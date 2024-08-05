@@ -1,0 +1,204 @@
+﻿@page "/app/daybook"
+@inject IAccountReport report
+@inject ICompany _company;
+@inject IInvoiceSetting _invoice
+@inject ICustomerSupplier _ledger
+@using System.Data;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@using System.Security.Claims
+@inject IPrivilege _privilege
+@inject IPrintingService PrintingService
+@inject NavigationManager navigation
+@attribute [Authorize]
+<PageTitle>Buku Harian</PageTitle>
+<div class="content">
+						<div class="page-header">
+							<div class="page-title">
+			<h4>Buku Harian</h4>
+							</div>
+						</div>
+
+						<!-- /product list -->
+						<div class="card">
+							<div class="card-body">
+			<!-- /Filter -->
+				<div class="">
+					<div class="card-body pb-0">
+					<div class="row">
+						<div class="col-lg-3 col-sm-6 col-12">
+							<div class="form-group">
+								Dari Tanggal
+								<RadzenDatePicker @bind-Value=@dtFromDate DateFormat="d" Class="w-100" />
+							</div>
+						</div>
+						<div class="col-lg-3 col-sm-6 col-12">
+							<div class="form-group">
+								Ke Tanggal
+								<RadzenDatePicker @bind-Value=@dtToDate DateFormat="d" Class="w-100" />
+							</div>
+						</div>
+						<div class="col-lg-3 col-sm-6 col-12">
+							<div class="form-group">
+								Tipe Bukti/Voucher
+								<RadzenDropDown Style="width:100%;" @bind-Value="intVoucherTypeId" Placeholder="All" AllowFiltering="true" Data="@(listVoucherType)" TextProperty="VoucherTypeName" ValueProperty="VoucherTypeId" />
+							</div>
+						</div>
+						<div class="col-lg-3 col-sm-6 col-12">
+							<div class="form-group">
+								Nama Akun
+								<RadzenDropDown Style="width:100%;" @bind-Value="intLedgerId" Placeholder="All" AllowFiltering="true" Data="@(listLedger)" TextProperty="LedgerName" ValueProperty="LedgerId" />
+							</div>
+						</div>
+						<div class="col-lg-6 col-sm-6 col-12">
+							<div class="form-group" style="margin-top:20px;">
+                                <a style="float:left; margin-right:4px;" class="btn btn-filters ms-auto" @onclick="()=>LoadData()"><img src="assets/img/icons/search-whites.svg" alt="img"></a>
+								<a style="float:left;" class="btn btn-filters ms-auto" @onclick="@(_ => PrintingService.Print("printable-form", PrintType.Html))"><img src="assets/img/icons/printer.svg" alt="img"></a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /Filter -->
+			<form id="printable-form">
+								<div class="table-responsive">
+									<br/>
+									<hr/>
+				<table style="width: 100%;line-height: inherit;text-align: left;">
+					<tbody>
+						<tr>
+							<td style="padding:5px;vertical-align:top;text-align:center;padding-bottom:20px">
+								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 22px;color:#000;font-weight: 600;"> @company.CompanyName </font></font><br>
+								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 17px;color:#000;font-weight: 600;">@company.Address</font></font><br>
+								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 15px;color:#000;font-weight: 600;">@company.PhoneNo</font></font><br>
+								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 16px;color:#000;font-weight: 600;"> DayBook</font></font><br>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+<br/>
+				@((MarkupString)myMarkup)
+								</div>
+								</form>
+							</div>
+						</div>
+						<!-- /product list -->
+					</div>
+
+@code {
+	[CascadingParameter]
+	public Task<AuthenticationState> authenticationState { get; set; }
+	DateTime dtFromDate = DateTime.UtcNow.AddDays(-1);
+	DateTime dtToDate = DateTime.UtcNow;
+	Company company = new Company();
+	IList<InvoiceSetting> listVoucherType;
+	IList<AccountLedgerView> listLedger;
+	int intVoucherTypeId = 0;
+	int intLedgerId = 0;
+	string myMarkup;
+	string strMenu = "Reports";
+	protected override async Task OnInitializedAsync()
+	{
+		//CheckPriviliagee
+		var authState = await authenticationState;
+		var strRole = authState.User;
+		string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+		var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+		if (strShow.ShowAction == true)
+		{
+			company = await _company.GetbyId(1);
+			listVoucherType = await _invoice.GetAll();
+			listLedger = await _ledger.GetAll();
+			intVoucherTypeId = 0;
+			intLedgerId = 0;
+			await LoadData();
+		}
+		else
+		{
+			navigation.NavigateTo("/app/dashboard");
+			Snackbar.Add("You dont have to privilege..", Severity.Error);
+		}
+
+		StateHasChanged();
+	}
+	private async Task LoadData()
+	{
+		string values = @"<table class='table'>
+                        <tr>
+                            <th style=''></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </tr> ";
+
+		values += @"<tr style='background: #F3F2F7;'>
+<th>" + "No. Urut" + @"</th>
+<th>" + "Tanggal" + @"</th>
+<th>" + "Tipe Voucher" + @"</th>
+<th>" + "Nomor Nota" + @"</th>
+<th>" + "Nama Akun" + @"</th>
+<th>" + "Debit" + @"</th>
+<th>" + "Kredit" + @"</th>
+            </tr>";
+
+		decimal totlDebit = 0;
+		decimal totlCredit = 0;
+		decimal decInwrd = 0;
+		decimal decOutWrd = 0;
+
+		DataTable dtblsub = new DataTable();
+		DataSet dset = new DataSet();
+
+		dtFromDate = new DateTime(dtFromDate.Year, dtFromDate.Month, dtFromDate.Day);
+		dtToDate = new DateTime(dtToDate.Year, dtToDate.Month, dtToDate.Day);
+		TimeSpan toDtTime = TimeSpan.Parse("23:59:59");
+		dtToDate = dtToDate.Add(toDtTime);
+
+		dset = report.DayBook(dtFromDate, dtToDate, intVoucherTypeId, intLedgerId);
+		int counter = 0;
+		dtblsub = dset.Tables[0];
+		string strBalance = string.Empty;
+
+
+		if (dtblsub.Rows.Count > 0)
+		{
+			for (int i = 0; i < dtblsub.Rows.Count; i++)
+			{
+				counter++;
+				totlDebit = totlDebit + decimal.Parse(dtblsub.Rows[i]["debit"].ToString());
+				totlCredit = totlCredit + decimal.Parse(dtblsub.Rows[i]["credit"].ToString());
+				decInwrd = decInwrd + decimal.Parse(dtblsub.Rows[i]["InwardQty"].ToString());
+				decOutWrd = decOutWrd + decimal.Parse(dtblsub.Rows[i]["OutwardQty"].ToString());
+				values += @"<tr>
+                    <td style=''>" + counter.ToString() + @"</td>
+                    <td style='font-family:Segoe UI;'>" + dtblsub.Rows[i]["Date"].ToString() + @"</td>
+                    <td style=''> " + dtblsub.Rows[i]["VoucherType"].ToString() + @"</td>
+                    <td>" + dtblsub.Rows[i]["voucherNo"].ToString() + @" </td>
+					<td>" + dtblsub.Rows[i]["Ledger"].ToString() + @" </td>
+                    <td> " + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(dtblsub.Rows[i]["debit"].ToString())) + @"</td>
+                    <td> " + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(dtblsub.Rows[i]["credit"].ToString())) + @"</td>
+                </tr>";
+
+
+			}
+		}
+		decimal decTotlDebitss = totlDebit;
+		decimal decTotlCreditss = totlCredit;
+		decimal decBlnce = decTotlDebitss - decTotlCreditss;
+		values += @"<tr>
+<td style=''></td>
+<td></td>
+<td style='font-style:bold; color:black; font-size:16px;'>Total</td>
+<td>" + "" + @"</td>
+<td>" + "" + @"</td>
+<td style='font-style:bold; color:black; font-size:16px;'>" + PublicVariables._Symbol + string.Format("{0:n0}", decTotlDebitss) + @"</td>
+<td style='font-style:bold; color:black; font-size:16px;'>" + PublicVariables._Symbol + string.Format("{0:n0}", decTotlCreditss) + @"</td>
+</tr>";
+		values += "</table>";
+		myMarkup = values;
+		StateHasChanged();
+	}
+}

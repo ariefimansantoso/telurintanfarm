@@ -1,0 +1,106 @@
+﻿@page "/"
+@using QuickAccounting.Components
+@layout LoginLayout
+@inject UserAccountService userAccountService
+@inject ICurrency _currency
+@inject ICompany _company
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager navManager
+@inject ISnackbar Snackbar
+<PageTitle>Masuk</PageTitle>
+<!-- Main Wrapper -->
+<div class="account-page">
+    <div class="main-wrapper">
+        <div class="account-content">
+            <div class="login-wrapper">
+                <div class="login-img">
+                    <img src="img/login-v2.svg" alt="img">
+                </div>
+                <div class="login-content">
+                    <div class="login-userset">
+                        <div class="login-logo">
+                            <img src="img/logo.png" alt="img">
+                        </div>
+                        <div class="login-userheading">
+                            <h3>Masuk</h3>
+                            <h4>Masuk ke area aplikasi</h4>
+                        </div>
+                        <div class="form-login">
+                            <label>Nama Akun</label>
+                            <div class="form-addons">
+                                <input type="text" placeholder="Masukkan nama akun anda" @bind="model.Email">
+                                <img src="assets/img/icons/mail.svg" alt="img">
+                            </div>
+                        </div>
+                        <div class="form-login">
+                            <label>Kata Sandi</label>
+                            <div class="pass-group">
+                                <input type="password" class="pass-input" @bind="model.Password" placeholder="Masukkan kata sandi anda">
+                                <span class="fas toggle-password fa-eye-slash"></span>
+                            </div>
+                        </div>
+                        <div class="form-login">
+                            <div class="alreadyuser">
+                                @*<h4><a href="/" class="hover-a">Forgot Password?</a></h4>*@
+                            </div>
+                        </div>
+                        <div class="form-login">
+                            <Loading IsLoading="isProcessing">
+                            <a class="btn btn-login" @onclick="Authenticate">Masuk</a>
+                            </Loading>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    UserMaster master = new UserMaster();
+    string strMessage;
+    private class Model
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    private Model model = new Model();
+    Company company = new Company();
+    bool isProcessing;
+    protected override async Task OnInitializedAsync()
+    {
+        model.Email = "";
+        model.Password = "";
+    }
+    private async Task Authenticate()
+    {
+        isProcessing = true;
+        try
+        {
+            var userAccount = userAccountService.GetByUserName(model.Email, model.Password);
+            if (userAccount == null || userAccount.Password != model.Password)
+            {
+                Snackbar.Add("Nama atau Password salah.", Severity.Error);
+                return;
+            }
+            else
+            {
+                var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+                await customAuthStateProvider.UpdateAuthenticationState(new UserSession
+                    {
+                        Email = userAccount.Email,
+                        RoleName = userAccount.RoleName
+                    });
+                var varCurrency = await _currency.GetCurrencyView(1);
+                PublicVariables._Symbol = varCurrency.CurrencySymbol;
+                navManager.NavigateTo("/app/dashboard", true);
+            }
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+        
+    }
+}

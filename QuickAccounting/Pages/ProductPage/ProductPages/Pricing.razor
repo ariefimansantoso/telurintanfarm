@@ -1,0 +1,205 @@
+﻿@page "/app/pricing"
+@inject IPricingService _pricing
+
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@using System.Security.Claims
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+@using QuickAccounting.Components
+<Loader IsLoading="isLoading"></Loader>
+<PageTitle>Set Harga Barang</PageTitle>
+<div class="content">
+	<div class="page-header">
+		<div class="page-title">
+			<h4>Set Harga Barang</h4>
+		</div>
+		<div class="page-btn">
+			<Loading IsLoading="isProcessing">
+			<a href="javascript:void(0);" @onclick="()=>SavePrice()" class="btn btn-added">
+				<img src="assets/img/icons/plus.svg" alt="img">Simpan
+			</a>
+			</Loading>
+		</div>
+	</div>
+
+	<!-- /product list -->
+	<div class="card">
+		<div class="card-body">			
+			<div class="table-responsive">
+				<table class="mud-table-root">
+					<thead class="mud-table-head">
+						<!--!-->
+						<tr class="mud-table-row">
+							<!--!-->
+							<th scope="col" class="mud-table-cell">Hari/Tanggal</th>
+							@foreach(var p in products)
+							{
+								<th scope="col" class="mud-table-cell">@p.ProductName</th>
+							}							
+						</tr>
+					</thead>
+					<tbody class="mud-table-body">
+						@if (prices5Days == null)
+						{
+							<tr class="mud-table-row" style="">
+								<!--!-->
+								<td data-label="ProductName" class="mud-table-cell">@DateTime.Now.ToString("dd-MM-yyyy hh:mm")</td><!--!-->
+								@foreach (var p in products)
+								{
+									<th scope="col" class="mud-table-cell">
+										<input type="number" id="txtProductPrice-@p.ProductCode" class="input-price" data-order="@p.ProductCode" data-pid="@p.ProductId" />
+									</th>
+								}								
+							</tr>
+						}
+						else
+						{
+							<tr class="mud-table-row" style="">
+								<!--!-->
+								<td data-label="ProductName" class="mud-table-cell">@DateTime.Now.ToString("dd-MM-yyyy hh:mm")</td>
+								@{
+									var indexer = 0;
+								}
+								@foreach (var p in products)
+								{
+									<th scope="col" class="mud-table-cell">
+										<input type="number" @oninput="NumberChanged" @bind="inputValues[indexer]" class="input-price" data-order="@p.ProductCode" data-pid="@p.ProductId" />
+									</th>
+									if (indexer == 3) break;
+									indexer++;
+									
+								}
+							</tr>
+
+							for (int i = 0; i < prices5Days.Count; i++)
+							{
+								<tr class="mud-table-row" style="">
+									@{ var igrouping = prices5Days.SelectMany(group => group); }
+									<td class="mud-table-cell">@prices5Days[i].Key.ToString("dd-MM-yyyy hh:mm")</td>
+
+									@foreach (var p in prices5Days[i])
+									{
+										<td data-label="ProductName" class="mud-table-cell">
+											@string.Format("{0:n0}", p.Price)
+										</td>
+									}
+
+								</tr>
+							}
+						}						
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<!-- /product list -->
+</div>
+
+<style type="text/css">
+	.input-price {
+		border: 1px solid rgba(145, 158, 171, 0.32);
+		height: 36px;
+		width: 100%;
+		font-size: 14px;
+		font-weight: 500;
+		color: #637381;
+		padding: 10px 15px;
+		border-radius: 5px;
+	}
+</style>
+@code {
+	[CascadingParameter]
+	public Task<AuthenticationState> authenticationState { get; set; }
+
+	public List<ProductView> products;
+	public List<IGrouping<DateTime, PriceMaster>> prices5Days;
+
+	private bool isLoading = true;
+	bool isProcessing;
+
+	public int[] inputValues;
+
+	private void NumberChanged(ChangeEventArgs e)
+	{
+		int value0 = Convert.ToInt32(e.Value);
+		inputValues[0] = value0;
+		inputValues[1] = value0 - 500;
+		inputValues[2] = value0 - 500 - 100;
+		inputValues[3] = value0 - 500 - 100 - 100;
+    }
+
+	private async Task SavePrice()
+	{
+		isProcessing = true;
+		//0 - 8 - 1
+		//1 - 1 2
+		//2 - 2 3
+		//3 - 6 4
+
+		PriceMaster p1 = new PriceMaster();
+		PriceMaster p2 = new PriceMaster();
+		PriceMaster p3 = new PriceMaster();
+		PriceMaster p4 = new PriceMaster();
+
+		p1.ProductID = 8;
+		p1.Price = inputValues[0];
+		p1.PriceDate = DateTime.Now;
+		p1.ProductCode = 1;
+
+		p2.ProductID = 1;
+		p2.Price = inputValues[1];
+		p2.PriceDate = DateTime.Now;
+		p2.ProductCode = 2;
+
+		p3.ProductID = 2;
+		p3.Price = inputValues[2];
+		p3.PriceDate = DateTime.Now;
+		p3.ProductCode = 3;
+
+		p4.ProductID = 6;
+		p4.Price = inputValues[3];
+		p4.PriceDate = DateTime.Now;
+		p4.ProductCode = 4;
+
+		List<PriceMaster> prices = new List<PriceMaster>();
+		prices.Add(p1);
+		prices.Add(p2);
+		prices.Add(p3);
+		prices.Add(p4);
+
+		_pricing.InsertPrice(prices);
+		navigation.NavigateTo("/app/pricing");
+		products = _pricing.GetAllProducts();
+		prices5Days = _pricing.GetPricesTake5Days();
+
+		isProcessing = false;
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		inputValues = new int[4];
+		inputValues[0] = 0;
+		inputValues[1] = 0;
+		inputValues[2] = 0;
+		inputValues[3] = 0;
+
+		products = _pricing.GetAllProducts();
+		prices5Days = _pricing.GetPricesTake5Days();
+
+		//CheckPriviliagee
+		// var authState = await authenticationState;
+		// var strRole = authState.User;
+		// string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+		// var strShow = await _privilege.PriviliageCheck("Daftar Harga Barang", strName);
+		await LoadData();
+		StateHasChanged();
+	}
+	private async Task LoadData()
+	{				
+		isLoading = false;
+		StateHasChanged();
+	}
+}

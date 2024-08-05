@@ -1,0 +1,499 @@
+﻿@page "/app/salesinvoiceview/{id}"
+@inject ISalesInvoice _sales
+@inject IPaymentIn _paymentin
+@inject ICompany _company
+@inject IProduct _product
+@inject ITax _tax
+@inject IEmailSetting _emailSetting;
+@inject IInvoiceSetting _setting
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Mvc;
+@using Microsoft.Extensions.FileProviders;
+@using QuickAccounting.Components
+@using QuickAccounting.Repository
+@using QuickAccounting.Services
+@using System.Security.Claims
+@using System.Net.Mail;
+@using OfficeOpenXml;
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrintingService PrintingService
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDialogService Dialog
+@inject IJSRuntime js
+@inject IExcelService _excelService
+@inject IBarcodeService _barcodeService
+@attribute [Authorize]
+<PageTitle>SalesInnvoice View</PageTitle>
+<div class="content">
+					<div class="page-header">
+						<div class="page-title">
+							<h4>Detail Penjualan</h4>
+			<h6>View Sales details
+			</h6>
+						</div>
+					</div>
+					<div class="card">
+						<div class="card-body">
+							<div class="card-sales-split">
+								<h2 style="font-size:15px; font-weight:700;">Sales Detail : @model.SalesMasterId</h2>
+								<ul>
+									@if(@model.PaymentStatus == "Draft")
+									{
+						<li>							
+							@* <a style="cursor:pointer;" @onclick="@(_ => PrintingService.Print("printable-form", PrintType.Html))"><img src="assets/img/icons/printer.svg" alt="img">Print</a> *@
+							<a style="cursor:pointer;" @onclick="@(_ => DownloadExcelInvoice())"><img src="assets/img/icons/printer.svg" alt="img">Print</a>
+						</li>
+						<li>
+							<a style="cursor:pointer;" @onclick="@SendMail"><img src="assets/img/icons/mail.svg" alt="img">Kirim Email</a>
+						</li>
+						<li>
+							<a href="/app/salesinvoiceedit/@model.SalesMasterId"><img src="assets/img/icons/edit.svg" alt="img">Update</a>
+						</li>
+						<li>
+							<a @onclick="() => OpenDeleteDialog()"><img src="assets/img/icons/dollar.svg" alt="img">Disetujui</a>
+						</li>
+									}
+									else
+									{
+										<li>
+							<a href="/app/salesinvoiceedit/@model.SalesMasterId"><img src="assets/img/icons/edit.svg" alt="img">Update</a>
+						</li>
+						<li>
+							<a style="cursor:pointer;" @onclick="@(_ => PrintingService.Print("print-barcode", PrintType.Html))"><img src="assets/img/icons/bar.svg" alt="img">Print Nota QR</a>
+						</li>
+						<li>
+							<a style="cursor:pointer;" @onclick="@(_ => DownloadExcelInvoice())"><img src="assets/img/icons/printer.svg" alt="img">Print</a>
+						</li>
+						<li>
+							<a style="cursor:pointer;" @onclick="@SendMail"><img src="assets/img/icons/mail.svg" alt="img">Kirim Email</a>
+						</li>
+									<li>
+							<a href="/app/paymentcustomeradd/@master.SalesMasterId"><img src="assets/img/icons/wallet1.svg" alt="img">Buat Nota Pembayaran</a>
+									</li>
+									<li>
+							<a href="/app/salesreturn/@master.SalesMasterId"><img src="assets/img/icons/return1.svg" alt="img">Buat Nota Debit</a>
+									</li>
+									}
+								</ul>
+							</div>
+			<form id="printable-form">
+							<div class="invoice-box table-height" style="color: #555;">
+								<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
+									<tbody><tr class="top">
+										<td colspan="6" style="padding: 5px;vertical-align: top;">
+											<table style="width: 100%;line-height: inherit;text-align: left;">
+												<tbody><tr>
+													<td style="width:38%;padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
+														<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Informasi Pelanggan</font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.LedgerName</font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Email</font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Phone</font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Address</font></font><br>
+													</td>
+												<td style="width:34%;padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
+														<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Telur Intan Farm</font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @company.CompanyName </font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;">@company.Email</font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;">@company.PhoneNo</font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @company.Address</font></font><br>
+													</td>
+													<td style="padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
+														<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Info Nota</font></font><br>
+												<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">No Nota: @model.SalesMasterId </font></font><br>
+												<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Tanggal Nota: @model.Date </font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Referensi @model.Reference </font></font><br>
+														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Status:  @model.PaymentStatus</font></font><br>
+													</td>
+												</tr>
+											</tbody></table>
+										</td>
+									</tr>
+									<tr class="heading " style="background: #F3F2F7;">
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Nama Barang
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Jml
+										</td>
+							<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+								Unit
+							</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Harga
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Diskon
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Pajak
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Subtotal
+										</td>
+									</tr>
+									@foreach(var item in TodoList)
+									{
+									<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+										<td style="padding: 10px;vertical-align: top; display: flex;align-items: center;">
+											@item.ProductName	
+										</td>
+										<td style="padding: 10px;vertical-align: top; ">
+											@item.Qty
+										</td>
+								<td style="padding: 10px;vertical-align: top; ">
+									@item.UnitName
+								</td>
+										<td style="padding: 10px;vertical-align: top; ">
+											@string.Format("{0:n0}", item.SalesRate)
+										</td>
+										<td style="padding: 10px;vertical-align: top; ">
+											@string.Format("{0:n0}", item.DiscountAmount)
+										</td>
+										<td style="padding: 10px;vertical-align: top; ">
+											@string.Format("{0:n0}", item.TaxAmount)
+										</td>
+										<td style="padding: 10px;vertical-align: top; ">
+											@string.Format("{0:n0}", item.TotalAmount)
+										</td>
+									</tr>
+									}
+								</tbody>
+							<tfoot>
+						<tr class="total-order w-100 max-widthauto m-auto mb-4">
+									<td colspan="5"></td>
+									<td style="font-weight:700;">Subtotal</td>
+							<td style="font-weight:700;">@string.Format("{0:n0}", model.NetAmounts)</td>
+								</tr>
+						<tr class="total-order w-100 max-widthauto m-auto mb-4">
+									<td colspan="5"></td>
+									<td>Diskon</td>
+									<td>@string.Format("{0:n0}", model.BillDiscount)</td>
+								</tr>
+						<tr class="total-order w-100 max-widthauto m-auto mb-4">
+									<td colspan="5"></td>
+									<td style="font-weight:700;">Total Setelah Diskon</td>
+									<td style="font-weight:700;">@string.Format("{0:n0}", model.TotalAmount)</td>
+								</tr>
+						<tr class="total-order w-100 max-widthauto m-auto mb-4">
+							<td colspan="5"></td>
+							<td>Vat</td>
+								<td>	@string.Format("{0:n0}", model.TotalTax)</td>
+						</tr>
+						<tr class="total-order w-100 max-widthauto m-auto mb-4">
+							<td colspan="5"></td>
+							<td style="font-weight:700;">Grand Total</td>
+								<td style="font-weight:700;">@string.Format("{0:n0}", model.GrandTotal)</td>
+						</tr>
+							</tfoot>	
+							</table>
+		
+							</div>
+				<table>
+					<tr>
+						<td>
+							<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 15px;color:#000;font-weight: 700;"> Dalam pengucapan </font></font><br>
+							<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 15px;color:#000;font-weight: 400;"> @strNumberToWords </font></font><br>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 15px;color:#000;font-weight: 700;"> Catatan </font></font><br>
+							<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 15px;color:#000;font-weight: 400;"> @model.Narration </font></font><br>
+						</td>
+					</tr>
+				</table>
+								<div class="row">
+									<div class="col-lg-10">
+						<h7>Created by:</h7> <br/>
+							<h7>@model.AddedDate</h7>
+									</div>
+									<div class="col-lg-2" style="float:right;">
+							<h7>Approved by:</h7> <br />
+						<h5>
+							@if (model.PaymentStatus == "Draft")
+							{
+							 <span style="font-size:12px;">Not Approved</span>
+							}
+							else
+							{
+								<span style="font-size:12px;">@model.UserId</span>
+							}
+						</h5>
+					</div>
+								</div>
+							</form>
+
+				<div id="print-barcode" style="width:220px; text-align:center; font-size:11px;">
+					<b>PT Telur Intan Farm</b><br />
+					Jln. Ahmad Yani no. 1, Balung<br />
+					<hr style="border:solid 1px #c2c2c2; width: 100%; height:1px; margin:3px 0px;" />
+					<div style="width:40%; text-align:left; float:left; font-size:8px;">
+						@model.UserId
+					</div>
+					<div style="width:60%; text-align:right; float:right; font-size:8px;">
+						@DateTime.Now.ToString("dd-MM-yyyy hh:mm")
+					</div>
+
+					<div style="width:100%; font-size:26px; font-weight:bold; ">
+						@model.SalesMasterId
+					</div>
+					<img src="data:image/png;base64,@GenerateBarcode()" style="width:75%; margin:0px auto;" />
+					<hr style="border:solid 1px #c2c2c2; width: 100%; height:1px; margin:3px 0px;" />
+					@foreach (var itemDetail in TodoList)
+					{
+						<div style="width:100%; margin:5px 0px; height: auto; text-align:left; font-size:9px; padding:3px 0px;">							
+								@itemDetail.ProductName - @itemDetail.Qty @itemDetail.UnitName								
+						</div>
+					}
+					<div style="width:100%; margin:5px 0px; height: auto; text-align:left; font-size:9px; padding:3px 0px;">							
+					@if(model.KP10 > 0)
+					{
+						<text>KP 10:</text> @model.KP10 <br />
+					}	
+					
+					@if (model.KP15 > 0)
+					{
+						<text>KP 15:</text> @model.KP15 <br />
+					}
+					</div>
+					@if(model.BillDiscount > 0)
+					{
+						<div style="width:60%; text-align:right; float:left; font-size:8px; border-top:solid 1px #c2c2c2;margin-top:5px;">
+							Sub Total :
+						</div>
+						<div style="width:40%; text-align:right; float:right; font-size:8px; border-top:solid 1px #c2c2c2;margin-top:5px;">
+							@string.Format("{0:n0}", model.NetAmounts)
+						</div>
+						<div style="width:60%; text-align:right; float:left; font-size:8px; ">
+							Diskon :
+						</div>
+						<div style="width:40%; text-align:right; float:right; font-size:8px; ">
+							@string.Format("{0:n0}", model.BillDiscount)
+						</div>
+					}
+
+					<div style="width:60%; text-align:right; float:left; font-size:8px; border-top:solid 1px #c2c2c2;margin-top:5px;">
+						Total :
+					</div>				
+					<div style="width:40%; text-align:right; float:right; font-size:8px; border-top:solid 1px #c2c2c2;margin-top:5px;">
+						@string.Format("{0:n0}", model.GrandTotal)
+					</div>
+					<div style="width:60%; text-align:right; float:left; font-size:8px; margin:5px 0px;">
+						Bayar :
+					</div>
+				<div style="width:40%; text-align:right; float:right; font-size:8px; margin:5px 0px;">
+						@string.Format("{0:n0}", model.Bayar)
+					</div>
+				<div style="width:60%; text-align:right; float:left; font-size:8px;border-bottom:solid 1px #c2c2c2; margin:5px 0px;">
+						Kembali :
+					</div>
+				<div style="width:40%; text-align:right; float:right; font-size:8px; border-bottom:solid 1px #c2c2c2; margin:5px 0px;">
+						@string.Format("{0:n0}", model.Kembali)
+					</div>
+					<div style="width:100%; clear:both; margin-top: 3px;">
+						Terima Kasih Atas Pembelian Anda
+					</div>
+				</div>
+						</div>
+					</div>
+
+	
+				</div>
+
+<style type="text/css">
+	@@media print {
+		#print-barcode {
+			margin-left:0px !important;
+		}
+	}
+</style>
+@if (DeleteDialogOpen)
+{
+	<ModalDialog Title="Setujui Nota Penjualan"
+			 Text="Apakah anda yakin mau menyetujui Nota Penjualan ini? Akan menambahkan catatan nota penjualan."
+                 OnClose="@OnDeleteDialogClose"
+                 DialogType="ModalDialog.ModalDialogType.Ok">
+    </ModalDialog>
+}
+@code {
+	[Parameter]
+	public string id { get; set; }
+	[CascadingParameter]
+	public Task<AuthenticationState> authenticationState { get; set; }
+	Company company = new Company();
+	SalesMasterView model = new SalesMasterView();
+	SalesMaster master = new SalesMaster();
+	List<ProductView> TodoList = new List<ProductView>();
+	InvoiceSetting setting = new InvoiceSetting();
+	EmailSetting emailSetting = new EmailSetting();
+	string strNumberToWords;
+	int decSalesVoucherType = 9;
+	public bool DeleteDialogOpen { get; set; }
+	string strMenu = "Sales";
+	protected override async Task OnInitializedAsync()
+	{
+		//CheckPriviliagee
+		var authState = await authenticationState;
+		var strRole = authState.User;
+		string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+		var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+		if(strShow == null)
+		{
+			navigation.NavigateTo("/app/dashboard");
+			Snackbar.Add("You dont have to privilege..", Severity.Error);
+		}
+		if (strShow.ShowAction == true)
+		{
+			await LoadData();
+		}
+		else
+		{
+			navigation.NavigateTo("/app/dashboard");
+			Snackbar.Add("You dont have to privilege..", Severity.Error);
+		}
+	}
+	private async Task LoadData()
+	{
+		company = await _company.GetbyId(1);
+		model = await _sales.SalesInvoiceMasterView(Convert.ToInt32(id));
+		master = await _sales.GetbyId(Convert.ToInt32(id));
+		TodoList = await _sales.SalesInvoiceDetailsView(Convert.ToInt32(id));
+		strNumberToWords = NumberToWords.ConvertAmount( Convert.ToDouble(model.GrandTotal.ToString())); 
+
+		//GetSerialNo
+		string	serial = await _sales.GetSerialNo();
+		setting = await _setting.GetbyId(decSalesVoucherType);
+		master.VoucherNo = setting.Prefix + serial + setting.Suffix;
+		master.SerialNo = serial;
+		StateHasChanged();
+	}
+	private async void ApprovedOk()
+	{
+		if (TodoList == null)
+		{
+			Snackbar.Add("Invalid Entry.", Severity.Info);
+		}
+		else if (master.LedgerId == 0)
+		{
+			Snackbar.Add("Choose Customer.", Severity.Info);
+		}
+		else if (master.VoucherNo == string.Empty)
+		{
+			Snackbar.Add("Type Voucher No.", Severity.Info);
+		}
+		else if (master.GrandTotal == 0)
+		{
+			Snackbar.Add("Invalid Entry.", Severity.Info);
+		}
+		else
+		{
+			var authState = await authenticationState;
+			var user = authState.User;
+			string userName = user.FindFirst(ClaimTypes.Name).Value;
+			master.UserId = userName;
+			master.PaymentStatus = "Approved";
+			master.ModifyDate = DateTime.UtcNow;
+			foreach (var item in TodoList)
+			{
+				SalesDetails details = new SalesDetails();
+				if (item != null)
+				{
+					details.SalesDetailsId = item.SalesDetailsId;
+					details.ProductId = item.ProductId;
+					details.Qty = item.Qty;
+					details.UnitId = item.UnitId;
+					details.Rate = item.PurchaseRate;
+					details.Amount = item.Amount;
+					details.Discount = item.Discount;
+					details.DiscountAmount = item.DiscountAmount;
+					if (item.TaxId == 0)
+					{
+						details.TaxId = 1;
+					}
+					else
+					{
+						details.TaxId = item.TaxId;
+					}
+					details.TaxRate = item.TaxRate;
+					details.TaxAmount = item.TaxAmount;
+					details.BatchId = item.BatchId;
+					details.NetAmount = item.NetAmount;
+					details.GrossAmount = 0;
+					details.OrderDetailsId = 0;
+					details.QuotationDetailsId = 0;
+					master.listOrder.Add(details);
+				}
+			}
+			var result = await _sales.Approved(master);
+
+			if (result == true)
+			{
+				Snackbar.Add("Nota Penjualan Sudah Disetujui.", Severity.Success);
+				await LoadData();
+			}
+			else
+			{
+				Snackbar.Add("Persetujuan Gagal.", Severity.Error);
+			}
+		}
+	}
+	private async Task OnDeleteDialogClose(bool accepted)
+	{
+		if (accepted)
+		{
+			ApprovedOk();
+		}
+
+		DeleteDialogOpen = false;
+		StateHasChanged();
+	}
+	public async void SendMail()
+	{
+		emailSetting = await _emailSetting.GetbyId(1);
+		string To = model.Email;
+		string Subject = "My Name is bryan hamal";
+		string Body = "<h2>This is mail address</h2>";
+		try
+		{
+			using(MailMessage mail = new MailMessage())
+			{
+				mail.From = new MailAddress(emailSetting.MailAddress);
+				mail.To.Add(model.Email);
+				mail.Subject = Subject;
+				mail.Body = Body;
+				mail.IsBodyHtml = true;
+
+				using(SmtpClient smtp = new SmtpClient("smtp.gmail.com" , 587))
+				{
+					smtp.Credentials = new System.Net.NetworkCredential(emailSetting.MailAddress , emailSetting.Password);
+					smtp.EnableSsl = true;
+					smtp.UseDefaultCredentials = true;
+					smtp.Send(mail);
+					Snackbar.Add("Successfully Send.", Severity.Success);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add(ex.Message, Severity.Error);
+		}
+	}
+	private void OpenDeleteDialog()
+	{
+		DeleteDialogOpen = true;
+		StateHasChanged();
+	}
+
+	private async void DownloadExcelInvoice()
+	{					
+		var excelBytes = await _excelService.GenerateExcelWorkbook(Convert.ToInt32(id));
+		await js.InvokeVoidAsync("saveAsFile", $"faktur_{model.SalesMasterId}.xlsx", Convert.ToBase64String(excelBytes));		
+	}
+
+	private string GenerateBarcode() 
+	{
+		return _barcodeService.GenerateQRCode(model.SalesMasterId.ToString());
+	}
+}
+

@@ -1,0 +1,299 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime _jsCustom
+@inject NavigationManager navManager
+@inject AuthenticationStateProvider authStateProvider
+@inject IUser _userManage
+
+@using QuickAccounting.ExceptionHandling
+<PageTitle>PT Telur Intan Farm</PageTitle>
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<AuthorizeView>
+            <Authorized>
+		<div class="expand-menu @(HideLabel ? "mini-sidebar" : "")">
+<div class="main-wrapper">
+			<div class="header">
+				<!-- Logo -->
+				<div class="header-left active" style="background:#ffffff;">
+					<a href="/app/dashboard" class="logo">
+						<img src="img/logo.png" alt="">
+					</a>
+					<a href="/app/dashboard" class="logo-small">
+						<img src="img/logo.png" alt="">
+					</a>
+					<a id="toggle_btn" @onclick="@Toggle">
+					</a>
+				</div>
+				<!-- /Logo -->
+
+				<a id="mobile_btn" class="mobile_btn">
+					<span class="bar-icon">
+						<span></span>
+						<span></span>
+						<span></span>
+					</span>
+				</a>
+
+				<!-- Header Menu -->
+				<ul class="nav user-menu">
+
+					<NotificationLayout />
+					<li class="nav-item dropdown has-arrow main-drop">
+						<a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
+							<span class="user-img">
+								<img src="img/user.png" alt="">
+								<span class="status online"></span>
+							</span>
+						</a>
+						<div class="dropdown-menu menu-drop-user">
+							<div class="profilename">
+								<div class="profileset">
+									<span class="user-img">
+										<img src="img/user.png" alt="">
+										<span class="status online"></span>
+									</span>
+									<div class="profilesets">
+										<h6>@context.User.Identity.Name</h6>
+									</div>
+								</div>
+								<hr class="m-0">
+								<a class="dropdown-item" href="/app/userprofile"> <i class="me-2" data-feather="user"></i> Profil Saya</a>
+								<a class="dropdown-item" href="/app/company"><i class="me-2" data-feather="settings"></i>Settings</a>
+								<hr class="m-0">
+								<a style="cursor:pointer" class="dropdown-item logout pb-0" @onclick="@Logout"><img src="assets/img/icons/log-out.svg" class="me-2" alt="img">Keluar</a>
+							</div>
+						</div>
+					</li>
+				</ul>
+				<!-- /Header Menu -->
+				<!-- Mobile Menu -->
+				<div class="dropdown mobile-user-menu">
+					<a href="javascript:void(0);" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></a>
+					<div class="dropdown-menu dropdown-menu-right">
+						<a class="dropdown-item" href="/app/userprofile">Profil Saya</a>
+						<a class="dropdown-item" href="/app/company">Settings</a>
+							<a class="dropdown-item" style="cursor:pointer;" @onclick="@Logout">Keluar</a>
+					</div>
+				</div>
+				<!-- /Mobile Menu -->
+					<div class="expand-menu" style="@(HideLabel ? "display:none" : "")">
+				<div class="sidebar" id="sidebar">
+					<div class="sidebar-inner slimscroll">
+						<div id="sidebar-menu" class="sidebar-menu">
+							<ul>
+								<li class="active">
+									<a href="/app/dashboard"><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
+								</li>
+
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/sales1.svg" alt="img"><span> Penjualan</span> <span class="menu-arrow"></span></a>
+									<ul>
+										@*<li><a href="/app/sales">Quotations</a></li>*@
+										<li><a href="/app/sales">Nota Penjualan</a></li>
+										<li><a href="/app/salesreturn">Nota Kredit</a></li>
+										<li><a style="cursor:pointer;" @onclick="@ClickPos">POS</a></li>
+										<li><a href="/app/paymentcustomer">Pembayaran Nota</a></li>
+										<li><a href="/app/customer">Pelanggan</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Pengeluaran</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/purchase">Nota Pengeluaran</a></li>
+										<li><a href="/app/expenses">Pengeluaran Lain</a></li>
+										<li><a href="/app/paymentsuspplier">Pembayaran Oleh Supplier</a></li>
+										<li><a href="/app/purchasereturn">Nota Debit</a></li>
+										<li><a href="/app/supplier">Suppliers</a></li>
+									</ul>
+								</li>
+
+										<li class="submenu">
+											<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Picking</span> <span class="menu-arrow"></span></a>
+											<ul>
+												<li><a href="/app/pickingscan">Scan Picking</a></li>
+												<li><a href="/app/returscan">Scan Retur</a></li>
+												<li><a href="/app/aturstoktelur">Atur Stok Telur</a></li>
+											</ul>
+										</li>
+
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Accounting</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/journalvoucher">Journal Voucher</a></li>
+										<li><a href="/app/payment">Payment Voucher  </a></li>
+										<li><a href="/app/receipt">Receipt Voucher</a></li>
+										<li><a href="/app/account">Daftar Akun </a></li>
+										<li><a href="/app/bank">Rekening Bank</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/users.svg" alt="img"><span>SDM / HR</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/employee">Karyawan</a></li>
+										<li><a href="/app/designation">Designation</a></li>
+										<li><a href="/app/payhead">Pay Head </a></li>
+										<li><a href="/app/salarypackage">Salary Package</a></li>
+										<li><a href="/app/attendancelist">Absensi</a></li>
+										<li><a href="/app/monthlysetting">Monthly Salary Setting</a></li>
+										<li><a href="/app/advancepayment">Kasbon</a></li>
+										<li><a href="/app/bonusdeduction">Bonus Deduction</a></li>
+										<li><a href="/app/salaryvoucher">Monthly Salary Voucher</a></li>
+										<li><a href="/app/dailysalary">Daily Salary Voucher</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+											<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Anggaran</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/budget">Anggaran</a></li>
+										<li><a href="/app/budgetvariance">Budget Variance</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Inventaris</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/product">Produk</a></li>
+										<li><a href="/app/category">Kategori Produk</a></li>
+										<li><a href="/app/brand">Merek</a></li>
+										<li><a href="/app/unit">Unit Satuan</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Daftar Harga Barang</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/pricing">Set Harga Barang</a></li>
+									</ul>
+								</li>
+								<li class="">
+									<a href="/app/reports"><img src="assets/img/icons/time.svg" alt="img"><span> Laporan</span></a>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Daftar Pengguna</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/useradd">Tambah Pengguna</a></li>
+										<li><a href="/app/user">Daftar Pengguna</a></li>
+										<li><a href="/app/rolepermissions" ef">Role Permissions</a></li>
+									</ul>
+								</li>
+								<li class="submenu">
+									<a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Configuration</span> <span class="menu-arrow"></span></a>
+									<ul>
+										<li><a href="/app/company">Apps</a></li>
+										<li><a href="/app/invoicesetting">Invoice Settings</a></li>
+										<li><a href="/app/currency">Currency Settings</a></li>
+										<li><a href="/app/tax">Tax Rates</a></li>
+									</ul>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				</div>
+			</div>
+				@* <CustomErrorBoundary @ref="errorBoundary">
+					<ChildContent> *@
+						<div class="page-wrapper @(HideLabel ? "opened" : "")">
+							@Body
+						</div>
+					@* </ChildContent>
+					<ErrorContent Context="Exception">
+						<div class="modal fade @showModel" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true" style="display:@ModalDisplay; opacity:1;">
+							<div class="modal-dialog" style="top:90px;">
+								<div class="modal-content">
+									<div class="modal-header bg-light p-3">
+										<h5 class="modal-title" id="addAgentModalLabel">Error</h5>
+										<button type="button" class="close" data-bs-dismiss="modal" aria-label="Close" @onclick="() => errorBoundary.Recover()">
+											<span aria-hidden="true">×</span>
+										</button>
+									</div>
+
+									<div class="modal-body">
+										<div class="mb-3">
+
+											<div class="alert alert-danger">
+												<h3>@Exception.GetType()</h3>
+												<h3>@Exception.Message</h3>
+											</div>
+										</div>
+
+									</div>
+									<div class="modal-footer">
+										<div class="hstack gap-2 justify-content-end">
+											<button type="button" class="btn btn-block btn-outline-success active" @onclick="() => errorBoundary.Recover()" data-bs-dismiss="modal">Close</button>
+											<a class="btn btn-primary" @onclick="()=>GoToDashboard()">Go to dashboard</a>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</ErrorContent>
+				</CustomErrorBoundary> *@
+</div>
+</div>
+</Authorized>
+<NotAuthorized>
+    <QuickAccounting.Pages.Authentication.Login />
+</NotAuthorized>
+</AuthorizeView>
+@code {
+	private bool HideLabel { get; set; } = false;
+	public string ModalDisplay = "none;";
+	string showModel = "";
+	private CustomErrorBoundary errorBoundary;
+	string currentUserRole = "User";
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadData();
+	}
+
+	private async Task GetUserRole()
+	{
+		var authstate = await authStateProvider.GetAuthenticationStateAsync();
+		var user = authstate.User;
+		var userName = user.Identity.Name;		
+		currentUserRole = await _userManage.GetUserRole(userName);
+	}
+
+	private async Task LoadData()
+	{
+		errorBoundary = new CustomErrorBoundary();
+		if (errorBoundary != null)
+		{
+			ModalDisplay = "block;";
+			showModel = "Show";
+		}
+		ModalDisplay = "block;";
+		showModel = "Show";
+		StateHasChanged();
+	}
+	protected async override Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await _jsCustom.InvokeAsync<IJSObjectReference>("import", "/assets/js/script.js");
+			StateHasChanged();
+		}
+	}
+	private async Task Logout()
+	{
+		var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+		await customAuthStateProvider.UpdateAuthenticationState(null);
+		navManager.NavigateTo("/", true);
+	}
+	private void Toggle()
+	{
+		HideLabel = !HideLabel;
+		StateHasChanged();
+	}
+	private async void GoToDashboard()
+	{
+		navManager.NavigateTo("/app/dashboard" , true);
+	}
+	private async void ClickPos()
+	{
+		navManager.NavigateTo("/app/pos");
+		HideLabel = !HideLabel;
+		StateHasChanged();
+	}
+}

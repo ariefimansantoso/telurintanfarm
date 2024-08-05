@@ -1,0 +1,170 @@
+﻿@page "/app/pickingscan"
+@inject ISalesInvoice _sales
+@inject IPaymentIn _paymentin
+@inject ICompany _company
+@inject IProduct _product
+@inject ITax _tax
+@inject IEmailSetting _emailSetting;
+@inject IInvoiceSetting _setting
+@inject ISnackbar Snackbar
+@using Microsoft.AspNetCore.Mvc;
+@using Microsoft.Extensions.FileProviders;
+@using QuickAccounting.Components
+@using QuickAccounting.Repository
+@using QuickAccounting.Services
+@using System.Security.Claims
+@using System.Net.Mail;
+@using OfficeOpenXml;
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrintingService PrintingService
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDialogService Dialog
+@inject IJSRuntime js
+@inject IExcelService _excelService
+@inject IBarcodeService _barcodeService
+@attribute [Authorize]
+<PageTitle>Picking Scan</PageTitle>
+<div class="content">
+	<div class="page-header">
+		<div class="page-title">
+			<h4>Scan QR Code</h4>
+			<h6>
+				Pengambilan Telur Retail/Ecer
+			</h6>
+		</div>
+	</div>
+	<div class="card">
+		<div class="card-body">			
+			<div class="invoice-box table-height" style="color: #555;">
+					<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
+						<tbody>
+							<tr class="top">
+								<td colspan="6" style="vertical-align: top;">
+									<div class="col-lg col-sm-6 col-6">
+										<div class="form-group">
+											Scan Nota Disini:
+											<input type="text" autofocus id="txtInvoiceNo" placeholder="Nomor Nota" @bind="@id" @onkeydown="@Enter">
+										</div>
+									</div>								
+									<div class="col-lg col-sm-6 col-6">
+										<div class="form-group" style="margin-top:20px; font-size:20px;">
+											Status Pengambilan Barang: <b>@StatusDiambil</b>
+										</div>
+									</div>							
+								</td>
+							</tr>
+							<tr class="heading" style="background: #F3F2F7;">
+								<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+									Nama Barang
+								</td>
+								<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+									Jml
+								</td>
+								<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+									Unit
+								</td>															
+							</tr>
+							@foreach (var item in TodoList)
+							{
+								<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+									<td style="padding: 10px;vertical-align: top; display: flex;align-items: center;">
+										@item.ProductName
+									</td>
+									<td style="padding: 10px;vertical-align: top; ">
+										@item.Qty
+									</td>
+									<td style="padding: 10px;vertical-align: top; ">
+										@item.UnitName
+									</td>																
+								</tr>
+							}
+						</tbody>						
+					</table>
+
+				</div>												
+		</div>
+	</div>
+
+
+</div>
+
+<script type="text/javascript">
+	$(document).ready(function () {
+		$("#txtInvoiceNo").on('change keydown paste input', function () {
+			doSomething();
+		});
+
+		document.getElementById("txtInvoiceNo").focus();
+	});
+</script>
+
+@code {
+	[Parameter]
+	public string id { get; set; }
+	[CascadingParameter]
+	public Task<AuthenticationState> authenticationState { get; set; }
+	Company company = new Company();
+	SalesMasterView model = new SalesMasterView();
+	SalesMaster master = new SalesMaster();
+	List<ProductView> TodoList = new List<ProductView>();
+	InvoiceSetting setting = new InvoiceSetting();
+	EmailSetting emailSetting = new EmailSetting();
+
+	int decSalesVoucherType = 9;
+	public bool DeleteDialogOpen { get; set; }
+	string strMenu = "Picking";
+	public string StatusDiambil { get; set; }
+	protected override async Task OnInitializedAsync()
+	{
+		//CheckPriviliagee
+		var authState = await authenticationState;
+		var strRole = authState.User;
+		string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+		var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+		if (strShow == null)
+		{
+			navigation.NavigateTo("/app/dashboard");
+			Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+		}
+		if (strShow.ShowAction == true)
+		{
+			await LoadData();
+		}
+		else
+		{
+			navigation.NavigateTo("/app/dashboard");
+			Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+		}
+	}
+	private async Task LoadData()
+	{
+		company = await _company.GetbyId(1);
+
+		StateHasChanged();
+	}	
+	public async void Enter(KeyboardEventArgs e)
+	{
+		if (e.Code == "Enter" || e.Code == "NumpadEnter")
+		{			
+			model = await _sales.SalesInvoiceMasterView(Convert.ToInt32(id));
+			master = await _sales.GetbyId(Convert.ToInt32(id));
+			TodoList = await _sales.SalesInvoiceDetailsView(Convert.ToInt32(id));
+
+			StatusDiambil = master.SudahDiambil ? "Sudah Diambil" : "Belum Diambil";
+
+			master.SudahDiambil = true;
+			var result = await _sales.UpdateSalesInvoice(master);
+
+			if (result == true)
+			{
+				Snackbar.Add("Scan Selesai.", Severity.Success);
+			}
+			else
+			{
+				Snackbar.Add("Scan Gagal: Data tidak ditemukan.", Severity.Error);
+			}
+		}
+	}
+}
+
