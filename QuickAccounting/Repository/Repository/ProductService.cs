@@ -121,7 +121,9 @@ namespace QuickAccounting.Repository.Repository
                                    BrandName = b.Name,
                                    GroupName = c.GroupName,
                                    UnitName = d.UnitName,
-                                   Image = a.Image
+                                   Image = a.Image,
+                                   Narration = a.Narration,
+                                   QueueNumber = a.QueueNumber
                                }).ToListAsync();
             return result;
         }

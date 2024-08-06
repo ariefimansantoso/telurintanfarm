@@ -7,7 +7,7 @@ namespace QuickAccounting.Services
 	{
 		List<ProductView> GetAllProducts();
 		List<PriceMaster> GetPrices();
-		List<IGrouping<DateTime, PriceMaster>> GetPricesTake5Days();
+		List<IGrouping<string, PriceMaster>> GetPricesTake5Days();
 		void InsertPrice(List<PriceMaster> priceMasters);
 		void UpdatePrices(List<PriceMaster> prices);
 	}

@@ -54,5 +54,6 @@
 
         //StockPosting
         public int StockPostingId { get; set; }
+        public int QueueNumber { get; set; }
     }
 }

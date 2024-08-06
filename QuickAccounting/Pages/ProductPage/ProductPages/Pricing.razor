@@ -1,6 +1,6 @@
 ﻿@page "/app/pricing"
 @inject IPricingService _pricing
-
+@inject IProduct _product
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @using System.Security.Claims
@@ -34,10 +34,13 @@
 						<!--!-->
 						<tr class="mud-table-row">
 							<!--!-->
-							<th scope="col" class="mud-table-cell">Hari/Tanggal</th>
+							<th scope="col" class="mud-table-cell">Hari/Tanggal</th>							
 							@foreach(var p in products)
 							{
-								<th scope="col" class="mud-table-cell">@p.ProductName</th>
+								<th scope="col" class="mud-table-cell">
+									@p.ProductName<br />
+									@p.Narration
+								</th>
 							}							
 						</tr>
 					</thead>
@@ -46,7 +49,7 @@
 						{
 							<tr class="mud-table-row" style="">
 								<!--!-->
-								<td data-label="ProductName" class="mud-table-cell">@DateTime.Now.ToString("dd-MM-yyyy hh:mm")</td><!--!-->
+								<td data-label="ProductName" class="mud-table-cell">@DateTime.Now.ToString("dd-MM-yyyy HH:mm")</td><!--!-->
 								@foreach (var p in products)
 								{
 									<th scope="col" class="mud-table-cell">
@@ -59,34 +62,33 @@
 						{
 							<tr class="mud-table-row" style="">
 								<!--!-->
-								<td data-label="ProductName" class="mud-table-cell">@DateTime.Now.ToString("dd-MM-yyyy hh:mm")</td>
-								@{
-									var indexer = 0;
-								}
-								@foreach (var p in products)
-								{
+								<td data-label="ProductName" class="mud-table-cell">@DateTime.Now.ToString("dd-MM-yyyy HH:mm")</td>								
+								@for(int z = 0; z < 7; z++)
+								{									
 									<th scope="col" class="mud-table-cell">
-										<input type="number" @oninput="NumberChanged" @bind="inputValues[indexer]" class="input-price" data-order="@p.ProductCode" data-pid="@p.ProductId" />
-									</th>
-									if (indexer == 3) break;
-									indexer++;
-									
+										@if(z == 0)
+										{
+											<input type="number" value="@inputValues[z]" @onchange="@NumberChanged" class="input-price" data-order="@products[z].ProductCode" data-pid="@products[z].ProductId" />
+										}
+										else
+										{
+											<input type="number" value="@inputValues[z]" class="input-price" data-order="@products[z].ProductCode" data-pid="@products[z].ProductId" />
+										}										
+									</th>																	
 								}
 							</tr>
 
-							for (int i = 0; i < prices5Days.Count; i++)
+							for (int i = prices5Days.Count - 1; i >= 0; i--)
 							{
 								<tr class="mud-table-row" style="">
-									@{ var igrouping = prices5Days.SelectMany(group => group); }
-									<td class="mud-table-cell">@prices5Days[i].Key.ToString("dd-MM-yyyy hh:mm")</td>
-
-									@foreach (var p in prices5Days[i])
-									{
+									@{ var igrouping = prices5Days[i]; }
+									<td class="mud-table-cell">@igrouping.FirstOrDefault().PriceDate.ToString("dd-MM-yyyy HH:mm")</td>									
+									@foreach (var p in igrouping)
+						  			{
 										<td data-label="ProductName" class="mud-table-cell">
 											@string.Format("{0:n0}", p.Price)
 										</td>
 									}
-
 								</tr>
 							}
 						}						
@@ -115,21 +117,36 @@
 	public Task<AuthenticationState> authenticationState { get; set; }
 
 	public List<ProductView> products;
-	public List<IGrouping<DateTime, PriceMaster>> prices5Days;
+	public List<IGrouping<string, PriceMaster>> prices5Days;
 
 	private bool isLoading = true;
 	bool isProcessing;
 
 	public int[] inputValues;
 
+	private void SetHarga(MouseEventArgs args)
+	{
+		int value0 = Convert.ToInt32(inputValues[0]);
+		//inputValues[0] = value0;
+		inputValues[1] = value0 - 400;
+		inputValues[2] = value0 - 400 - 100;
+		inputValues[3] = value0 - 400 - 100 - 100;
+		inputValues[4] = value0 - 400 - 100 - 100 - 100;
+		inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
+		inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
+	}
+
 	private void NumberChanged(ChangeEventArgs e)
 	{
 		int value0 = Convert.ToInt32(e.Value);
 		inputValues[0] = value0;
-		inputValues[1] = value0 - 500;
-		inputValues[2] = value0 - 500 - 100;
-		inputValues[3] = value0 - 500 - 100 - 100;
-    }
+		inputValues[1] = value0 - 400;
+		inputValues[2] = value0 - 400 - 100;
+		inputValues[3] = value0 - 400 - 100 - 100;
+		inputValues[4] = value0 - 400 - 100 - 100 - 100;
+		inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
+		inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
+	}
 
 	private async Task SavePrice()
 	{
@@ -143,49 +160,109 @@
 		PriceMaster p2 = new PriceMaster();
 		PriceMaster p3 = new PriceMaster();
 		PriceMaster p4 = new PriceMaster();
+		PriceMaster p5 = new PriceMaster();
+		PriceMaster p6 = new PriceMaster();
+		PriceMaster p7 = new PriceMaster();
+		DateTime insertDate = DateTime.Now;
+		string priceGroup = Guid.NewGuid().ToString();
 
 		p1.ProductID = 8;
 		p1.Price = inputValues[0];
-		p1.PriceDate = DateTime.Now;
+		p1.PriceDate = insertDate;
 		p1.ProductCode = 1;
+		p1.PriceGroup = priceGroup;
+		var product1 = await _product.GetbyId(p1.ProductID);
+		product1.SalesRate = p1.Price;
 
 		p2.ProductID = 1;
 		p2.Price = inputValues[1];
-		p2.PriceDate = DateTime.Now;
+		p2.PriceDate = insertDate;
 		p2.ProductCode = 2;
+		p2.PriceGroup = priceGroup;
+		var product2 = await _product.GetbyId(p2.ProductID);
+		product2.SalesRate = p2.Price;
 
 		p3.ProductID = 2;
 		p3.Price = inputValues[2];
-		p3.PriceDate = DateTime.Now;
+		p3.PriceDate = insertDate;
 		p3.ProductCode = 3;
+		p3.PriceGroup = priceGroup;
+		var product3 = await _product.GetbyId(p3.ProductID);
+		product3.SalesRate = p3.Price;
 
-		p4.ProductID = 6;
+		p4.ProductID = 33;
 		p4.Price = inputValues[3];
 		p4.PriceDate = DateTime.Now;
-		p4.ProductCode = 4;
+		p4.ProductCode = 30;
+		p4.PriceGroup = priceGroup;
+		var product4 = await _product.GetbyId(p4.ProductID);
+		product4.SalesRate = p4.Price;
+
+		p5.ProductID = 14;
+		p5.Price = inputValues[4];
+		p5.PriceDate = insertDate;
+		p5.ProductCode = 5;
+		p5.PriceGroup = priceGroup;
+		var product5 = await _product.GetbyId(p5.ProductID);
+		product5.SalesRate = p5.Price;
+
+		p6.ProductID = 34;
+		p6.Price = inputValues[5];
+		p6.PriceDate = insertDate;
+		p6.ProductCode = 31;
+		p6.PriceGroup = priceGroup;
+		var product6 = await _product.GetbyId(p6.ProductID);
+		product6.SalesRate = p6.Price;
+
+		p7.ProductID = 35;
+		p7.Price = inputValues[6];
+		p7.PriceDate = insertDate;
+		p7.ProductCode = 32;
+		p7.PriceGroup = priceGroup;
+		var product7 = await _product.GetbyId(p7.ProductID);
+		product7.SalesRate = p7.Price;
 
 		List<PriceMaster> prices = new List<PriceMaster>();
 		prices.Add(p1);
 		prices.Add(p2);
 		prices.Add(p3);
 		prices.Add(p4);
+		prices.Add(p5);
+		prices.Add(p6);
+		prices.Add(p7);
 
 		_pricing.InsertPrice(prices);
-		navigation.NavigateTo("/app/pricing");
+
+		await _product.Update(product1);
+		await _product.Update(product2);
+		await _product.Update(product3);
+		await _product.Update(product4);
+		await _product.Update(product5);
+		await _product.Update(product6);
+		await _product.Update(product7);
+
+		//navigation.NavigateTo("/app/pricing");
 		products = _pricing.GetAllProducts();
 		prices5Days = _pricing.GetPricesTake5Days();
 
+		inputValues = new int[7];
+		for(int i = 0; i < 7; i++)
+		{
+			inputValues[i] = 0;
+		}
+
 		isProcessing = false;
+		StateHasChanged();
 	}
 
 	protected override async Task OnInitializedAsync()
 	{
-		inputValues = new int[4];
-		inputValues[0] = 0;
-		inputValues[1] = 0;
-		inputValues[2] = 0;
-		inputValues[3] = 0;
-
+		inputValues = new int[7];
+		for(int i = 0; i < 7; i++)
+		{
+			inputValues[i] = 0;
+		}
+		
 		products = _pricing.GetAllProducts();
 		prices5Days = _pricing.GetPricesTake5Days();
 
@@ -197,6 +274,7 @@
 		await LoadData();
 		StateHasChanged();
 	}
+
 	private async Task LoadData()
 	{				
 		isLoading = false;

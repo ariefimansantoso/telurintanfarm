@@ -19,12 +19,13 @@ namespace QuickAccounting.Services
 			return _context.PriceHistory.OrderByDescending(x => x.PriceDate).ToList();
 		}
 
-		public List<IGrouping<DateTime, PriceMaster>> GetPricesTake5Days()
+		public List<IGrouping<string, PriceMaster>> GetPricesTake5Days()
 		{
 			if (_context.PriceHistory.Count() == 0)
 				return null;
 
-			return _context.PriceHistory.ToList().OrderByDescending(x => x.PriceDate).GroupBy(x => x.PriceDate).ToList();
+			var data = _context.PriceHistory.OrderBy(x => x.ID).ToList();
+			return data.GroupBy(x => x.PriceGroup).ToList();
 		}
 
 		public void InsertPrice(List<PriceMaster> priceMasters)
@@ -45,12 +46,16 @@ namespace QuickAccounting.Services
 						  join b in _context.Brand on a.BrandId equals b.BrandId
 						  join c in _context.ProductGroup on a.GroupId equals c.GroupId
 						  join d in _context.Unit on a.UnitId equals d.UnitId
+						  orderby a.QueueNumber
 						  select new ProductView
 						  {
 							  ProductId = a.ProductId,
 							  ProductCode = a.ProductCode,
-							  ProductName = a.ProductName
-						  }).OrderBy(x => Convert.ToInt32(x.ProductCode)).Take(4).ToList();
+							  ProductName = a.ProductName,
+							  Narration = a.Narration,
+							  QueueNumber = a.QueueNumber,
+							  SalesRate = a.SalesRate
+						  }).Take(7).ToList();
 			return result;
 		}
 	}

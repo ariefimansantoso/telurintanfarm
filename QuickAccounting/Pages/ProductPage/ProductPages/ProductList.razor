@@ -32,22 +32,22 @@
                     </ToolBarContent>
                     <HeaderContent>
                         <MudTh>Code/Sku</MudTh>
-                        <MudTh>Product Name</MudTh>
-                        <MudTh>Unit Name</MudTh>
-                        <MudTh>Brand Name</MudTh>
-                        <MudTh>Category Name</MudTh>
-                        <MudTh>Purchase Rate</MudTh>
-                        <MudTh>Sales Rate</MudTh>
+                        <MudTh>Nama Barang</MudTh>
+                        <MudTh>Catatan</MudTh>
+                        <MudTh>Satuan</MudTh>
+                        <MudTh>Kategori</MudTh>
+                        <MudTh>Harga</MudTh>
+                        <MudTh>Harga Modal</MudTh>                        
                         <MudTh></MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd DataLabel="ProductName">@context.ProductCode</MudTd>
+                        <MudTd DataLabel="ProductCode">@context.ProductCode</MudTd>
                         <MudTd DataLabel="ProductName">@context.ProductName</MudTd>
-                        <MudTd DataLabel="UnitName">@context.UnitName</MudTd>
+                        <MudTd DataLabel="Narration">@context.Narration</MudTd>
                         <MudTd DataLabel="BrandName">@context.BrandName</MudTd>
-                        <MudTd DataLabel="GroupName">@context.GroupName</MudTd>
-                        <MudTd DataLabel="PurchaseRate">@PublicVariables._Symbol @context.PurchaseRate</MudTd>
-                        <MudTd DataLabel="SalesRate">@PublicVariables._Symbol @context.SalesRate</MudTd>
+                        <MudTd DataLabel="GroupName">@context.GroupName</MudTd>                        
+                        <MudTd DataLabel="SalesRate">@PublicVariables._Symbol @string.Format("{0:n0}", context.SalesRate)</MudTd>
+                        <MudTd DataLabel="PurchaseRate">@PublicVariables._Symbol @string.Format("{0:n0}", context.PurchaseRate)</MudTd>
                         <MudTd DataLabel="">
                             <a class="me-3" href="/app/productedit/@context.ProductId">
                                 <img src="assets/img/icons/edit.svg" alt="img">
@@ -154,6 +154,7 @@
     private async Task LoadData()
     {
         listModel = await _product.GetAll();
+        listModel = listModel.OrderBy(x => x.QueueNumber).ToList();
         StateHasChanged();
     }
     private async Task Save()

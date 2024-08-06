@@ -34,5 +34,6 @@ namespace QuickAccounting.Data.Setting
         public DateTime? ModifyDate { get; set; }
         [NotMapped]
         public List<ProductView> Variants { get; set; } = new List<ProductView>();
+        public int QueueNumber { get; set; }
     }
 }
