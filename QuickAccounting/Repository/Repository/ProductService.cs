@@ -145,7 +145,8 @@ namespace QuickAccounting.Repository.Repository
 
         public async Task<int> Save(Product model)
         {
-            await _context.Product.AddAsync(model);
+            model.QueueNumber = 16;
+			await _context.Product.AddAsync(model);
             await _context.SaveChangesAsync();
             int id = model.ProductId;
             //PostingOpeningStock

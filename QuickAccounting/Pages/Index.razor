@@ -198,8 +198,8 @@
 						<table class="table">
 							<thead>
 								<tr>
-									<th>Cash / Bank</th>
-									<th>Amount</th>
+									<th>Kas / Bank</th>
+									<th>Jumlah</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -216,7 +216,7 @@
 									<td class="productimgname">
 										@item.LedgerName
 									</td>
-									<td>@PublicVariables._Symbol @item.Balance</td>
+									<td>@PublicVariables._Symbol @string.Format("{0:n0}", item.Balance)</td>
 								</tr>
 									}
 								}
@@ -229,17 +229,17 @@
 	</div>
 	<div class="card mb-0">
 		<div class="card-body">
-			<h4 class="card-title">Recent Transaction</h4>
+			<h4 class="card-title">Transaksi Terkini</h4>
 			<div class="table-responsive">
 				<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
 
 					<MudTabPanel Text="Sales">
 						<MudTable Items="@listSales" Dense="@dense" Hover="@hover">
 							<HeaderContent>
-								<MudTh>Customer Name</MudTh>
-								<MudTh>Invoice No</MudTh>
+								<MudTh>Nama Pelanggan</MudTh>
+								<MudTh>Nomor Nota</MudTh>
 								<MudTh>Reference</MudTh>
-								<MudTh>Date</MudTh>
+								<MudTh>Tanggal</MudTh>
 								<MudTh>Total</MudTh>
 								<MudTh>Status</MudTh>
 							</HeaderContent>
@@ -248,7 +248,7 @@
 								<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
 								<MudTd DataLabel="Reference">@context.Reference</MudTd>
 								<MudTd DataLabel="Date">@context.Date</MudTd>
-								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
+								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @string.Format("{0:n0}", context.GrandTotal)</MudTd>
 								@if (context.PaymentStatus == "Draft")
 								{
 									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br />
@@ -503,7 +503,7 @@
 	{
 		listProduct = await report.GetTopProduct();
 		DateTime today = DateTime.Now;
-		dtFromDate = new DateTime(today.Year, today.Month, today.Day);
+		dtFromDate = new DateTime(today.Year, today.Month, today.Day,0,0,0);
 		dtToDate = new DateTime(today.Year, today.Month, today.Day);
 		TimeSpan toDtTime = TimeSpan.Parse("23:59:59");
 		dtToDate = dtToDate.Add(toDtTime);
@@ -516,7 +516,7 @@
 
 		PartaiTunai = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
 		PartaiBank = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
-		
+
 		DaySeven();
 		StateHasChanged();
 	}
@@ -579,8 +579,11 @@
 		string strDay7 = "active";
 		string strDay30 = "DeActive";
 		string strDay365 = "DeActive";
-		DateTime dtFromDate = DateTime.UtcNow.AddDays(-7);
-		DateTime dtToDate = DateTime.UtcNow;
+		DateTime today = DateTime.Now;
+		dtFromDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+		dtToDate = new DateTime(today.Year, today.Month, today.Day);
+		TimeSpan toDtTime = TimeSpan.Parse("23:59:59");
+		dtToDate = dtToDate.Add(toDtTime);
 		var result = report.SalesPurchaseTotal(dtFromDate, dtToDate, 1); //GetTotalSales&Purchase
 		TotalSale = result.totalSale;
 		TotalPurchase = result.totalPurchase;
@@ -598,6 +601,7 @@
 		listPaymentOut = await _paymentout.GetAll(dtFromDate, dtToDate, string.Empty, "PaymentVoucher");
 		listPurchase = await _purchase.PurchaseInvoiceSearch(dtFromDate, dtToDate, string.Empty, 0);
 		listSales = await _sales.SalesInvoiceSearch(dtFromDate, dtToDate, string.Empty, 0);
+		listSales = listSales.OrderByDescending(x => x.Date).ToList();
 		listSalesReturn = await _salesreturn.SalesReturnInvoiceSearch(dtFromDate, dtToDate, string.Empty, 0);
 		listPurchaseReturn = await _purchasereturn.PurchaseReturnInvoiceSearch(dtFromDate, dtToDate, string.Empty, 0);
 

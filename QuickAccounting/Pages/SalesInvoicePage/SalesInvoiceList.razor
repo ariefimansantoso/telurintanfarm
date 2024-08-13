@@ -12,7 +12,7 @@
 <div class="content">
 						<div class="page-header">
 							<div class="page-title">
-								<h4>Sales Invoice</h4>
+								<h4>Nota Penjualan</h4>
 							</div>
 							<div class="page-btn">
 								<a href="/app/salesinvoiceadd" class="btn btn-added">
@@ -29,25 +29,25 @@
 					<div class="row">
 						<div class="col-lg col-sm-6 col-12">
 							<div class="form-group">
-								From Date
+								Dari Tanggal
 								<RadzenDatePicker @bind-Value=@dtFromDate DateFormat="d" Class="w-100" />
 							</div>
 						</div>
 						<div class="col-lg col-sm-6 col-12">
 							<div class="form-group">
-								To Date
+								Ke Tanggal
 								<RadzenDatePicker @bind-Value=@dtToDate DateFormat="d" Class="w-100" />
 							</div>
 						</div>
 							<div class="col-lg col-sm-6 col-12">
 								<div class="form-group">
-									Invoice No
+									Nomor Nota
 									<input type="text" @bind="@strVoucherNo" placeholder="Invoice No">
 								</div>
 							</div>
 						<div class="col-lg col-sm-6 col-12">
 							<div class="form-group">
-								Customer
+								Pelanggan
 								<RadzenDropDown Style="width:100%;" @bind-Value="@LedgerId" Placeholder="Choose Customer" AllowFiltering="true" Data="@(listLedger)" TextProperty="LedgerName" ValueProperty="LedgerId" />
 							</div>
 						</div>
@@ -67,10 +67,9 @@
 						<MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
 					</ToolBarContent>
                     <HeaderContent>
-                        <MudTh>Customer Name</MudTh>
-                        <MudTh>Invoice No</MudTh>
-                        <MudTh>Reference</MudTh>
-                        <MudTh>Date</MudTh>
+                        <MudTh>Nama Pelanggan</MudTh>
+                        <MudTh>Nota</MudTh>
+                        <MudTh>Tanggal</MudTh>
                         <MudTh>Total</MudTh>
 						<MudTh>Status</MudTh>
                         <MudTh></MudTh>
@@ -78,9 +77,8 @@
 							<RowTemplate>
 								<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
 								<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-								<MudTd DataLabel="Reference">@context.Reference</MudTd>
 								<MudTd DataLabel="Date">@context.Date</MudTd>
-								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
+								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @string.Format("{0:n0}", context.GrandTotal)</MudTd>
 						@if (context.PaymentStatus == "Draft")
 								{
 							<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br/>
@@ -147,8 +145,9 @@
 	private bool hover = true;
 	IList<AccountLedgerView> listLedger;
 	IList<SalesMasterView> listModel;
-	DateTime dtFromDate = DateTime.UtcNow.AddDays(-7);
-	DateTime dtToDate = DateTime.UtcNow;
+	DateTime today = DateTime.Now;
+	DateTime dtFromDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
+	DateTime dtToDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);	
 	string strVoucherNo = string.Empty;
 	int LedgerId = 0;
 	string strMenu = "Sales";
@@ -164,6 +163,12 @@
 		if (strShow.ShowAction == true)
 		{
 			listLedger = await _customersupplier.GetAll(26); //ReceiableGroupId
+			DateTime today = DateTime.Now;
+			dtFromDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+			dtToDate = new DateTime(today.Year, today.Month, today.Day);
+			TimeSpan toDtTime = TimeSpan.Parse("23:59:59");
+			dtToDate = dtToDate.Add(toDtTime);
+
 			await LoadData();
 		}
 		else
@@ -174,10 +179,10 @@
 		StateHasChanged();
 	}
 	private async Task LoadData()
-	{
-		
+	{		
 		listModel = await _sales.SalesInvoiceSearch(dtFromDate, dtToDate, strVoucherNo, LedgerId);
-	isLoading = false;
+		listModel = listModel.OrderByDescending(x => x.Date).ToList();
+		isLoading = false;
 		StateHasChanged();
 	}
 	private bool FilterFunc1(SalesMasterView element) => FilterFunc(element, searchString1);

@@ -123,7 +123,10 @@ namespace QuickAccounting.Repository.Repository
             using (SqlConnection sqlcon = new SqlConnection(_conn.DbConn))
             {
                 var para = new DynamicParameters();
-                para.Add("@FromDate", FromDate);
+				FromDate = new DateTime(FromDate.Year, FromDate.Month, FromDate.Day, 0, 0, 0);
+                ToDate = new DateTime(ToDate.Year, ToDate.Month, ToDate.Day, ToDate.Hour, ToDate.Minute, ToDate.Second);
+
+				para.Add("@FromDate", FromDate);
                 para.Add("@ToDate", ToDate);
                 para.Add("@VoucherNo", VoucherNo);
                 para.Add("@LedgerId", LedgerId);

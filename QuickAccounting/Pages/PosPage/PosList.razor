@@ -516,6 +516,7 @@
                 master.OrderMasterId = 0;
                 master.WarehouseId = 1;
                 master.AddedDate = DateTime.Now;
+                master.Date = DateTime.Now;
                 master.Kembali = master.Bayar - master.GrandTotal;
                 master.TipePembayaran = paymentType;
                 foreach (var item in TodoList)

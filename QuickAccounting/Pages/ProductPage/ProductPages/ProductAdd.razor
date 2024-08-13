@@ -133,7 +133,7 @@
 				</div>
 @code {
 	[CascadingParameter]
-    public Task<AuthenticationState> authenticationState { get; set; }
+	public Task<AuthenticationState> authenticationState { get; set; }
 	Product model = new Product();
 	IList<BrandView> listBrand;
 	IList<ProductGroupView> listCategory;
@@ -179,6 +179,7 @@
 		model.OpeningStock = 0;
 		model.ExiparyDate = DateTime.UtcNow;
 		model.IsActive = true;
+		model.QueueNumber = 16;
 		StateHasChanged();
 	}
 	private async Task Save()

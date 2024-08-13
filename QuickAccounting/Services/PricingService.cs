@@ -24,7 +24,7 @@ namespace QuickAccounting.Services
 			if (_context.PriceHistory.Count() == 0)
 				return null;
 
-			var data = _context.PriceHistory.OrderBy(x => x.ID).ToList();
+			var data = _context.PriceHistory.OrderByDescending(x => x.PriceDate).ToList();
 			return data.GroupBy(x => x.PriceGroup).ToList();
 		}
 
