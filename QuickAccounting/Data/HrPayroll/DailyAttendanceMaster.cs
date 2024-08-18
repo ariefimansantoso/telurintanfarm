@@ -12,7 +12,10 @@ namespace QuickAccounting.Data.HrPayroll
         public string Narration { get; set; }
         public DateTime? AddedDate { get; set; }
         public DateTime? ModifyDate { get; set; }
-		[NotMapped]
-		public List<DailyAttendanceDetails> listOrder { get; set; } = new List<DailyAttendanceDetails>();
-	}
+        public int EmployeeID { get; set; }
+        public string Lat { get; set; }
+        public string Long { get; set; }
+        public string PhotoSelfie { get; set; }
+        public string AttendanceStatus { get; set; }
+    }
 }

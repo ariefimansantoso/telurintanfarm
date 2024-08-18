@@ -99,120 +99,115 @@
     }
     private async Task LoadData()
     {
-        listStatus.Add(new StatusInfo { StatusPresent = "Absent" });
-        listStatus.Add(new StatusInfo { StatusPresent = "Present" });
-        master.Date = DateTime.UtcNow;
-        String sDate = DateTime.UtcNow.ToString();
-        DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
+        // listStatus.Add(new StatusInfo { StatusPresent = "Absent" });
+        // listStatus.Add(new StatusInfo { StatusPresent = "Present" });
+        // master.Date = DateTime.UtcNow;
+        // String sDate = DateTime.UtcNow.ToString();
+        // DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
 
-        String dy = datevalue.Day.ToString();
-        String mn = datevalue.Month.ToString();
-        String yy = datevalue.Year.ToString();
-        master.Narration = dy + mn + yy;
-        listModel = _attendance.DailyAttendanceDetailsSearchGridFill();
-        foreach (var item in listModel)
-        {
-            DailyAttendanceDetails statuspaidunpaid = new DailyAttendanceDetails();
-            statuspaidunpaid = await _attendance.GetAttandanceDetails(master.Narration, item.EmployeeId);
-            if (statuspaidunpaid != null)
-            {
-                details.Status = statuspaidunpaid.Status;
-                details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
-                var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
-                myTodos.status = details.Status;
-                myTodos.DailyAttendanceDetailsId = details.DailyAttendanceDetailsId;
-                details.Status = "Absent";
-                details.DailyAttendanceDetailsId = 0;
-            }
-            else
-            {
-                var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
-                myTodos.status = "Absent";
-                myTodos.DailyAttendanceDetailsId = 0;
-            }
+        // String dy = datevalue.Day.ToString();
+        // String mn = datevalue.Month.ToString();
+        // String yy = datevalue.Year.ToString();
+        // master.Narration = dy + mn + yy;
+        // listModel = _attendance.DailyAttendanceDetailsSearchGridFill();
+        // foreach (var item in listModel)
+        // {
+        //     DailyAttendanceDetails statuspaidunpaid = new DailyAttendanceDetails();
+        //     statuspaidunpaid = await _attendance.GetAttandanceDetails(master.Narration, item.EmployeeId);
+        //     if (statuspaidunpaid != null)
+        //     {
+        //         details.Status = statuspaidunpaid.Status;
+        //         details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
+        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
+        //         myTodos.status = details.Status;
+        //         myTodos.DailyAttendanceDetailsId = details.DailyAttendanceDetailsId;
+        //         details.Status = "Absent";
+        //         details.DailyAttendanceDetailsId = 0;
+        //     }
+        //     else
+        //     {
+        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
+        //         myTodos.status = "Absent";
+        //         myTodos.DailyAttendanceDetailsId = 0;
+        //     }
 
-        }
+        // }
         StateHasChanged();
     }
     private async Task ChangeDate()
     {
         //listStatus.Add(new StatusInfo { StatusPresent = "Absent" });
         //listStatus.Add(new StatusInfo { StatusPresent = "Present" });
-        String sDate = master.Date.ToString();
-        DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
+        // String sDate = master.Date.ToString();
+        // DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
 
-        String dy = datevalue.Day.ToString();
-        String mn = datevalue.Month.ToString();
-        String yy = datevalue.Year.ToString();
-        master.Narration = dy + mn + yy;
-        listModel = _attendance.DailyAttendanceDetailsSearchGridFill();
-        foreach (var item in listModel)
-        {
-            DailyAttendanceDetails statuspaidunpaid = new DailyAttendanceDetails();
-            statuspaidunpaid = await _attendance.GetAttandanceDetails(master.Narration, item.EmployeeId);
-            if (statuspaidunpaid != null)
-            {
-                details.Status = statuspaidunpaid.Status;
-                details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
-                var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
-                myTodos.status = details.Status;
-                myTodos.DailyAttendanceDetailsId = details.DailyAttendanceDetailsId;
-                details.Status = string.Empty;
-                details.DailyAttendanceDetailsId = 0;
-            }
-            else
-            {
-                //details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
-                var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
-                myTodos.status = "Absent";
-                myTodos.DailyAttendanceDetailsId = 0;
-            }
+        // String dy = datevalue.Day.ToString();
+        // String mn = datevalue.Month.ToString();
+        // String yy = datevalue.Year.ToString();
+        // master.Narration = dy + mn + yy;
+        // listModel = _attendance.DailyAttendanceDetailsSearchGridFill();
+        // foreach (var item in listModel)
+        // {
+        //     DailyAttendanceDetails statuspaidunpaid = new DailyAttendanceDetails();
+        //     statuspaidunpaid = await _attendance.GetAttandanceDetails(master.Narration, item.EmployeeId);
+        //     if (statuspaidunpaid != null)
+        //     {
+        //         details.Status = statuspaidunpaid.Status;
+        //         details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
+        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
+        //         myTodos.status = details.Status;
+        //         myTodos.DailyAttendanceDetailsId = details.DailyAttendanceDetailsId;
+        //         details.Status = string.Empty;
+        //         details.DailyAttendanceDetailsId = 0;
+        //     }
+        //     else
+        //     {
+        //         //details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
+        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
+        //         myTodos.status = "Absent";
+        //         myTodos.DailyAttendanceDetailsId = 0;
+        //     }
 
-        }
+        // }
         StateHasChanged();
     }
     private async void Save()
     {
 
-        if (listModel == null)
-        {
-            Snackbar.Add("Invalid.", Severity.Error);
-        }
-        else
-        {
-            //decimal decResult = _attendance.HolidaySettings(master.Date);
-            //if (decResult != 1)
-            //{
-            master.AddedDate = DateTime.UtcNow;
-            foreach (var item in listModel)
-            {
-                DailyAttendanceDetails details = new DailyAttendanceDetails();
-                if(item.status == null)
-                {
-                    details.Status = "Absent";
-                }
-                else
-                {
-                    details.Status = item.status;
-                }
-                details.Narration = string.Empty;
-                details.EmployeeId = item.EmployeeId;
-                master.listOrder.Add(details);
-            }
-            var result = await _attendance.Save(master);
+        
+        //     //decimal decResult = _attendance.HolidaySettings(master.Date);
+        //     //if (decResult != 1)
+        //     //{
+        //     master.AddedDate = DateTime.UtcNow;
+        //     foreach (var item in listModel)
+        //     {
+        //         DailyAttendanceDetails details = new DailyAttendanceDetails();
+        //         if(item.status == null)
+        //         {
+        //             details.Status = "Absent";
+        //         }
+        //         else
+        //         {
+        //             details.Status = item.status;
+        //         }
+        //         details.Narration = string.Empty;
+        //         details.EmployeeId = item.EmployeeId;
+        //         master.listOrder.Add(details);
+        //     }
+        //     var result = await _attendance.Save(master);
 
-            if (result > 0)
-            {
-                Snackbar.Add("Attendance Created Successfully.", Severity.Success);
-                await LoadData();
-                navigation.NavigateTo("/app/attendancelist");
-                StateHasChanged();
-                }
-                else
-                {
-                    Snackbar.Add("Transaction Failed.", Severity.Error);
-                }
-            //}
-        }
+        //     if (result > 0)
+        //     {
+        //         Snackbar.Add("Attendance Created Successfully.", Severity.Success);
+        //         await LoadData();
+        //         navigation.NavigateTo("/app/attendancelist");
+        //         StateHasChanged();
+        //         }
+        //         else
+        //         {
+        //             Snackbar.Add("Transaction Failed.", Severity.Error);
+        //         }
+        //     //}
+        // }
     }
 }

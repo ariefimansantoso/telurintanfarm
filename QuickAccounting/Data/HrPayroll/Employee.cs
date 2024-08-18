@@ -26,5 +26,11 @@ namespace QuickAccounting.Data.HrPayroll
         public decimal DailyWage { get; set; }
 		[Range(1, int.MaxValue, ErrorMessage = "Please select Package.")]
 		public int DefaultPackageId { get; set; }
+        public int UserID { get; set; }
+        public string BirthPlace { get; set; }
+        public string NIK { get; set; }
+        public string ID_BPJS_KES { get; set; }
+        public string ID_BPJS_TK { get; set; }
+        public string BankAccount { get; set; }
     }
 }

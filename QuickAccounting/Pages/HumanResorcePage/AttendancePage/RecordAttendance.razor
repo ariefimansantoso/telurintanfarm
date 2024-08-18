@@ -1,0 +1,257 @@
+﻿@page "/app/recordattendance"
+@inject IAttendance _attendance
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@using System.Security.Claims
+
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<PageTitle>Form Absensi Harian</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Absensi Harian</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (AttendanceSubmitted == false) {
+                if (WithinBoundaries)
+                {
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label style="font-size:24px; font-weight:bold;">@WaktuAbsensi</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Foto Selfie</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <div class="image-uploads">
+                                            @if (PhotoSelfie == string.Empty)
+                                            {
+                                                <img src="/img/noimage.png" alt="img">
+                                            }
+                                            else
+                                            {
+                                                <img src="@PhotoSelfie" width="80" height="80">
+                                            }
+                                            <br />
+                                            <InputFile OnChange="OnFileChange" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <br /> <br />
+                    <div class="row">
+                        <div class="col-lg-12" style="text-align: center !important;">
+                            <input type="button" @onclick="@(e => Save())" class="btn btn-submit me-2" value="Simpan Absensi" />
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label style="font-size:24px; font-weight:bold;">Anda tidak berada di lokasi kandang.</label>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Absensi berhasil disimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <!-- /product list -->
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    DailyAttendanceMaster master = new DailyAttendanceMaster();
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+
+    string strMenu = "Record Attendance";
+    private string PhotoSelfie;
+    private Location location;
+    private string WaktuAbsensi;
+
+    private bool AttendanceSubmitted;
+    private bool WithinBoundaries;
+
+    private async Task GetLocation()
+    {
+        try
+        {
+            // Call the JavaScript function and get the result as an anonymous object
+            var result = await JSRuntime.InvokeAsync<Location>("getGeolocation");
+            location = result;
+
+            var boundary = new GeoBoundary
+                {
+                    MinLatitude = -8.285350737880993,
+                    MaxLatitude = -8.283251719937075,
+                    MinLongitude = 113.53280383586056,
+                    MaxLongitude = 113.53530775154285
+                };
+
+            WithinBoundaries = boundary.IsPointWithinBoundary(location.Latitude, location.Longitude);
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions (e.g., geolocation not supported, user denied permission, etc.)
+            WithinBoundaries = false;
+        }
+    }
+
+    async Task OnFileChange(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var format = "image/png";
+            using MemoryStream ms = new();
+            var resized = await e.File.RequestImageFileAsync(e.File.ContentType, maxWidth: 500, maxHeight: 500);
+            using Stream fileStream = resized.OpenReadStream();
+            await fileStream.CopyToAsync(ms);
+
+            var fileString = $"data:{format};base64,{Convert.ToBase64String(ms.ToArray())}";
+            if (fileString == null)
+            {
+                PhotoSelfie = string.Empty;
+            }
+            else
+            {
+                PhotoSelfie = fileString;
+            }
+        }
+        catch(Exception ex)
+        {
+            PhotoSelfie = string.Empty;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        //CheckPriviliagee
+        await GetLocation();
+        await LoadData();
+
+        StateHasChanged();
+    }
+
+    private async Task LoadData()
+    {
+        PhotoSelfie = string.Empty;
+        DateTime now = DateTime.Now;
+
+        master.Date = now;
+        String sDate = now.ToString();
+        DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
+
+        String dy = datevalue.Day.ToString();
+        String mn = datevalue.Month.ToString();
+        String yy = datevalue.Year.ToString();
+        master.Narration = dy + mn + yy;                
+
+        master.Lat = location.Latitude.ToString();
+        master.Long = location.Longitude.ToString();
+
+        var hour = now.Hour;
+        if(hour <= 15)
+        {
+            WaktuAbsensi = "Absensi Kedatangan";
+        }
+        else if (hour > 15)
+        {
+            WaktuAbsensi = "Absensi Pulang";
+        }
+
+        AttendanceSubmitted = false;
+
+        StateHasChanged();
+    }
+
+    private async Task Save()
+    {
+        if (PhotoSelfie == string.Empty)
+        {
+            Snackbar.Add("Anda belum mengambil foto selfie.", Severity.Error);
+            return;
+        }
+
+        DateTime now = DateTime.Now;
+        master.AddedDate = now;
+        master.Date = now;
+        master.PhotoSelfie = PhotoSelfie;
+        master.Lat = location.Latitude.ToString();
+        master.Long = location.Longitude.ToString();
+        master.EmployeeID = modelEmployee.EmployeeId;
+
+        // by default alpha, sampai nanti pas payroll baru di set masuk klo ada absensi 2 kali dalam sehari.
+        master.AttendanceStatus = "ALPHA";
+
+        var result = await _attendance.Save(master);
+
+        if (result > 0)
+        {
+            Snackbar.Add("Absensi telah berhasil disimpan.", Severity.Success);
+            AttendanceSubmitted = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Absensi gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
+        }
+    }
+
+    public class Location
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
+    public class GeoBoundary
+    {
+        public double MinLatitude { get; set; }
+        public double MaxLatitude { get; set; }
+        public double MinLongitude { get; set; }
+        public double MaxLongitude { get; set; }
+
+        public bool IsPointWithinBoundary(double latitude, double longitude)
+        {
+            return latitude >= MinLatitude && latitude <= MaxLatitude &&
+                   longitude >= MinLongitude && longitude <= MaxLongitude;
+        }
+    }
+}

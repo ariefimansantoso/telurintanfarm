@@ -11,6 +11,7 @@ namespace QuickAccounting.Repository.Interface
         Task<int> Save(Employee model);
         Task<bool> Update(Employee model);
         Task<Employee> GetbyId(int id);
+        Task<Employee> GetbyUserId(int id);
         Task<bool> Delete(int id);
     }
 }

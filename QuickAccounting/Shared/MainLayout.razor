@@ -86,111 +86,144 @@
 									<a href="/app/dashboard"><img src="assets/img/icons/dashboard.svg" alt="img"><span> Dashboard</span> </a>
 								</li>
 
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/sales1.svg" alt="img"><span> Penjualan</span> <span class="menu-arrow"></span></a>
-									<ul>
-										@*<li><a href="/app/sales">Quotations</a></li>*@
-										<li><a href="/app/sales">Nota Penjualan</a></li>
-										<li><a href="/app/salesreturn">Nota Kredit</a></li>
-										<li><a style="cursor:pointer;" @onclick="@ClickPos">POS</a></li>
-										<li><a href="/app/paymentcustomer">Pembayaran Nota</a></li>
-										<li><a href="/app/customer">Pelanggan</a></li>
-									</ul>
-								</li>
+										@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/sales1.svg" alt="img"><span> Penjualan</span> <span class="menu-arrow"></span></a>
+												<ul>
+													@*<li><a href="/app/sales">Quotations</a></li>*@
+													<li><a href="/app/sales">Nota Penjualan</a></li>
+													<li><a href="/app/salesreturn">Nota Kredit</a></li>
+													<li><a style="cursor:pointer;" @onclick="@ClickPos">POS</a></li>
+													<li><a href="/app/paymentcustomer">Pembayaran Nota</a></li>
+													<li><a href="/app/customer">Pelanggan</a></li>
+												</ul>
+											</li>
+											<li class="">
+												<a href="/app/currentprices"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Harga Terkini</span></a>											
+											</li>
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Pengeluaran</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/purchase">Nota Pengeluaran</a></li>
+													<li><a href="/app/expenses">Pengeluaran Lain</a></li>
+													<li><a href="/app/paymentsuspplier">Pembayaran Oleh Supplier</a></li>
+													<li><a href="/app/purchasereturn">Nota Debit</a></li>
+													<li><a href="/app/supplier">Suppliers</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole == "Picking" || currentUserRole == "Admin")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Picking</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/pickingscan">Scan Picking</a></li>
+													<li><a href="/app/returscan">Scan Retur</a></li>
+													<li><a href="/app/aturstoktelur">Atur Stok Telur</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Accounting</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/journalvoucher">Journal Voucher</a></li>
+													<li><a href="/app/payment">Payment Voucher  </a></li>
+													<li><a href="/app/receipt">Receipt Voucher</a></li>
+													<li><a href="/app/account">Daftar Akun </a></li>
+													<li><a href="/app/bank">Rekening Bank</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole == "HR" || currentUserRole == "Admin")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/users.svg" alt="img"><span>SDM / HR</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/employee">Karyawan</a></li>
+													@* <li><a href="/app/designation">Designation</a></li>
+													<li><a href="/app/payhead">Pay Head </a></li>
+													<li><a href="/app/salarypackage">Salary Package</a></li> *@
+													<li><a href="/app/recordattendance">Laporan Absensi Harian</a></li>
+													<li><a href="javascript:void(0);">Sanksi dan Hukuman</a></li>
+													<li><a href="javascript:void(0);">Bonus Deduction</a></li>
+													<li><a href="javascript:void(0);">Job Desc</a></li>
+													<li><a href="javascript:void(0);">Daftar SOP</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole != "Admin")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/users.svg" alt="img"><span>Absensi Karyawan</span> <span class="menu-arrow"></span></a>
+												<ul>													
+													<li><a href="/app/recordattendance">Form Absensi Harian</a></li>
+													<li><a href="javascript:void(0);">Form Ijin / Libur</a></li>
+													<li><a href="javascript:void(0);">Laporan Absensi dan Gaji</a></li>
+													<li><a href="javascript:void(0);">Data Sanksi dan Hukuman</a></li>
+													<li><a href="javascript:void(0);">Deskripsi Pekerjaan</a></li>
+													<li><a href="javascript:void(0);">Daftar SOP</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole == "Admin")
+										{
 										<li class="submenu">
-											<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Harga Terkini</span> <span class="menu-arrow"></span></a>
-											<ul>
-												<li><a href="/app/currentprices">Harga Terkini</a></li>
-											</ul>
-										</li>
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Pengeluaran</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/purchase">Nota Pengeluaran</a></li>
-										<li><a href="/app/expenses">Pengeluaran Lain</a></li>
-										<li><a href="/app/paymentsuspplier">Pembayaran Oleh Supplier</a></li>
-										<li><a href="/app/purchasereturn">Nota Debit</a></li>
-										<li><a href="/app/supplier">Suppliers</a></li>
-									</ul>
-								</li>
-
-										<li class="submenu">
-											<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span> Picking</span> <span class="menu-arrow"></span></a>
-											<ul>
-												<li><a href="/app/pickingscan">Scan Picking</a></li>
-												<li><a href="/app/returscan">Scan Retur</a></li>
-												<li><a href="/app/aturstoktelur">Atur Stok Telur</a></li>
-											</ul>
-										</li>
-
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Accounting</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/journalvoucher">Journal Voucher</a></li>
-										<li><a href="/app/payment">Payment Voucher  </a></li>
-										<li><a href="/app/receipt">Receipt Voucher</a></li>
-										<li><a href="/app/account">Daftar Akun </a></li>
-										<li><a href="/app/bank">Rekening Bank</a></li>
-									</ul>
-								</li>
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/users.svg" alt="img"><span>SDM / HR</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/employee">Karyawan</a></li>
-										<li><a href="/app/designation">Designation</a></li>
-										<li><a href="/app/payhead">Pay Head </a></li>
-										<li><a href="/app/salarypackage">Salary Package</a></li>
-										<li><a href="/app/attendancelist">Absensi</a></li>
-										<li><a href="/app/monthlysetting">Monthly Salary Setting</a></li>
-										<li><a href="/app/advancepayment">Kasbon</a></li>
-										<li><a href="/app/bonusdeduction">Bonus Deduction</a></li>
-										<li><a href="/app/salaryvoucher">Monthly Salary Voucher</a></li>
-										<li><a href="/app/dailysalary">Daily Salary Voucher</a></li>
-									</ul>
-								</li>
-								<li class="submenu">
 											<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Anggaran</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/budget">Anggaran</a></li>
-										<li><a href="/app/budgetvariance">Budget Variance</a></li>
+											<ul>
+												<li><a href="/app/budget">Anggaran</a></li>
+												<li><a href="/app/budgetvariance">Budget Variance</a></li>
+											</ul>
+										</li>
+										}
+										@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Inventaris</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/product">Produk</a></li>
+													<li><a href="/app/category">Kategori Produk</a></li>
+													<li><a href="/app/brand">Merek</a></li>
+													<li><a href="/app/unit">Unit Satuan</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole == "Admin")
+										{
+											<li class="">
+												<a href="/app/pricing"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Set Harga</span></a>									
+											</li>
+										}
+										@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
+										{
+											<li class="">
+												<a href="/app/reports"><img src="assets/img/icons/time.svg" alt="img"><span> Laporan</span></a>
+											</li>
+										}
+										@if (currentUserRole == "Admin")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Daftar Pengguna</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/useradd">Tambah Pengguna</a></li>
+													<li><a href="/app/user">Daftar Pengguna</a></li>
+													<li><a href="/app/rolepermissions" ef">Role Permissions</a></li>
+												</ul>
+											</li>
+
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Configuration</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/company">Apps</a></li>
+													<li><a href="/app/invoicesetting">Invoice Settings</a></li>
+													<li><a href="/app/currency">Currency Settings</a></li>
+													<li><a href="/app/tax">Tax Rates</a></li>
+												</ul>
+											</li>
+										}
 									</ul>
-								</li>
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Inventaris</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/product">Produk</a></li>
-										<li><a href="/app/category">Kategori Produk</a></li>
-										<li><a href="/app/brand">Merek</a></li>
-										<li><a href="/app/unit">Unit Satuan</a></li>
-									</ul>
-								</li>
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Set Harga</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/pricing">Set Harga Telur</a></li>
-									</ul>
-								</li>
-								<li class="">
-									<a href="/app/reports"><img src="assets/img/icons/time.svg" alt="img"><span> Laporan</span></a>
-								</li>
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/users1.svg" alt="img"><span> Daftar Pengguna</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/useradd">Tambah Pengguna</a></li>
-										<li><a href="/app/user">Daftar Pengguna</a></li>
-										<li><a href="/app/rolepermissions" ef">Role Permissions</a></li>
-									</ul>
-								</li>
-								<li class="submenu">
-									<a href="javascript:void(0);"><img src="assets/img/icons/settings.svg" alt="img"><span> Configuration</span> <span class="menu-arrow"></span></a>
-									<ul>
-										<li><a href="/app/company">Apps</a></li>
-										<li><a href="/app/invoicesetting">Invoice Settings</a></li>
-										<li><a href="/app/currency">Currency Settings</a></li>
-										<li><a href="/app/tax">Tax Rates</a></li>
-									</ul>
-								</li>
-							</ul>
 						</div>
 					</div>
 				</div>
@@ -250,6 +283,7 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		await GetUserRole();
 		await LoadData();
 	}
 

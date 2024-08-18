@@ -129,61 +129,13 @@ namespace QuickAccounting.Repository.Repository
 				sqlcon.Close();
 		}
 		public async Task<int> Save(DailyAttendanceMaster model)
-        {
-            var result = await (from a in _context.DailyAttendanceMaster
-                                where a.Narration == model.Narration
-                                select new DailyAttendanceMaster
-                                {
-                                    DailyAttendanceMasterId = a.DailyAttendanceMasterId
-                                }).FirstOrDefaultAsync();
+        {            
             int id = 0;
-            if (result == null)
-            {
-                await _context.DailyAttendanceMaster.AddAsync(model);
-                await _context.SaveChangesAsync();
-                id = model.DailyAttendanceMasterId;
-            }
-            else
-            {
-                model.DailyAttendanceMasterId = result.DailyAttendanceMasterId;
-                _context.DailyAttendanceMaster.Update(model);
-                await _context.SaveChangesAsync();
-            }
-            //DeleteAttendanceDetails
-            if (result != null)
-            {
-                using (SqlConnection sqlcon = new SqlConnection(_conn.DbConn))
-                {
-                    var paraScDelete = new DynamicParameters();
-                    paraScDelete.Add("@DailyAttendanceMasterId", result.DailyAttendanceMasterId);
-                    var valueScDelete = sqlcon.Query<int>("DELETE FROM DailyAttendanceDetails where DailyAttendanceMasterId=@DailyAttendanceMasterId", paraScDelete, null, true, 0, commandType: CommandType.Text);
-                }
-            }
-            foreach (var item in model.listOrder)
-            {
-                DailyAttendanceDetails details = new DailyAttendanceDetails();
-                    if (result != null)
-                    {
-                        details.DailyAttendanceMasterId = result.DailyAttendanceMasterId;
-                    }
-                    else
-                    {
-                        details.DailyAttendanceMasterId = id;
-                    }
-                    details.EmployeeId = item.EmployeeId;
-                    details.Status = item.Status;
-                    details.Narration = item.Narration;
-                    await _context.DailyAttendanceDetails.AddAsync(details);
-                    await _context.SaveChangesAsync();
-            }
-            if (result != null)
-            {
-                return result.DailyAttendanceMasterId;
-            }
-            else
-            {
-                return id;
-            }
+            await _context.DailyAttendanceMaster.AddAsync(model);
+            await _context.SaveChangesAsync();
+            id = model.DailyAttendanceMasterId;
+
+            return id;            
         }
 
         public async Task<bool> Update(DailyAttendanceMaster model)

@@ -110,6 +110,12 @@ namespace QuickAccounting.Repository.Repository
             return model;
         }
 
+        public async Task<Employee> GetbyUserId(int id)
+        {
+            Employee model = await _context.Employee.FirstOrDefaultAsync(x => x.UserID == id);
+            return model;
+        }
+
         public async Task<int> Save(Employee model)
         {
             await _context.Employee.AddAsync(model);
