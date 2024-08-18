@@ -25,7 +25,7 @@ namespace QuickAccounting.Services
 				return null;
 
 			var data = _context.PriceHistory.OrderByDescending(x => x.PriceDate).ToList();
-			return data.GroupBy(x => x.PriceGroup).ToList();
+			return data.GroupBy(x => x.PriceGroup).Take(2).ToList();
 		}
 
 		public void InsertPrice(List<PriceMaster> priceMasters)
@@ -55,7 +55,7 @@ namespace QuickAccounting.Services
 							  Narration = a.Narration,
 							  QueueNumber = a.QueueNumber,
 							  SalesRate = a.SalesRate
-						  }).Take(7).ToList();
+						  }).Take(9).ToList();
 			return result;
 		}
 	}

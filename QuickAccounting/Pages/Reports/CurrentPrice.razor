@@ -14,49 +14,74 @@
 
 	@if (_render)
 	{
+		<div class="row">
+			<div class="col-lg-12 col-sm-12 col-12">
+				<div class="dash-widget" style="padding: 0px 20px 0px 20px !important;">
+					<div class="dash-widgetcontent">						
+						<h5 id="h5Tanggal" style="font-size: 36px;padding: 0px 0px;margin: 0px 0px;"></h5>
+					</div>
+				</div>
+			</div>			
+		</div>
 		var productGroup = products.GroupBy(x => x.GroupName).ToList();
 
 		for(int q = 0; q < productGroup.Count; q++)
 		{
 			<div class="row">
-				<div class="container-fluid">
-					<div class="col-md-12">
-						<div class="brand-text float-left mt-4">
-							<h3>Harga @productGroup[q].Key Saat Ini</h3>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			@for (int i = 0; i < productGroup[q].Count(); i += 4)
+			@for (int i = 0; i < productGroup[q].Count(); i += 2)
 			{
-				<div class="row">
+				
 
-					@{
-						var items = productGroup[q].Skip(i).Take(4).ToList();
-					}
+					
+					var items = productGroup[q].Skip(i).Take(2).ToList();
+					
 
 					@for (int z = 0; z < items.Count; z++)
 					{
-						<div class="col-lg-3 col-sm-6 col-12">
-							<div class="dash-widget">
-								<div class="dash-widgetimg">
-									<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
-								</div>
+						if (i == 2 && z == 1) continue;
+						if (i == 4 && z == 0) continue;
+
+						<div class="col-lg-6 col-sm-6 col-12">
+							<div class="dash-widget" style="padding: 20px 20px 0px 20px !important;">
 								<div class="dash-widgetcontent">
-									<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", items[z].SalesRate)</span></h5>
-									<h6>@items[z].ProductName</h6>
+									<h6 style="font-size: 36px;line-height: 2px;padding-top: 20px;">@items[z].Narration</h6>
+									<h5 style="font-size: 72px;line-height: 120px;padding: 0px 0px;margin: 0px 0px;height: fit-content;"><span class="counters">@string.Format("{0:n0}", items[z].SalesRate)</span></h5>
 								</div>
 							</div>
 						</div>
 					}
 
-				</div>
+				
 			}
+			</div>
 		}
 	}
 </div>
+<script type="text/javascript">
+	$(document).ready(function () {
+		document.getElementById('toggle_btn').click();
 
+		window.setTimeout(function () {
+			console.log("reload");
+			window.location.reload();
+		}, 60000);
+
+		setInterval(time, 1000);
+	});
+
+	function time() {
+		var d = new Date();
+		var day = d.getDate();
+		var month = d.toLocaleString('id-ID', { month: 'long' });;
+		var year = d.getFullYear();
+		var s = d.getSeconds();
+		var m = d.getMinutes();
+		var h = d.getHours();
+		var span = document.getElementById('h5Tanggal');
+		span.textContent = day + " " + month + " " + year + " " +
+			("0" + h).substr(-2) + ":" + ("0" + m).substr(-2) + ":" + ("0" + s).substr(-2);
+	}
+</script>
 @code {
 	public List<ProductView> products;
 
@@ -73,7 +98,7 @@
 	private async Task LoadData()
 	{
 		products = await _product.GetAll();
-		products = products.OrderBy(z => z.QueueNumber).ToList();		
+		products = products.OrderBy(z => z.QueueNumber).Take(9).ToList();		
 		isLoading = false;
 		StateHasChanged();
 	}

@@ -243,7 +243,7 @@
 					@foreach (var itemDetail in TodoList)
 					{
 						<div style="width:100%; margin:5px 0px; height: auto; text-align:left; font-size:9px; padding:3px 0px;">							
-								@itemDetail.ProductName - @itemDetail.Qty @itemDetail.UnitName								
+								@(!string.IsNullOrEmpty(itemDetail.Narration) ? itemDetail.Narration : itemDetail.ProductName) - @Convert.ToInt32(itemDetail.Qty) - @string.Format("{0:n0}", itemDetail.SalesRate)
 						</div>
 					}
 					<div style="width:100%; margin:5px 0px; height: auto; text-align:left; font-size:9px; padding:3px 0px;">							

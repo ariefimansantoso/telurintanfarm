@@ -36,7 +36,8 @@
 						<tr class="mud-table-row">
 							<!--!-->
 							<th scope="col" class="mud-table-cell">Nama Barang</th>	
-								@for (int i = 0; i < prices5Days.Count - 6; i++)
+								<th scope="col" class="mud-table-cell"></th>
+								@for (int i = 0; i < prices5Days.Count; i++)
 							{								
 								var igrouping = prices5Days[i];								
 
@@ -44,7 +45,7 @@
 										@igrouping.FirstOrDefault().PriceDate.ToString("dd-MM-yyyy HH:mm")
 								</th>							
 							}			
-							<th scope="col" class="mud-table-cell"></th>
+							
 						</tr>
 					</thead>
 					<tbody class="mud-table-body">
@@ -56,7 +57,33 @@
 									<td class="mud-table-cell">
 										@products[p].ProductName
 									</td>
-									@for (int i = 0; i < prices5Days.Count - 6; i++)
+									<td class="mud-table-cell">
+										@if (p == 0)
+										{
+											<input type="number" value="@inputValues[p]" @onchange="@NumberChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+										}
+										else if(p == 5)
+										{
+											<input type="number" value="@inputValues[p]" @onchange="@PriceBentesChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+										}
+										else if(p == 6)
+										{
+											<input type="number" value="@inputValues[p]" @onchange="@PricePutihChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+										}
+										else if(p == 7)
+										{
+											<input type="number" value="@inputValues[p]" @onchange="@PriceParahChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+										}
+										else if (p == 8)
+										{
+											<input type="number" value="@inputValues[p]" @onchange="@PricePSChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+										}
+										else
+										{
+											<input type="number" value="@inputValues[p]" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+										}
+									</td>
+									@for (int i = 0; i < prices5Days.Count; i++)
 									{
 										var igrouping = prices5Days[i];
 
@@ -76,59 +103,10 @@
 											}
 										
 										
-									}
-
-									<td class="mud-table-cell">
-										@if (p == 0)
-										{
-											<input type="number" value="@inputValues[p]" @onchange="@NumberChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-										else
-										{
-											<input type="number" value="@inputValues[p]" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-									</td>
+									}									
 								</tr>
 						}
-							
-						@* @if (prices5Days == null)
-						{
-							
-						}
-						else
-						{
-							<tr class="mud-table-row" style="">
-								<!--!-->
-								<td class="mud-table-cell">@DateTime.Now.ToString("dd-MM-yyyy HH:mm")</td>								
-								@for(int z = 0; z < 7; z++)
-								{									
-									<td scope="col" class="mud-table-cell">
-										@if(z == 0)
-										{
-											<input type="number" value="@inputValues[z]" @onchange="@NumberChanged" class="input-price" data-order="@products[z].ProductCode" data-pid="@products[z].ProductId" />
-										}
-										else
-										{
-											<input type="number" value="@inputValues[z]" class="input-price" data-order="@products[z].ProductCode" data-pid="@products[z].ProductId" />
-										}										
-									</td>																	
-								}
-							</tr>
-
-							for (int i = prices5Days.Count - 1; i >= 0; i--)
-							{
-								<tr class="mud-table-row" style="">
-									@{ var igrouping = prices5Days[i]; }
-									<td class="mud-table-cell">@igrouping.FirstOrDefault().PriceDate.ToString("dd-MM-yyyy HH:mm")</td>									
-									@foreach (var g in igrouping)
-						  			{
-										<td data-label="ProductName" class="mud-table-cell">
-											@string.Format("{0:n0}", p.Price)
-										</td>
-									}
-								</tr>
-							}
-						} *@						
+												
 					</tbody>
 				</table>
 			</div>
@@ -177,8 +155,8 @@
 		inputValues[2] = value0 - 400 - 100;
 		inputValues[3] = value0 - 400 - 100 - 100;
 		inputValues[4] = value0 - 400 - 100 - 100 - 100;
-		inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
-		inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
+		//inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
+		//inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
 	}
 
 	private void NumberChanged(ChangeEventArgs e)
@@ -189,8 +167,32 @@
 		inputValues[2] = value0 - 400 - 100;
 		inputValues[3] = value0 - 400 - 100 - 100;
 		inputValues[4] = value0 - 400 - 100 - 100 - 100;
-		inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
-		inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
+		//inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
+		//inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
+	}
+
+	private void PriceBentesChanged(ChangeEventArgs args)
+	{
+		int value0 = Convert.ToInt32(args.Value); 
+		inputValues[5] = value0;
+	}
+
+	private void PricePutihChanged(ChangeEventArgs args)
+	{
+		int value0 = Convert.ToInt32(args.Value);
+		inputValues[6] = value0;
+	}
+
+	private void PriceParahChanged(ChangeEventArgs args)
+	{
+		int value0 = Convert.ToInt32(args.Value); 
+		inputValues[7] = value0;
+	}
+
+	private void PricePSChanged(ChangeEventArgs args)
+	{
+		int value0 = Convert.ToInt32(args.Value);
+		inputValues[8] = value0;
 	}
 
 	private async Task SavePrice()
@@ -208,6 +210,9 @@
 		PriceMaster p5 = new PriceMaster();
 		PriceMaster p6 = new PriceMaster();
 		PriceMaster p7 = new PriceMaster();
+		PriceMaster p8 = new PriceMaster();
+		PriceMaster p9 = new PriceMaster();
+
 		DateTime insertDate = DateTime.Now;
 		string priceGroup = Guid.NewGuid().ToString();
 
@@ -235,10 +240,10 @@
 		var product3 = await _product.GetbyId(p3.ProductID);
 		product3.SalesRate = p3.Price;
 
-		p4.ProductID = 33;
+		p4.ProductID = 6;
 		p4.Price = inputValues[3];
 		p4.PriceDate = DateTime.Now;
-		p4.ProductCode = 30;
+		p4.ProductCode = 4;
 		p4.PriceGroup = priceGroup;
 		var product4 = await _product.GetbyId(p4.ProductID);
 		product4.SalesRate = p4.Price;
@@ -251,21 +256,37 @@
 		var product5 = await _product.GetbyId(p5.ProductID);
 		product5.SalesRate = p5.Price;
 
-		p6.ProductID = 34;
+		p6.ProductID = 16;
 		p6.Price = inputValues[5];
 		p6.PriceDate = insertDate;
-		p6.ProductCode = 31;
+		p6.ProductCode = 13;
 		p6.PriceGroup = priceGroup;
 		var product6 = await _product.GetbyId(p6.ProductID);
 		product6.SalesRate = p6.Price;
 
-		p7.ProductID = 35;
+		p7.ProductID = 7;
 		p7.Price = inputValues[6];
 		p7.PriceDate = insertDate;
-		p7.ProductCode = 32;
+		p7.ProductCode = 6;
 		p7.PriceGroup = priceGroup;
 		var product7 = await _product.GetbyId(p7.ProductID);
 		product7.SalesRate = p7.Price;
+
+		p8.ProductID = 17;
+		p8.Price = inputValues[7];
+		p8.PriceDate = insertDate;
+		p8.ProductCode = 14;
+		p8.PriceGroup = priceGroup;
+		var product8 = await _product.GetbyId(p8.ProductID);
+		product8.SalesRate = p8.Price;
+
+		p9.ProductID = 19;
+		p9.Price = inputValues[8];
+		p9.PriceDate = insertDate;
+		p9.ProductCode = 16;
+		p9.PriceGroup = priceGroup;
+		var product9 = await _product.GetbyId(p9.ProductID);
+		product9.SalesRate = p9.Price;
 
 		List<PriceMaster> prices = new List<PriceMaster>();
 		prices.Add(p1);
@@ -275,6 +296,8 @@
 		prices.Add(p5);
 		prices.Add(p6);
 		prices.Add(p7);
+		prices.Add(p8);
+		prices.Add(p9);
 
 		_pricing.InsertPrice(prices);
 
@@ -285,13 +308,15 @@
 		await _product.Update(product5);
 		await _product.Update(product6);
 		await _product.Update(product7);
+		await _product.Update(product8);
+		await _product.Update(product9);
 
 		//navigation.NavigateTo("/app/pricing");
 		products = _pricing.GetAllProducts();
 		prices5Days = _pricing.GetPricesTake5Days();
 
-		inputValues = new int[7];
-		for(int i = 0; i < 7; i++)
+		inputValues = new int[9];
+		for(int i = 0; i < 9; i++)
 		{
 			inputValues[i] = 0;
 		}
@@ -320,8 +345,8 @@
 			return;
 		}
 
-		inputValues = new int[7];
-		for(int i = 0; i < 7; i++)
+		inputValues = new int[9];
+		for(int i = 0; i < 9; i++)
 		{
 			inputValues[i] = 0;
 		}
