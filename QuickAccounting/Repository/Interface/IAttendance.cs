@@ -16,5 +16,7 @@ namespace QuickAccounting.Repository.Interface
 		Task<int> Save(DailyAttendanceMaster model);
 		Task<bool> Update(DailyAttendanceMaster model);
 		Task<bool> Delete(int id);
-	}
+		Task<List<DailyAttendanceMaster>> GetTodaysAttendanceList(int employeeID);
+
+    }
 }

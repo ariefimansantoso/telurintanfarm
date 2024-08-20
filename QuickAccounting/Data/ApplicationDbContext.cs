@@ -77,6 +77,8 @@ namespace QuickAccounting.Data
         public DbSet<TaskPriority> TaskPriority { get; set; }
         public DbSet<Tasks> Tasks { get; set; }
         public DbSet<PriceMaster> PriceHistory { get; set; }
+        public DbSet<Perijinan> Perijinans { get; set; }
+        public DbSet<Penalty> Penalties { get; set; }
 
         //Budget
         public DbSet<BudgetMaster> BudgetMaster { get; set; }

@@ -83,6 +83,14 @@ namespace QuickAccounting.Repository.Repository
                 sqlcon.Close();
             }
         }
+
+        public async Task<List<DailyAttendanceMaster>> GetTodaysAttendanceList(int employeeID)
+        {
+            DateTime today = DateTime.Now;
+            var attendance = _context.DailyAttendanceMaster.Where(x => x.EmployeeID == employeeID && x.Date.Date.Equals(today.Date)).ToList();
+            return attendance;
+        }
+
         public async Task<DailyAttendanceDetails> GetAttandanceDetails(string date, int employeeid)
         {
             using (SqlConnection sqlcon = new SqlConnection(_conn.DbConn))
@@ -106,7 +114,6 @@ namespace QuickAccounting.Repository.Repository
 		}
 		public bool DailyAttendanceMasterMasterIdSearch(DateTime strDate)
 		{
-
 			decimal deccountMasterId = 0;
 				SqlConnection sqlcon = new SqlConnection(_conn.DbConn);
 			sqlcon.Open();

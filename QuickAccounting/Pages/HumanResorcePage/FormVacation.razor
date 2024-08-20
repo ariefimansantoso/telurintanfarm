@@ -1,0 +1,203 @@
+﻿@page "/app/recordvacation"
+@inject IAttendance _attendance
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@using System.Security.Claims
+
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<PageTitle>Form Ijin / Libur</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Ijin / Libur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (FormSubmitted == false)
+            {
+                                   
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Tanggal Ijin / Libur</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <RadzenDatePicker @bind-Value=@TanggalIjin DateFormat="d" Change="()=>ChangeDate()" Class="w-100" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Tipe Ijin / Libur</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <select class="form-control" @bind="TipeIjin">
+                                            <option value="IJIN">Ijin</option>
+                                            <option value="LIBUR">Libur</option>
+                                            <option value="SAKIT">Sakit</option>
+                                        </select>
+                                        <i>Apabila anda ijin sakit, maka wajib ketika masuk membawa surat dokter, apabila tidak akan dihitung sebagai ALPHA.</i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Alasan</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                    <textarea type="text" style="width:100%;" @bind="Alasan" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <br /> <br />
+                    <div class="row">
+                        <div class="col-lg-12" style="text-align: center !important;">
+                            <input type="button" @onclick="@(e => Save())" class="btn btn-submit me-2" value="Simpan" />
+                        </div>
+                    </div>               
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Absensi berhasil disimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <!-- /product list -->
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    Perijinan master = new Perijinan();
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+
+    private string TipeIjin;
+    private string Alasan;
+    private DateTime TanggalIjin;
+
+    string strMenu = "Form Vacation";
+
+    private bool FormSubmitted;
+
+    private async Task ChangeDate()
+    {
+        //listStatus.Add(new StatusInfo { StatusPresent = "Absent" });
+        //listStatus.Add(new StatusInfo { StatusPresent = "Present" });
+        // String sDate = master.Date.ToString();
+        // DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
+
+        // String dy = datevalue.Day.ToString();
+        // String mn = datevalue.Month.ToString();
+        // String yy = datevalue.Year.ToString();
+        // master.Narration = dy + mn + yy;
+        // listModel = _attendance.DailyAttendanceDetailsSearchGridFill();
+        // foreach (var item in listModel)
+        // {
+        //     DailyAttendanceDetails statuspaidunpaid = new DailyAttendanceDetails();
+        //     statuspaidunpaid = await _attendance.GetAttandanceDetails(master.Narration, item.EmployeeId);
+        //     if (statuspaidunpaid != null)
+        //     {
+        //         details.Status = statuspaidunpaid.Status;
+        //         details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
+        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
+        //         myTodos.status = details.Status;
+        //         myTodos.DailyAttendanceDetailsId = details.DailyAttendanceDetailsId;
+        //         details.Status = string.Empty;
+        //         details.DailyAttendanceDetailsId = 0;
+        //     }
+        //     else
+        //     {
+        //         //details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
+        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
+        //         myTodos.status = "Absent";
+        //         myTodos.DailyAttendanceDetailsId = 0;
+        //     }
+
+        // }
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        //CheckPriviliagee        
+        await LoadData();
+
+        StateHasChanged();
+    }
+
+    private async Task LoadData()
+    {        
+        DateTime now = DateTime.Now;
+
+        TanggalIjin = now;              
+
+        FormSubmitted = false;
+
+        StateHasChanged();
+    }
+
+    private async Task Save()
+    {
+        if (FormSubmitted == false)
+        {
+            Snackbar.Add("Anda belum mengambil foto selfie.", Severity.Error);
+            return;
+        }
+
+        DateTime now = DateTime.Now;
+        master.ForDate = TanggalIjin;
+        master.IsApproved = false;
+        master.ApprovalDescription = string.Empty;
+        master.SubmittedDesc = Alasan;
+
+        master.EmployeeID = modelEmployee.EmployeeId;
+
+        // by default alpha, sampai nanti pas payroll baru di set masuk klo ada absensi 2 kali dalam sehari.
+        master.AttendanceStatus = "ALPHA";
+
+        var result = await _attendance.Save(master);
+
+        if (result > 0)
+        {
+            Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
+            FormSubmitted = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Form Ijin gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
+        }
+    }
+}
