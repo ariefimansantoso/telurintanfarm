@@ -12,107 +12,118 @@
 <Loader IsLoading="isLoading"></Loader>
 <PageTitle>Set Harga Barang</PageTitle>
 <div class="content">
-	<div class="page-header">
-		<div class="page-title">
-			<h4>Set Harga Barang</h4>
+	@if(!_saved) {
+		<div class="page-header">
+			<div class="page-title">
+				<h4>Set Harga Barang</h4>
+			</div>
+			<div class="page-btn">
+				<Loading IsLoading="isProcessing">
+				<a href="javascript:void(0);" @onclick="()=>SavePrice()" class="btn btn-added">
+					<img src="assets/img/icons/plus.svg" alt="img">Simpan
+				</a>
+				</Loading>
+			</div>
 		</div>
-		<div class="page-btn">
-			<Loading IsLoading="isProcessing">
-			<a href="javascript:void(0);" @onclick="()=>SavePrice()" class="btn btn-added">
-				<img src="assets/img/icons/plus.svg" alt="img">Simpan
-			</a>
-			</Loading>
-		</div>
-	</div>
-	@if (_render)
-	{
-	<!-- /product list -->
-	<div class="card">
-		<div class="card-body">			
-			<div class="table-responsive">
-				<table class="mud-table-root">
-					<thead class="mud-table-head">
-						<!--!-->
-						<tr class="mud-table-row">
+		@if (_render)
+		{
+		<!-- /product list -->
+		<div class="card">
+			<div class="card-body">			
+				<div class="table-responsive">
+					<table class="mud-table-root">
+						<thead class="mud-table-head">
 							<!--!-->
-							<th scope="col" class="mud-table-cell">Nama Barang</th>	
-								<th scope="col" class="mud-table-cell"></th>
-								@for (int i = 0; i < prices5Days.Count; i++)
-							{								
-								var igrouping = prices5Days[i];								
-
-								<th scope="col" class="mud-table-cell">
-										@igrouping.FirstOrDefault().PriceDate.ToString("dd-MM-yyyy HH:mm")
-								</th>							
-							}			
-							
-						</tr>
-					</thead>
-					<tbody class="mud-table-body">
-						
-						@for(int p = 0; p < products.Count; p++)
-						{
-								<tr class="mud-table-row" style="">
-									<!--!-->
-									<td class="mud-table-cell">
-										@products[p].ProductName
-									</td>
-									<td class="mud-table-cell">
-										@if (p == 0)
-										{
-											<input type="number" value="@inputValues[p]" @onchange="@NumberChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-										else if(p == 5)
-										{
-											<input type="number" value="@inputValues[p]" @onchange="@PriceBentesChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-										else if(p == 6)
-										{
-											<input type="number" value="@inputValues[p]" @onchange="@PricePutihChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-										else if(p == 7)
-										{
-											<input type="number" value="@inputValues[p]" @onchange="@PriceParahChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-										else if (p == 8)
-										{
-											<input type="number" value="@inputValues[p]" @onchange="@PricePSChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-										else
-										{
-											<input type="number" value="@inputValues[p]" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-										}
-									</td>
+							<tr class="mud-table-row">
+								<!--!-->
+								<th scope="col" class="mud-table-cell">Nama Barang</th>	
+									<th scope="col" class="mud-table-cell"></th>
 									@for (int i = 0; i < prices5Days.Count; i++)
-									{
-										var igrouping = prices5Days[i];
+								{								
+									var igrouping = prices5Days[i];								
 
-										
-											
-											@if(igrouping.FirstOrDefault(x => x.ProductID == products[p].ProductId) != null)
+									<th scope="col" class="mud-table-cell">
+											@igrouping.FirstOrDefault().PriceDate.ToString("dd-MM-yyyy HH:mm")
+									</th>							
+								}			
+							
+							</tr>
+						</thead>
+						<tbody class="mud-table-body">
+						
+							@for(int p = 0; p < products.Count; p++)
+							{
+									<tr class="mud-table-row" style="">
+										<!--!-->
+										<td class="mud-table-cell">
+											@products[p].ProductName
+										</td>
+										<td class="mud-table-cell">
+											@if (p == 0)
 											{
-											<td class="mud-table-cell">
-												@string.Format("{0:n0}", igrouping.FirstOrDefault(x => x.ProductID == products[p].ProductId).Price)
-											</td>
+												<input type="number" value="@inputValues[p]" @onchange="@NumberChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+											}
+											else if(p == 5)
+											{
+												<input type="number" value="@inputValues[p]" @onchange="@PriceBentesChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+											}
+											else if(p == 6)
+											{
+												<input type="number" value="@inputValues[p]" @onchange="@PricePutihChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+											}
+											else if(p == 7)
+											{
+												<input type="number" value="@inputValues[p]" @onchange="@PriceParahChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+											}
+											else if (p == 8)
+											{
+												<input type="number" value="@inputValues[p]" @onchange="@PricePSChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
 											}
 											else
 											{
-											<td class="mud-table-cell">
-												@string.Format("{0:n0}", 0)
-												</td>
+												<input type="number" value="@inputValues[p]" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
 											}
+										</td>
+										@for (int i = 0; i < prices5Days.Count; i++)
+										{
+											var igrouping = prices5Days[i];
+
+										
+											
+												@if(igrouping.FirstOrDefault(x => x.ProductID == products[p].ProductId) != null)
+												{
+												<td class="mud-table-cell">
+													@string.Format("{0:n0}", igrouping.FirstOrDefault(x => x.ProductID == products[p].ProductId).Price)
+												</td>
+												}
+												else
+												{
+												<td class="mud-table-cell">
+													@string.Format("{0:n0}", 0)
+													</td>
+												}
 										
 										
-									}									
-								</tr>
-						}
+										}									
+									</tr>
+							}
 												
-					</tbody>
-				</table>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<!-- /product list -->
+		}
+	}
+	else {
+	<div class="row">
+		<div class="col-lg-4 col-sm-6 col-12">
+			<div class="form-group" style="text-align: center !important;">
+				<label style="font-size:24px; font-weight:bold;">Harga-harga berhasil disimpan.</label>
 			</div>
 		</div>
 	</div>
-	<!-- /product list -->
 	}
 </div>
 
@@ -144,6 +155,7 @@
 	private bool isLoading = true;
 	bool isProcessing;
 	private bool _render;
+	private bool _saved;
 
 	public int[] inputValues;
 
@@ -322,6 +334,7 @@
 		}
 
 		isProcessing = false;
+		_saved = true;
 		StateHasChanged();
 	}
 
@@ -350,7 +363,7 @@
 		{
 			inputValues[i] = 0;
 		}
-		
+
 		products = _pricing.GetAllProducts();
 		prices5Days = _pricing.GetPricesTake5Days();
 
@@ -359,6 +372,7 @@
 		// var strRole = authState.User;
 		// string strName = strRole.FindFirst(ClaimTypes.Role).Value;
 		// var strShow = await _privilege.PriviliageCheck("Daftar Harga Barang", strName);
+		_saved = false;
 		await LoadData();
 		StateHasChanged();
 		_render = true;

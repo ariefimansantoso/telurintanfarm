@@ -6,8 +6,8 @@ namespace QuickAccounting.Repository.Interface
     {
         Task<bool> DeletePerijinan(Penalty model);
         Task<bool> DeletePerijinan(Perijinan model);
-        Task InsertPenalty(Penalty perijinan);
-        Task InsertPerijinan(Perijinan perijinan);
+        Task<int> InsertPenalty(Penalty perijinan);
+        Task<int> InsertPerijinan(Perijinan perijinan);
         IQueryable<Penalty> PenaltyQuery();
         IQueryable<Perijinan> PerijinanQuery();
         Task<bool> UpdatePenalty(Penalty model);
