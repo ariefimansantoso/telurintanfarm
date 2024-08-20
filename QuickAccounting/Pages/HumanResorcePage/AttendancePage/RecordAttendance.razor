@@ -5,7 +5,7 @@
 @inject IUser _user
 @inject IEmployee _employee
 @using System.Security.Claims
-
+@inject IWebHostEnvironment _hostingEnvironment
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @attribute [Authorize]
@@ -20,54 +20,68 @@
 
     <div class="card">
         <div class="card-body">
-            @if (AttendanceSubmitted == false) {
-                if (WithinBoundaries)
+            @if (AttendanceCompletedForToday == false)
+            {
+                if (AttendanceSubmitted == false)
                 {
-                    <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
-                            <div class="form-group" style="text-align: center !important;">
-                                <label style="font-size:24px; font-weight:bold;">@WaktuAbsensi</label>
+                    if (WithinBoundaries)
+                    {
+                        <div class="row">
+                            <div class="col-lg-4 col-sm-6 col-12">
+                                <div class="form-group" style="text-align: center !important;">
+                                    <label style="font-size:24px; font-weight:bold;">@WaktuAbsensi</label>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
-                            <div class="form-group" style="text-align: center !important;">
-                                <label>Foto Selfie</label>
-                                <div class="row">
-                                    <div class="col-lg-12 col-sm-12 col-12">
-                                        <div class="image-uploads">
-                                            @if (PhotoSelfie == string.Empty)
-                                            {
-                                                <img src="/img/noimage.png" alt="img">
-                                            }
-                                            else
-                                            {
-                                                <img src="@PhotoSelfie" width="80" height="80">
-                                            }
-                                            <br />
-                                            <InputFile OnChange="OnFileChange" />
+                        <div class="row">
+                            <div class="col-lg-4 col-sm-6 col-12">
+                                <div class="form-group" style="text-align: center !important;">
+                                    <label>Foto Selfie</label>
+                                    <div class="row">
+                                        <div class="col-lg-12 col-sm-12 col-12">
+                                            <div class="image-uploads">
+                                                @if (PhotoViewer == string.Empty)
+                                                {
+                                                    <img src="/img/noimage.png" alt="img">
+                                                }
+                                                else
+                                                {
+                                                    <img src="@PhotoViewer" width="80" height="80">
+                                                }
+                                                <br />
+                                                <InputFile OnChange="OnFileChange" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <br /> <br />
-                    <div class="row">
-                        <div class="col-lg-12" style="text-align: center !important;">
-                            <input type="button" @onclick="@(e => Save())" class="btn btn-submit me-2" value="Simpan Absensi" />
+                        <br /> <br />
+                        <div class="row">
+                            <div class="col-lg-12" style="text-align: center !important;">
+                                <input type="button" @onclick="@(e => Save())" class="btn btn-submit me-2" value="Simpan Absensi" />
+                            </div>
                         </div>
-                    </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-lg-4 col-sm-6 col-12">
+                                <div class="form-group" style="text-align: center !important;">
+                                    <label style="font-size:24px; font-weight:bold;">Anda tidak berada di lokasi kandang.</label>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 }
                 else
                 {
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
-                                <label style="font-size:24px; font-weight:bold;">Anda tidak berada di lokasi kandang.</label>
+                                <label style="font-size:24px; font-weight:bold;">Absensi berhasil disimpan.</label>
                             </div>
                         </div>
                     </div>
@@ -78,7 +92,7 @@
                 <div class="row">
                     <div class="col-lg-4 col-sm-6 col-12">
                         <div class="form-group" style="text-align: center !important;">
-                            <label style="font-size:24px; font-weight:bold;">Absensi berhasil disimpan.</label>
+                            <label style="font-size:24px; font-weight:bold;">Absensi hari ini sudah lengkap.</label>
                         </div>
                     </div>
                 </div>
@@ -95,14 +109,20 @@
     DailyAttendanceMaster master = new DailyAttendanceMaster();
     UserMaster modelUser = new UserMaster();
     Employee modelEmployee = new Employee();
+    List<DailyAttendanceMaster> todayAttendances;
 
     string strMenu = "Record Attendance";
     private string PhotoSelfie;
+    private string PhotoViewer;
     private Location location;
     private string WaktuAbsensi;
 
     private bool AttendanceSubmitted;
     private bool WithinBoundaries;
+    private bool AttendanceCompletedForToday;
+
+    MemoryStream uploadedFileStream;
+    string uploadedFileExtension;
 
     private async Task GetLocation()
     {
@@ -120,7 +140,7 @@
                     MaxLongitude = 113.53530775154285
                 };
 
-            WithinBoundaries = boundary.IsPointWithinBoundary(location.Latitude, location.Longitude);
+            WithinBoundaries = true; //boundary.IsPointWithinBoundary(location.Latitude, location.Longitude);
         }
         catch (Exception ex)
         {
@@ -134,24 +154,25 @@
         try
         {
             var format = "image/png";
-            using MemoryStream ms = new();
+            uploadedFileExtension = Path.GetExtension(e.File.Name);
+            uploadedFileStream = new();
             var resized = await e.File.RequestImageFileAsync(e.File.ContentType, maxWidth: 500, maxHeight: 500);
             using Stream fileStream = resized.OpenReadStream();
-            await fileStream.CopyToAsync(ms);
+            await fileStream.CopyToAsync(uploadedFileStream);
 
-            var fileString = $"data:{format};base64,{Convert.ToBase64String(ms.ToArray())}";
+            var fileString = $"data:{format};base64,{Convert.ToBase64String(uploadedFileStream.ToArray())}";
             if (fileString == null)
             {
-                PhotoSelfie = string.Empty;
+                PhotoViewer = string.Empty;
             }
             else
             {
-                PhotoSelfie = fileString;
+                PhotoViewer = fileString;
             }
         }
         catch(Exception ex)
         {
-            PhotoSelfie = string.Empty;
+            PhotoViewer = string.Empty;
         }
     }
 
@@ -161,7 +182,7 @@
         var currentUser = authState.User;
         string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
         modelUser = await _user.UserProfile(userName);
-        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);        
 
         //CheckPriviliagee
         await GetLocation();
@@ -173,7 +194,18 @@
     private async Task LoadData()
     {
         PhotoSelfie = string.Empty;
+        PhotoViewer = string.Empty;
         DateTime now = DateTime.Now;
+
+        todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
+        if(todayAttendances.Count == 2)
+        {
+            AttendanceCompletedForToday = true;
+        }
+        else
+        {
+            AttendanceCompletedForToday = false;
+        }
 
         master.Date = now;
         String sDate = now.ToString();
@@ -188,7 +220,7 @@
         master.Long = location.Longitude.ToString();
 
         var hour = now.Hour;
-        if(hour <= 15)
+        if(hour >= 5 || hour <= 9)
         {
             WaktuAbsensi = "Absensi Kedatangan";
         }
@@ -203,7 +235,10 @@
     }
 
     private async Task Save()
-    {
+    {        
+        string userFolder = master.EmployeeID + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
+        string fileName = await UploadFile(userFolder);
+
         if (PhotoSelfie == string.Empty)
         {
             Snackbar.Add("Anda belum mengambil foto selfie.", Severity.Error);
@@ -213,13 +248,15 @@
         DateTime now = DateTime.Now;
         master.AddedDate = now;
         master.Date = now;
-        master.PhotoSelfie = PhotoSelfie;
+
         master.Lat = location.Latitude.ToString();
         master.Long = location.Longitude.ToString();
         master.EmployeeID = modelEmployee.EmployeeId;
 
         // by default alpha, sampai nanti pas payroll baru di set masuk klo ada absensi 2 kali dalam sehari.
-        master.AttendanceStatus = "ALPHA";
+        master.AttendanceStatus = "ALPHA";        
+
+        master.PhotoSelfie = fileName;
 
         var result = await _attendance.Save(master);
 
@@ -233,6 +270,25 @@
         {
             Snackbar.Add("Absensi gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
         }
+    }
+
+    public async Task<string> UploadFile(string userFolder)
+    {
+        var uploadDirectory = Path.Combine(_hostingEnvironment.WebRootPath, "uploads/absensi/" + userFolder);
+        if (!Directory.Exists(uploadDirectory))
+        {
+            Directory.CreateDirectory(uploadDirectory);
+        }
+
+        var fileExtension = uploadedFileExtension;        
+        var fileName = $"{Guid.NewGuid()}{fileExtension}";
+        var path = Path.Combine(uploadDirectory, fileName);
+        await using var fs = new FileStream(path, FileMode.Create);
+        //await file.OpenReadStream(file.Size).CopyToAsync(fs);
+        uploadedFileStream.Position = 0;
+        await uploadedFileStream.CopyToAsync(fs);
+        PhotoSelfie = fileName;
+        return fileName;
     }
 
     public class Location

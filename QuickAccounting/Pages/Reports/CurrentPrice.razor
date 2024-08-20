@@ -24,15 +24,11 @@
 			</div>			
 		</div>
 		var productGroup = products.GroupBy(x => x.GroupName).ToList();
-
-		for(int q = 0; q < productGroup.Count; q++)
-		{
-			<div class="row">
-			@for (int i = 0; i < productGroup[q].Count(); i += 2)
-			{
-				
-
-					
+		<div class="row">
+		@for(int q = 0; q < productGroup.Count; q++)
+		{			
+			for (int i = 0; i < productGroup[q].Count(); i += 2)
+			{				
 					var items = productGroup[q].Skip(i).Take(2).ToList();
 					
 
@@ -53,8 +49,9 @@
 
 				
 			}
-			</div>
+			
 		}
+		</div>
 	}
 </div>
 <script type="text/javascript">
@@ -98,7 +95,7 @@
 	private async Task LoadData()
 	{
 		products = await _product.GetAll();
-		products = products.OrderBy(z => z.QueueNumber).Take(9).ToList();		
+		products = products.OrderBy(z => z.QueueNumber).Take(10).ToList();		
 		isLoading = false;
 		StateHasChanged();
 	}
