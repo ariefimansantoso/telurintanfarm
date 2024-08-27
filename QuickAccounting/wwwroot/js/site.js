@@ -107,3 +107,16 @@ function errorMissingRole() {
         timer: 1200
     })
 }
+
+function confirmAction(message) {
+    return confirm(message);
+}
+
+function checkReason() {
+    var reasonText = document.getElementById("txtRejectReason").value;
+    return reasonText;
+}
+
+function showAlert(message) {
+    alert(message);
+}

@@ -12,5 +12,10 @@ namespace QuickAccounting.Repository.Interface
         IQueryable<Perijinan> PerijinanQuery();
         Task<bool> UpdatePenalty(Penalty model);
         Task<bool> UpdatePerijinan(Perijinan model);
-    }
+        List<dynamic> GetPerijinanUnApproved();
+        List<dynamic> GetPerijinanBySupervisorID(int supervisorID);
+        List<dynamic> GetListPerijinanByEmployeeID(int employeeID);
+
+
+	}
 }

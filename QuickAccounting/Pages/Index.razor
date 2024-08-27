@@ -9,305 +9,287 @@
 @inject ISalesInvoice _sales
 @inject ISalesReturn _salesreturn
 @inject IPaymentIn _paymentin
+@inject AuthenticationStateProvider authStateProvider
+@inject IUser _userManage
+@inject IHRServices _hr
+@inject IEmployee _employee
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navigation
+
 @using QuickAccounting.Components
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
 <div class="content">
-	@* <div class="row">
-		<div class="container-fluid">
-			<div class="col-md-12">
-				<div class="brand-text float-left mt-4">
-					<h3>Welcome <span></span> </h3>
-				</div>
-				<div class="filter-toggle btn-group">
-					<button class="btn btn-secondary date-btn @strDay1" @onclick="DayOne">Today</button>
-					<button class="btn btn-secondary date-btn @strDay7" @onclick="DaySeven">Last 7 Days</button>
-					<button class="btn btn-secondary date-btn @strDay30" @onclick="DayMonth">This Month</button>
-					<button class="btn btn-secondary date-btn @strDay365" @onclick="DayYear">This Year</button>
+	@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
+	{
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Laporan Penjualan Hari Ini <span></span> </h3>
+					</div>				
 				</div>
 			</div>
 		</div>
-	</div>
-	<div class="row">
-		
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @TotalPurchase</span></h5>
-					<h6>Purchase</h6>
-				</div>
-			</div>
-		</div>
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget dash1">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @TotalSale</span></h5>
-					<h6>Sales</h6>
-				</div>
-			</div>
-		</div>
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget dash2">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @CashAmount</span></h5>
-					<h6>Receipt</h6>
-				</div>
-			</div>
-		</div>
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget dash3">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @PaymentCashAmount</span></h5>
-					<h6>Payment</h6>
-				</div>
-			</div>
-		</div>
-	</div> *@
-	<!-- Button trigger modal -->
 
-	<div class="row">
-		<div class="container-fluid">
-			<div class="col-md-12">
-				<div class="brand-text float-left mt-4">
-					<h3>Laporan Penjualan Hari Ini <span></span> </h3>
-				</div>				
-			</div>
-		</div>
-	</div>
-
-			<!-- /Filter -->
-			<div class="row">
-				<div class="col-lg col-sm-6 col-12">
-					<div class="form-group">
-						From Date
-						<input type="date" @bind="@dtFromDate" class="form-control" />
-					</div>
+		<!-- /Filter -->
+		<div class="row">
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Dari Tanggal
+					<input type="date" @bind="@dtFromDate" class="form-control" />
 				</div>
-				<div class="col-lg col-sm-6 col-12">
-					<div class="form-group">
-						To Date
-						<input type="date" @bind="@dtToDate" class="form-control" />
-					</div>
-				</div>				
-				<div class="col-lg-1 col-sm-6 col-12">
-					<div class="form-group" style="margin-top:20px;">
-						<Loading IsLoading="isProcessing">
+			</div>
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Ke Tanggal
+					<input type="date" @bind="@dtToDate" class="form-control" />
+				</div>
+			</div>				
+			<div class="col-lg-1 col-sm-6 col-12">
+				<div class="form-group" style="margin-top:20px;">
+					<Loading IsLoading="isProcessing">
 						<a class="btn btn-filters ms-auto" @onclick="()=>LoadDataSales()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
-				</Loading>
+					</Loading>
+				</div>
+			</div>
+		</div>
+		<!-- /Filter -->
+
+		<div class="row">
+
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", EcerTunai)</span></h5>
+						<h6>Ecer Tunai</h6>
 					</div>
 				</div>
 			</div>
-			<!-- /Filter -->
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", EcerBank)</span></h5>
+						<h6>Ecer EDC/Bank</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", PartaiTunai)</span></h5>
+						<h6>Partai Tunai</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", PartaiBank)</span></h5>
+						<h6>Partai Transfer</h6>
+					</div>
+				</div>
+			</div>
+		</div>
 
-	<div class="row">
-		
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", EcerTunai)</span></h5>
-					<h6>Ecer Tunai</h6>
-				</div>
-			</div>
-		</div>
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget dash1">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", EcerBank)</span></h5>
-					<h6>Ecer EDC/Bank</h6>
+		<div class="row">		
+			@* <div class="col-lg-6 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Income</h5>
+					</div>
+					<div class="card-body">
+						<RadzenChart>
+							<RadzenPieSeries Data="@listIncomeExpenses" Title="Income" CategoryProperty="LedgerName" ValueProperty="Credit">
+								<RadzenSeriesDataLabels Visible="@showDataLabels" />
+							</RadzenPieSeries>
+						</RadzenChart>
+					</div>
 				</div>
 			</div>
-		</div>
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget dash2">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", PartaiTunai)</span></h5>
-					<h6>Partai Tunai</h6>
-				</div>
-			</div>
-		</div>
-		<div class="col-lg-3 col-sm-6 col-12">
-			<div class="dash-widget dash3">
-				<div class="dash-widgetimg">
-					<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
-				</div>
-				<div class="dash-widgetcontent">
-					<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", PartaiBank)</span></h5>
-					<h6>Partai Transfer</h6>
+			<div class="col-lg-6 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Top 10 Product</h5>
+					</div>
+					<div class="card-body">
+						<RadzenChart>
+							<RadzenPieSeries Data="@listProduct" Title="Product" CategoryProperty="ProductName" ValueProperty="Qty">
+								<RadzenSeriesDataLabels Visible="@showDataLabels" />
+							</RadzenPieSeries>
+						</RadzenChart>
+					</div>
 				</div>
 			</div>
-		</div>
-	</div>
+ *@
 
-	<div class="row">
-		<div class="col-lg-6 col-sm-12 col-12 d-flex">
-			<div class="card flex-fill">
-				<div class="card-header pb-0 d-flex justify-content-between align-items-center">
-					<h5 class="card-title mb-0">Income</h5>
-				</div>
-				<div class="card-body">
-					<RadzenChart>
-						<RadzenPieSeries Data="@listIncomeExpenses" Title="Income" CategoryProperty="LedgerName" ValueProperty="Credit">
-                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
-                    </RadzenPieSeries>
-                </RadzenChart>
-				</div>
-			</div>
-		</div>
-		<div class="col-lg-6 col-sm-12 col-12 d-flex">
-			<div class="card flex-fill">
-				<div class="card-header pb-0 d-flex justify-content-between align-items-center">
-					<h5 class="card-title mb-0">Top 10 Product</h5>
-				</div>
-				<div class="card-body">
-					<RadzenChart>
-						<RadzenPieSeries Data="@listProduct" Title="Product" CategoryProperty="ProductName" ValueProperty="Qty">
-                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
-                    </RadzenPieSeries>
-                </RadzenChart>
-				</div>
-			</div>
-		</div>
-		<div class="col-lg-12 col-sm-12 col-12 d-flex">
-			<div class="card flex-fill">
-				<div class="card-header pb-0 d-flex justify-content-between align-items-center">
-					<h4 class="card-title mb-0">Bank and Cash Balance</h4>
-				</div>
-				<div class="card-body">
-					<div class="table-responsive">
-						<table class="table">
-							<thead>
-								<tr>
-									<th>Kas / Bank</th>
-									<th>Jumlah</th>
-								</tr>
-							</thead>
-							<tbody>
-								@if(listCashBank == null)
-								{
-
-								}
-								else
-								{
-									@foreach (var item in listCashBank)
+			<div class="col-lg-12 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h4 class="card-title mb-0">Saldo Kas dan Bank</h4>
+					</div>
+					<div class="card-body">
+						<div class="table-responsive">
+							<table class="table">
+								<thead>
+									<tr>
+										<th>Kas / Bank</th>
+										<th>Jumlah</th>
+									</tr>
+								</thead>
+								<tbody>
+									@if (listCashBank == null)
 									{
-								<tr>
-									
-									<td class="productimgname">
-										@item.LedgerName
-									</td>
-									<td>@PublicVariables._Symbol @string.Format("{0:n0}", item.Balance)</td>
-								</tr>
+
 									}
-								}
-							</tbody>
-						</table>
+									else
+									{
+										@foreach (var item in listCashBank)
+										{
+											<tr>
+
+												<td class="productimgname">
+													@item.LedgerName
+												</td>
+												<td>@PublicVariables._Symbol @string.Format("{0:n0}", Convert.ToDecimal(item.Balance))</td>
+											</tr>
+										}
+									}
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-	</div>
-	<div class="card mb-0">
-		<div class="card-body">
-			<h4 class="card-title">Transaksi Terkini</h4>
-			<div class="table-responsive">
-				<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
 
-					<MudTabPanel Text="Sales">
-						<MudTable Items="@listSales" Dense="@dense" Hover="@hover">
-							<HeaderContent>
-								<MudTh>Nama Pelanggan</MudTh>
-								<MudTh>Nomor Nota</MudTh>
-								<MudTh>Reference</MudTh>
-								<MudTh>Tanggal</MudTh>
-								<MudTh>Total</MudTh>
-								<MudTh>Status</MudTh>
-							</HeaderContent>
-							<RowTemplate>
-								<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
-								<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-								<MudTd DataLabel="Reference">@context.Reference</MudTd>
-								<MudTd DataLabel="Date">@context.Date</MudTd>
-								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @string.Format("{0:n0}", context.GrandTotal)</MudTd>
-								@if (context.PaymentStatus == "Draft")
-								{
-									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br />
-									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-								}
-								else
-								{
-									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightgreen">@context.PaymentStatus</MudTd>
-								}
-							</RowTemplate>
-							<PagerContent>
-								<MudTablePager />
-							</PagerContent>
-						</MudTable>
+		<div class="card mb-0">
+			<div class="card-body">
+				<h4 class="card-title">Transaksi Terkini</h4>
+				<div class="table-responsive">
+					<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
 
-					</MudTabPanel>
+						<MudTabPanel Text="Sales">
+							<MudTable Items="@listSales" Dense="@dense" Hover="@hover">
+								<HeaderContent>
+									<MudTh>Nama Pelanggan</MudTh>
+									<MudTh>Nomor Nota</MudTh>
+									<MudTh>Reference</MudTh>
+									<MudTh>Tanggal</MudTh>
+									<MudTh>Total</MudTh>
+									<MudTh>Status</MudTh>
+								</HeaderContent>
+								<RowTemplate>
+									<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
+									<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
+									<MudTd DataLabel="Reference">@context.Reference</MudTd>
+									<MudTd DataLabel="Date">@context.Date</MudTd>
+									<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @string.Format("{0:n0}", context.GrandTotal)</MudTd>
+									@if (context.PaymentStatus == "Draft")
+									{
+										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br />
+										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
+									}
+									else
+									{
+										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightgreen">@context.PaymentStatus</MudTd>
+									}
+								</RowTemplate>
+								<PagerContent>
+									<MudTablePager />
+								</PagerContent>
+							</MudTable>
 
-					<MudTabPanel Text="Purchase">
-						<MudTable Items="@listPurchase" Dense="@dense" Hover="@hover">
-							<HeaderContent>
-								<MudTh>Supplier Name</MudTh>
-								<MudTh>Bill No</MudTh>
-								<MudTh>Reference</MudTh>
-								<MudTh>Date</MudTh>
-								<MudTh>Total</MudTh>
-								<MudTh>Status</MudTh>
-							</HeaderContent>
-							<RowTemplate>
-								<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
-								<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-								<MudTd DataLabel="Reference">@context.Reference</MudTd>
-								<MudTd DataLabel="Date">@context.Date</MudTd>
-								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
-								@if (context.PaymentStatus == "Draft")
-								{
-									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br />
-									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-								}
-								else
-								{
-									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightgreen">@context.PaymentStatus</MudTd>
-								}
-							</RowTemplate>
-							<PagerContent>
-								<MudTablePager />
-							</PagerContent>
-						</MudTable>
-					</MudTabPanel>
-    
-					
-	<MudTabPanel Text="Credit Note">
+						</MudTabPanel>
+
+						<MudTabPanel Text="Purchase">
+							<MudTable Items="@listPurchase" Dense="@dense" Hover="@hover">
+								<HeaderContent>
+									<MudTh>Supplier Name</MudTh>
+									<MudTh>Bill No</MudTh>
+									<MudTh>Reference</MudTh>
+									<MudTh>Date</MudTh>
+									<MudTh>Total</MudTh>
+									<MudTh>Status</MudTh>
+								</HeaderContent>
+								<RowTemplate>
+									<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
+									<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
+									<MudTd DataLabel="Reference">@context.Reference</MudTd>
+									<MudTd DataLabel="Date">@context.Date</MudTd>
+									<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
+									@if (context.PaymentStatus == "Draft")
+									{
+										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br />
+										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
+									}
+									else
+									{
+										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightgreen">@context.PaymentStatus</MudTd>
+									}
+								</RowTemplate>
+								<PagerContent>
+									<MudTablePager />
+								</PagerContent>
+							</MudTable>
+						</MudTabPanel>
+
+
 						<MudTabPanel Text="Credit Note">
-							<MudTable Items="@listSalesReturn" Dense="@dense" Hover="@hover">
+							<MudTabPanel Text="Credit Note">
+								<MudTable Items="@listSalesReturn" Dense="@dense" Hover="@hover">
+									<HeaderContent>
+										<MudTh>Supplier Name</MudTh>
+										<MudTh>Bill No</MudTh>
+										<MudTh>Date</MudTh>
+										<MudTh>Total</MudTh>
+										<MudTh>Status</MudTh>
+									</HeaderContent>
+									<RowTemplate>
+										<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
+										<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
+										<MudTd DataLabel="Date">@context.Date</MudTd>
+										<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
+										@if (context.Status == "Draft")
+										{
+											<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />
+											<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
+										}
+										else
+										{
+											<MudTd DataLabel="Status" Class="badges bg-lightgreen">@context.Status</MudTd>
+										}
+									</RowTemplate>
+									<PagerContent>
+										<MudTablePager />
+									</PagerContent>
+								</MudTable>
+							</MudTabPanel>
+
+						</MudTabPanel>
+
+
+						<MudTabPanel Text="Debit Note">
+							<MudTable Items="@listPurchaseReturn" Dense="@dense" Hover="@hover">
 								<HeaderContent>
 									<MudTh>Supplier Name</MudTh>
 									<MudTh>Bill No</MudTh>
 									<MudTh>Date</MudTh>
 									<MudTh>Total</MudTh>
 									<MudTh>Status</MudTh>
+									<MudTh></MudTh>
 								</HeaderContent>
 								<RowTemplate>
 									<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
@@ -330,136 +312,544 @@
 							</MudTable>
 						</MudTabPanel>
 
-	</MudTabPanel>
-    
-
-					<MudTabPanel Text="Debit Note">
-						<MudTable Items="@listPurchaseReturn" Dense="@dense" Hover="@hover">
-							<HeaderContent>
-								<MudTh>Supplier Name</MudTh>
-								<MudTh>Bill No</MudTh>
-								<MudTh>Date</MudTh>
-								<MudTh>Total</MudTh>
-								<MudTh>Status</MudTh>
-								<MudTh></MudTh>
-							</HeaderContent>
-							<RowTemplate>
-								<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
-								<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-								<MudTd DataLabel="Date">@context.Date</MudTd>
-								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
-								@if (context.Status == "Draft")
-								{
-									<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />
-									<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-								}
-								else
-								{
-									<MudTd DataLabel="Status" Class="badges bg-lightgreen">@context.Status</MudTd>
-								}
-							</RowTemplate>
-							<PagerContent>
-								<MudTablePager />
-							</PagerContent>
-						</MudTable>
-					</MudTabPanel>
 
 
+						<MudTabPanel Text="Journal Voucher">
+							<MudTable Items="@listVoucher" Dense="@dense" Hover="@hover">
+								<HeaderContent>
+									<MudTh>Date</MudTh>
+									<MudTh>Voucher No</MudTh>
+									<MudTh>Amount</MudTh>
+									<MudTh>Narration</MudTh>
+									<MudTh>Status</MudTh>
+								</HeaderContent>
+								<RowTemplate>
+									<MudTd DataLabel="LedgerName">@context.Date</MudTd>
+									<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
+									<MudTd DataLabel="Narration">@PublicVariables._Symbol@context.Amount</MudTd>
+									<MudTd DataLabel="Date">@context.Narration</MudTd>
+									@if (context.Status == "Draft")
+									{
+										<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />
+										<MudTd DataLabel="Status" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
+									}
+									else
+									{
+										<MudTd DataLabel="Status" Class="badges bg-lightgreen">@context.Status</MudTd>
+									}
+								</RowTemplate>
+								<PagerContent>
+									<MudTablePager />
+								</PagerContent>
+							</MudTable>
+						</MudTabPanel>
+						<MudTabPanel Text="Receipt Voucher">
+							<MudTable Items="@listPaymentIn" Dense="@dense" Hover="@hover">
+								<HeaderContent>
+									<MudTh>Receipt Date</MudTh>
+									<MudTh>Receipt No</MudTh>
+									<MudTh>Paid From</MudTh>
+									<MudTh>Amount</MudTh>
+									<MudTh>Status</MudTh>
+								</HeaderContent>
+								<RowTemplate>
+									<MudTd DataLabel="LedgerName">@context.Date</MudTd>
+									<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
+									<MudTd DataLabel="Date">@context.LedgerName</MudTd>
+									<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
+									@if (context.PaymentType == "Draft")
+									{
+										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">@context.PaymentType</MudTd> <br />
+										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
+									}
+									else
+									{
+										<MudTd DataLabel="PaymentType" Class="badges bg-lightgreen">@context.PaymentType</MudTd>
+									}
+								</RowTemplate>
+								<PagerContent>
+									<MudTablePager />
+								</PagerContent>
+							</MudTable>
+						</MudTabPanel>
+						<MudTabPanel Text="Payment Voucher">
+							<MudTable Items="@listPaymentOut" Dense="@dense" Hover="@hover">
+								<HeaderContent>
+									<MudTh>Payment Date</MudTh>
+									<MudTh>Payment No</MudTh>
+									<MudTh>Paid From</MudTh>
+									<MudTh>Amount</MudTh>
+									<MudTh>Status</MudTh>
+								</HeaderContent>
+								<RowTemplate>
+									<MudTd DataLabel="LedgerName">@context.Date</MudTd>
+									<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
+									<MudTd DataLabel="Date">@context.LedgerName</MudTd>
+									<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
+									@if (context.PaymentType == "Draft")
+									{
+										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">@context.PaymentType</MudTd> <br />
+										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
+									}
+									else
+									{
+										<MudTd DataLabel="PaymentType" Class="badges bg-lightgreen">@context.PaymentType</MudTd>
+									}
+								</RowTemplate>
+								<PagerContent>
+									<MudTablePager />
+								</PagerContent>
+							</MudTable>
+						</MudTabPanel>
 
-					<MudTabPanel Text="Journal Voucher">
-						<MudTable Items="@listVoucher" Dense="@dense" Hover="@hover">
-							<HeaderContent>
-								<MudTh>Date</MudTh>
-								<MudTh>Voucher No</MudTh>
-								<MudTh>Amount</MudTh>
-								<MudTh>Narration</MudTh>
-								<MudTh>Status</MudTh>
-							</HeaderContent>
-							<RowTemplate>
-								<MudTd DataLabel="LedgerName">@context.Date</MudTd>
-								<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
-								<MudTd DataLabel="Narration">@PublicVariables._Symbol@context.Amount</MudTd>
-								<MudTd DataLabel="Date">@context.Narration</MudTd>
-								@if (context.Status == "Draft")
-								{
-									<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />
-									<MudTd DataLabel="Status" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-								}
-								else
-								{
-									<MudTd DataLabel="Status" Class="badges bg-lightgreen">@context.Status</MudTd>
-								}
-							</RowTemplate>
-							<PagerContent>
-								<MudTablePager />
-							</PagerContent>
-						</MudTable>
-					</MudTabPanel>
-					<MudTabPanel Text="Receipt Voucher">
-						<MudTable Items="@listPaymentIn" Dense="@dense" Hover="@hover">
-							<HeaderContent>
-								<MudTh>Receipt Date</MudTh>
-								<MudTh>Receipt No</MudTh>
-								<MudTh>Paid From</MudTh>
-								<MudTh>Amount</MudTh>
-								<MudTh>Status</MudTh>
-							</HeaderContent>
-							<RowTemplate>
-								<MudTd DataLabel="LedgerName">@context.Date</MudTd>
-								<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
-								<MudTd DataLabel="Date">@context.LedgerName</MudTd>
-								<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
-								@if (context.PaymentType == "Draft")
-								{
-									<MudTd DataLabel="PaymentType" Class="badges bg-lightred">@context.PaymentType</MudTd> <br />
-									<MudTd DataLabel="PaymentType" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-								}
-								else
-								{
-									<MudTd DataLabel="PaymentType" Class="badges bg-lightgreen">@context.PaymentType</MudTd>
-								}
-							</RowTemplate>
-							<PagerContent>
-								<MudTablePager />
-							</PagerContent>
-						</MudTable>
-					</MudTabPanel>
-					<MudTabPanel Text="Payment Voucher">
-						<MudTable Items="@listPaymentOut" Dense="@dense" Hover="@hover">
-							<HeaderContent>
-								<MudTh>Payment Date</MudTh>
-								<MudTh>Payment No</MudTh>
-								<MudTh>Paid From</MudTh>
-								<MudTh>Amount</MudTh>
-								<MudTh>Status</MudTh>
-							</HeaderContent>
-							<RowTemplate>
-								<MudTd DataLabel="LedgerName">@context.Date</MudTd>
-								<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
-								<MudTd DataLabel="Date">@context.LedgerName</MudTd>
-								<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
-								@if (context.PaymentType == "Draft")
-								{
-									<MudTd DataLabel="PaymentType" Class="badges bg-lightred">@context.PaymentType</MudTd> <br />
-									<MudTd DataLabel="PaymentType" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-								}
-								else
-								{
-									<MudTd DataLabel="PaymentType" Class="badges bg-lightgreen">@context.PaymentType</MudTd>
-								}
-							</RowTemplate>
-							<PagerContent>
-								<MudTablePager />
-							</PagerContent>
-						</MudTable>
-					</MudTabPanel>
+					</MudTabs>
+				</div>
+			</div>
+		</div>
+	}
+	
+	
+	@if(currentUserRole == "Admin")
+	{
+		<div class="row">
+			<div class="col-lg-12 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Daftar Pengajuan Ijin</h5>
+					</div>
+					<div class="card-body">
+						@if (unapprovedPerijinan != null && unapprovedPerijinan.Count > 0)
+						{
+							<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
+								<tbody>
+									<tr class="heading" style="background: #F3F2F7;">
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Karyawan
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Tanggal
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Jenis
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										</td>
+									</tr>
+									@foreach (dynamic p in unapprovedPerijinan)
+									{
+										bool? isApproved = p.IsApproved != null ? (bool?)p.IsApproved : null;
 
-</MudTabs>
+										<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+											<td style="padding: 10px 2px;vertical-align: middle;">
+												@p.EmployeeName
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.ForDate.ToString("dd/MM/yyyy")
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.SubmittedFor
+											</td>
+											@if (!isApproved.HasValue)
+											{
+												<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+													<a @onclick="( () => { OpenApproveDialog(p.ID); } )"><img src="assets/img/icons/check.png" alt="img" style="width:50px;"></a>
+												</td>
+												<td style="padding: 10px 2px;vertical-align: middle; text-align:center; ">
+													<a @onclick="( () => { OpenRejectDialog(p.ID); } )"><img src="assets/img/icons/remove.png" alt="img" style="width:50px;"></a>
+												</td>
+											}
+											else
+											{
+												if (isApproved.Value)
+												{
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+														<span class="badge badge-success">Disetujui</span>
+													</td>
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center; ">
+													</td>
+												}
+												else
+												{
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+														<span class="badge badge-danger">Ditolak</span>
+													</td>
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center; ">
+													</td>
+												}
+											}
+										</tr>
+										if (isApproved == null && !string.IsNullOrEmpty(p.SubmittedDesc))
+										{
+											<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+												<td style="padding: 10px;vertical-align: top; " colspan="5">
+													@p.SubmittedDesc
+												</td>
+											</tr>
+										}
+
+										if (isApproved.HasValue && isApproved.Value == false)
+										{
+											<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+												<td style="padding: 10px;vertical-align: top; " colspan="5">
+													<b>Alasan ditolak:</b><br />
+													@p.ApprovalDescription
+												</td>
+											</tr>
+										}
+									}
+
+
+								</tbody>
+							</table>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+	else if (currentUserRole == "Supervisor") {
+		<div class="row">
+			<div class="col-lg-12 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Daftar Pengajuan Ijin Anda</h5>
+					</div>
+					<div class="card-body">
+						@if (unapprovedPerijinanCurrentUser != null && unapprovedPerijinanCurrentUser.Count > 0)
+						{
+							<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
+								<tbody>
+									<tr class="heading" style="background: #F3F2F7;">
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Karyawan
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Tanggal
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Jenis
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										</td>										
+									</tr>
+									@foreach (dynamic p in unapprovedPerijinanCurrentUser)
+									{
+										bool? isApproved = p.IsApproved != null ? (bool?)p.IsApproved : null;
+
+										<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+											<td style="padding: 10px 2px;vertical-align: middle;">
+												@p.EmployeeName
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.ForDate.ToString("dd/MM/yyyy")
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.SubmittedFor
+											</td>
+											@if (!isApproved.HasValue)
+											{
+												<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+												<span class="badge badge-warning">Belum Disetujui</span>
+												</td>
+												
+											}
+											else
+											{
+												if (isApproved.Value)
+												{
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+														<span class="badge badge-success">Disetujui</span>
+													</td>
+													
+												}
+												else
+												{
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+														<span class="badge badge-danger">Ditolak</span>
+													</td>
+													
+												}
+											}
+										</tr>
+										if (isApproved == null && !string.IsNullOrEmpty(p.SubmittedDesc))
+										{
+											<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+												<td style="padding: 10px;vertical-align: top; " colspan="5">
+													@p.SubmittedDesc
+												</td>
+											</tr>
+										}
+
+										if (isApproved.HasValue && isApproved.Value == false)
+										{
+											<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+												<td style="padding: 10px;vertical-align: top; " colspan="5">
+													<b>Alasan ditolak:</b><br />
+													@p.ApprovalDescription
+												</td>
+											</tr>
+										}
+									}
+								</tbody>
+							</table>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-lg-12 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Daftar Pengajuan Ijin Tim Anda</h5>
+					</div>
+					<div class="card-body">
+					@if (unapprovedPerijinanBySupervisor != null && unapprovedPerijinanBySupervisor.Count > 0)
+						{
+							<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
+								<tbody>
+									<tr class="heading" style="background: #F3F2F7;">
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Karyawan
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Tanggal
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Jenis
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										</td>
+									</tr>
+								@foreach (dynamic p in unapprovedPerijinanBySupervisor)
+									{
+										bool? isApproved = p.IsApproved != null ? (bool?)p.IsApproved : null;
+
+										<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+											<td style="padding: 10px 2px;vertical-align: middle;">
+												@p.EmployeeName
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.ForDate.ToString("dd/MM/yyyy")
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.SubmittedFor
+											</td>
+											@if (!isApproved.HasValue)
+											{
+												<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+													<a @onclick="( () => { OpenApproveDialog(p.ID); } )"><img src="assets/img/icons/check.png" alt="img" style="width:50px;"></a>
+												</td>
+												<td style="padding: 10px 2px;vertical-align: middle; text-align:center; ">
+													<a @onclick="( () => { OpenRejectDialog(p.ID); } )"><img src="assets/img/icons/remove.png" alt="img" style="width:50px;"></a>
+												</td>
+											}
+											else
+											{
+												if (isApproved.Value)
+												{
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+														<span class="badge badge-success">Disetujui</span>
+													</td>
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center; ">
+													</td>
+												}
+												else
+												{
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+														<span class="badge badge-danger">Ditolak</span>
+													</td>
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center; ">
+													</td>
+												}
+											}
+										</tr>
+										if (isApproved == null && !string.IsNullOrEmpty(p.SubmittedDesc))
+										{
+											<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+												<td style="padding: 10px;vertical-align: top; " colspan="5">
+													@p.SubmittedDesc
+												</td>
+											</tr>
+										}
+
+										if (isApproved.HasValue && isApproved.Value == false)
+										{
+											<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+												<td style="padding: 10px;vertical-align: top; " colspan="5">
+													<b>Alasan ditolak:</b><br />
+													@p.ApprovalDescription
+												</td>
+											</tr>
+										}
+									}
+								</tbody>
+							</table>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-lg-12 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Menu Anda</h5>
+					</div>
+					<div class="card-body">
+						<a href="/app/recordattendance" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Absensi Harian</a>
+							<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+	else
+	{
+	<div class="row">
+		<div class="col-lg-12 col-sm-12 col-12 d-flex">
+			<div class="card flex-fill">
+				<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+					<h5 class="card-title mb-0">Daftar Pengajuan Ijin Anda</h5>
+				</div>
+				<div class="card-body">
+					@if (unapprovedPerijinanCurrentUser != null && unapprovedPerijinanCurrentUser.Count > 0)
+					{
+						<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
+							<tbody>
+								<tr class="heading" style="background: #F3F2F7;">
+									<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										Karyawan
+									</td>
+									<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										Tanggal
+									</td>
+									<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+										Jenis
+									</td>
+									<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+									</td>
+								</tr>
+								@foreach (dynamic p in unapprovedPerijinanCurrentUser)
+								{
+									bool? isApproved = p.IsApproved != null ? (bool?)p.IsApproved : null;
+
+									<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+										<td style="padding: 10px 2px;vertical-align: middle;">
+											@p.EmployeeName
+										</td>
+										<td style="padding: 10px 2px;vertical-align: middle; ">
+											@p.ForDate.ToString("dd/MM/yyyy")
+										</td>
+										<td style="padding: 10px 2px;vertical-align: middle; ">
+											@p.SubmittedFor
+										</td>
+										@if (!isApproved.HasValue)
+										{
+											<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+												<span class="badge badge-warning">Belum Disetujui</span>
+											</td>
+
+										}
+										else
+										{
+											if (isApproved.Value)
+											{
+												<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+													<span class="badge badge-success">Disetujui</span>
+												</td>
+
+											}
+											else
+											{
+												<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+													<span class="badge badge-danger">Ditolak</span>
+												</td>
+
+											}
+										}
+									</tr>
+									if (isApproved == null && !string.IsNullOrEmpty(p.SubmittedDesc))
+									{
+										<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+											<td style="padding: 10px;vertical-align: top; " colspan="5">
+												@p.SubmittedDesc
+											</td>
+										</tr>
+									}
+
+									if (isApproved.HasValue && isApproved.Value == false)
+									{
+										<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+											<td style="padding: 10px;vertical-align: top; " colspan="5">
+												<b>Alasan ditolak:</b><br />
+												@p.ApprovalDescription
+											</td>
+										</tr>
+									}
+								}
+							</tbody>
+						</table>
+					}
+				</div>
 			</div>
 		</div>
 	</div>
+	<div class="row">
+		<div class="col-lg-12 col-sm-12 col-12 d-flex">
+			<div class="card flex-fill">
+				<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+					<h5 class="card-title mb-0">Menu Anda</h5>
+				</div>
+				<div class="card-body">
+					<a href="/app/recordattendance" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Absensi Harian</a>
+						<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	}
 </div>
+@if (ApproveDialogOpen)
+{
+	<ModalDialog Title="Setujui Pengajuan Ijin/Libur Karyawan"
+				 Text="Apakah anda yakin anda ingin menyetujui pengajuan ini?"
+				 OnClose="@OnApproveDialogClose"
+				 DialogType="ModalDialog.ModalDialogType.Ok">
+	</ModalDialog>
+}
+@if (RejectDialogOpen)
+{
+	<ModalDialog Title="Tolak Pengajuan Ijin/Libur Karyawan"
+				 Text="Apakah anda yakin anda ingin menolak pengajuan ini? Mohon berikan alasannya pada kolom dibawah ini."
+				 OnClose="@OnRejectDialogClose"
+				 RejectReason="@RejectionReason"
+				 DialogType="ModalDialog.ModalDialogType.Reject">
+	</ModalDialog>
+}
 @code{
+	/* Kode baru */
+	private bool AdaPerijinan;
+	string currentUserRole = "User";
+	List<dynamic> unapprovedPerijinan;
+	public string CurrentUserName { get; set; }
+	public int SelectedPerijinanID { get; set; }
+	public bool ApproveDialogOpen { get; set; }
+	public bool RejectDialogOpen { get; set; }
+	UserMaster modelUser = new UserMaster();
+	Employee modelEmployee = new Employee();
+	public string RejectionReason { get; set; }
+	List<dynamic> unapprovedPerijinanBySupervisor;
+	List<dynamic> unapprovedPerijinanCurrentUser;
+	/* Kode baru */
+
+
 	private bool dense = true;
 	private bool hover = true;
 	bool value = true;
@@ -499,8 +889,93 @@
 
 	int ledgerIdCash = 1;
 	int ledgerIdBank = 10;
+
+	private void OpenApproveDialog(int id)
+	{
+		SelectedPerijinanID = id;
+		ApproveDialogOpen = true;
+		StateHasChanged();
+	}
+
+	private void OpenRejectDialog(int id)
+	{
+		SelectedPerijinanID = id;
+		RejectDialogOpen = true;
+		StateHasChanged();
+	}
+
+	private async Task OnApproveDialogClose(bool accepted)
+	{
+		if (accepted)
+		{
+			ApprovePerijinan();
+		}
+
+		ApproveDialogOpen = false;
+		StateHasChanged();
+
+		navigation.NavigateTo("/app/dashboard", true);
+	}
+
+	private async Task OnRejectDialogClose(bool accepted)
+	{
+		if (accepted)
+		{
+			string reason = await JSRuntime.InvokeAsync<string>("checkReason");
+			if (string.IsNullOrEmpty(reason))
+			{
+				await JSRuntime.InvokeVoidAsync("showAlert", "Alasan penolakan mohon diisi.");
+			}
+			else
+			{
+				RejectionReason = reason;
+				RejectPerijinan();
+			}
+		}
+
+		RejectDialogOpen = false;
+		StateHasChanged();
+
+		navigation.NavigateTo("/app/dashboard", true);
+	}
+
+	private async Task RejectPerijinan()
+	{
+		var perijinan = _hr.PerijinanQuery().FirstOrDefault(x => x.ID == SelectedPerijinanID);
+		if(perijinan != null)
+		{
+			perijinan.IsApproved = false;
+			perijinan.ApprovalDescription = RejectionReason;
+			perijinan.ActionDate = DateTime.Now;
+			perijinan.ActionByEmployeeID = modelEmployee.EmployeeId;
+			await _hr.UpdatePerijinan(perijinan);
+		}
+	}
+
+	private async Task ApprovePerijinan()
+	{
+		var perijinan = _hr.PerijinanQuery().FirstOrDefault(x => x.ID == SelectedPerijinanID);
+		if(perijinan != null)
+		{
+			perijinan.IsApproved = true;
+			perijinan.ApprovalDescription = "Disetujui oleh: " + modelEmployee.EmployeeName + "\r\nPada tanggal: " + DateTime.Now.ToString("dd/MM/yyyy hh:mm");
+			perijinan.ActionDate = DateTime.Now;
+			perijinan.ActionByEmployeeID = modelEmployee.EmployeeId;
+			await _hr.UpdatePerijinan(perijinan);
+		}
+	}
+
 	protected async override void OnInitialized()
 	{
+		AdaPerijinan = true;
+		unapprovedPerijinan = new List<dynamic>();
+		var authstate = await authStateProvider.GetAuthenticationStateAsync();
+		var user = authstate.User;
+		var userName = user.Identity.Name;		
+		currentUserRole = await _userManage.GetUserRole(userName);
+		modelUser = await _userManage.UserProfile(userName);
+		modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
 		listProduct = await report.GetTopProduct();
 		DateTime today = DateTime.Now;
 		dtFromDate = new DateTime(today.Year, today.Month, today.Day,0,0,0);
@@ -516,6 +991,27 @@
 
 		PartaiTunai = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
 		PartaiBank = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+
+		if(currentUserRole == "Supervisor")
+		{
+			unapprovedPerijinanBySupervisor = _hr.GetPerijinanBySupervisorID(modelEmployee.EmployeeId);
+			unapprovedPerijinanCurrentUser = _hr.GetListPerijinanByEmployeeID(modelEmployee.EmployeeId);
+		}
+		else if(currentUserRole == "Admin") 
+		{
+			if(modelUser.UserName == "Arief") {
+				unapprovedPerijinan = _hr.GetPerijinanUnApproved();
+			}
+			else
+			{
+				unapprovedPerijinan = _hr.GetPerijinanBySupervisorID(modelEmployee.EmployeeId);
+			}
+		}
+		else
+		{
+			unapprovedPerijinanCurrentUser = _hr.GetListPerijinanByEmployeeID(modelEmployee.EmployeeId);
+		}
+
 
 		DaySeven();
 		StateHasChanged();

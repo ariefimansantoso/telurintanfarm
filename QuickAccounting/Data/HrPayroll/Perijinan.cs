@@ -12,9 +12,11 @@ namespace QuickAccounting.Data.HrPayroll
         public string SubmittedDesc { get; set; }
         public string DocPhoto { get; set; }
         public DateTime ForDate { get; set; }
-        public bool IsApproved { get; set; }
+        public bool? IsApproved { get; set; }
         public string ApprovalDescription { get; set; }
-    }
+		public DateTime ActionDate { get; set; }
+		public int ActionByEmployeeID { get; set; } 
+	}
 
     public class Penalty
     {

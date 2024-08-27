@@ -67,7 +67,7 @@
 						<MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
 					</ToolBarContent>
                     <HeaderContent>
-                        <MudTh>Supplier Name</MudTh>
+                        <MudTh>Nama Supplier</MudTh>
                         <MudTh>Bill No</MudTh>
                         <MudTh>Reference</MudTh>
                         <MudTh>Date</MudTh>
@@ -80,7 +80,7 @@
 								<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
 								<MudTd DataLabel="Reference">@context.Reference</MudTd>
 								<MudTd DataLabel="Date">@context.Date</MudTd>
-								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol@context.GrandTotal</MudTd>
+								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @string.Format("{0:n0}", context.GrandTotal)</MudTd>
 						@if (context.PaymentStatus == "Draft")
 								{
 							<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br/>

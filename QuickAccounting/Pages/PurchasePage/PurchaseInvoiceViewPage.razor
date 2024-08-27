@@ -14,19 +14,19 @@
 @inject NavigationManager navigation
 @inject IDialogService Dialog
 @attribute [Authorize]
-<PageTitle>Purchase View</PageTitle>
+<PageTitle>Pembelian</PageTitle>
 <div class="content">
 					<div class="page-header">
 						<div class="page-title">
-							<h4>Purchase Details</h4>
-			<h6>View Purchase details
+							<h4>Detail Pembelian</h4>
+			<h6>Lihat Detail Pembelian
 			</h6>
 						</div>
 					</div>
 					<div class="card">
 						<div class="card-body">
 							<div class="card-sales-split">
-								<h2 style="font-size:15px; font-weight:600;">Purchase Detail : @model.VoucherNo</h2>
+				<h2 style="font-size:15px; font-weight:600;">Detail Pembelian : @model.VoucherNo</h2>
 								<ul>
 									@if(@model.PaymentStatus == "Draft")
 									{
@@ -60,58 +60,59 @@
 			<form id="printable-form">
 							<div class="invoice-box table-height">
 								<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
-									<tbody><tr class="top">
-										<td colspan="6" style="padding: 5px;vertical-align: top;">
-											<table style="width: 100%;line-height: inherit;text-align: left;">
-												<tbody><tr>
-													<td style="width:36%;padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
-														<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Customer Info</font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.LedgerName</font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Email</font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Phone</font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Address</font></font><br>
-													</td>
-											<td style="width:34%;padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
-														<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Company Info</font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @company.CompanyName </font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;">@company.Email</font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;">@company.PhoneNo</font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @company.Address</font></font><br>
-													</td>
-													<td style="padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
-														<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Invoice Info</font></font><br>
-												<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Bill No: @model.VoucherNo </font></font><br>
-												<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Date: @model.Date </font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Reference: @model.Reference </font></font><br>
-														<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Status:  @model.PaymentStatus</font></font><br>
-													</td>
-												</tr>
-											</tbody></table>
-										</td>
-									</tr>
-									<tr class="heading " style="background: #F3F2F7;">
-										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Product Name
-										</td>
-										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Qty
-										</td>
-							<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-								Unit
-							</td>
-										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Price
-										</td>
-										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Discount
-										</td>
-										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											TAX
-										</td>
-										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Subtotal
-										</td>
-									</tr>
+									<tbody>
+										<tr class="top">
+											<td colspan="6" style="padding: 5px;vertical-align: top;">
+												<table style="width: 100%;line-height: inherit;text-align: left;">
+													<tbody><tr>
+														<td style="width:36%;padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
+															<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Info Pelanggan</font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.LedgerName</font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Email</font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Phone</font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @model.Address</font></font><br>
+														</td>
+												<td style="width:34%;padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
+															<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Perusahaan</font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @company.CompanyName </font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;">@company.Email</font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;">@company.PhoneNo</font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 400;"> @company.Address</font></font><br>
+														</td>
+														<td style="padding:5px;vertical-align:top;text-align:left;padding-bottom:20px">
+															<font style="vertical-align: inherit;margin-bottom:25px;"><font style="vertical-align: inherit;font-size:14px;color:#7367F0;font-weight:600;line-height: 35px; ">Nota</font></font><br>
+													<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Bill No: @model.VoucherNo </font></font><br>
+													<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Date: @model.Date </font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Reference: @model.Reference </font></font><br>
+															<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 14px;color:#000;font-weight: 600;">Status:  @model.PaymentStatus</font></font><br>
+														</td>
+													</tr>
+												</tbody></table>
+											</td>
+										</tr>
+										<tr class="heading" style="background: #F3F2F7;">
+											<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Product Name
+											</td>
+											<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Qty
+											</td>
+								<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+									Unit
+								</td>
+											<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Price
+											</td>
+											<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Discount
+											</td>
+											<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												TAX
+											</td>
+											<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Subtotal
+											</td>
+										</tr>
 									@foreach(var item in TodoList)
 									{
 									<tr class="details" style="border-bottom:1px solid #E9ECEF ;">

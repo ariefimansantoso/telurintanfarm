@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Folder Include="Pages\HumanResorcePage\HrConfiguration\" />
+    <Folder Include="wwwroot\uploads\absensi\" />
   </ItemGroup>
 
   <ItemGroup>

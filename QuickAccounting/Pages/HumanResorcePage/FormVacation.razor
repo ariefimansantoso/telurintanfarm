@@ -146,14 +146,14 @@
 
         DateTime now = DateTime.Now;
         master.ForDate = TanggalIjin.Value;
-        master.IsApproved = false;
+        master.IsApproved = null;
         master.ApprovalDescription = string.Empty;
         master.SubmittedDesc = Alasan;
         master.DateSubmitted = now;
         master.SubmittedFor = TipeIjin;
         master.EmployeeID = modelEmployee.EmployeeId;
         master.DocPhoto = string.Empty;
-
+        
         var result = await _hr.InsertPerijinan(master);
 
         if (result > 0)

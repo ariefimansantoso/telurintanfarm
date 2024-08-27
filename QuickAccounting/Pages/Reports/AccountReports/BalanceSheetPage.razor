@@ -9,11 +9,11 @@
 @inject IPrintingService PrintingService
 @inject NavigationManager navigation
 @attribute [Authorize]
-<PageTitle>BalanceSheet</PageTitle>
+<PageTitle>Neraca</PageTitle>
 <div class="content">
 						<div class="page-header">
 							<div class="page-title">
-								<h4>BalanceSheet</h4>
+            <h4>Neraca</h4>
 							</div>
 						</div>
 
@@ -26,19 +26,19 @@
 					<div class="row">
 						<div class="col-lg-3 col-sm-6 col-12">
 							<div class="form-group">
-								From Date
+								Dari Tanggal
 								<RadzenDatePicker @bind-Value=@dtFromDate DateFormat="d" Class="w-100" />
 							</div>
 						</div>
 						<div class="col-lg-3 col-sm-6 col-12">
 							<div class="form-group">
-								To Date
+								Ke Tanggal
 								<RadzenDatePicker @bind-Value=@dtToDate DateFormat="d" Class="w-100" />
 							</div>
 						</div>
                         <div class="col-lg-3 col-sm-6 col-12">
                             <div class="form-group">
-                              <span style="margin-left:-58px;"> Show Details</span>
+                              <span style="margin-left:-58px;"> Detail</span>
                                 <RadzenSwitch Style="margin-top:24px; float:left;" @bind-Value=@value Change=@(args => OnChange(args, "Switch")) />
                             </div>
                         </div>
@@ -64,7 +64,7 @@
 								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 22px;color:#000;font-weight: 600;"> @company.CompanyName </font></font><br>
 								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 17px;color:#000;font-weight: 600;">@company.Address</font></font><br>
 								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 15px;color:#000;font-weight: 600;">@company.PhoneNo</font></font><br>
-								<font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 16px;color:#000;font-weight: 600;"> BalanceSheet</font></font><br>
+                                    <font style="vertical-align: inherit;"><font style="vertical-align: inherit;font-size: 16px;color:#000;font-weight: 600;"> Neraca</font></font><br>
 							</td>
 						</tr>
 					</tbody>
@@ -140,7 +140,7 @@
         {
             values += @"<tr>
 <td style='width: 260px;font-style:bold; color:black;text-align: left;'>" + rw["Name"].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + rw["Balance"].ToString() + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(rw["Balance"].ToString())) + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
             </tr>";
@@ -154,7 +154,7 @@
                 {
                     values += @"<tr>
 <td style='font-size:10px;'>" + rw1["Name"].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + rw1["Balance"].ToString() + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(rw1["Balance"].ToString())) + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
             </tr>";
@@ -178,7 +178,7 @@
 <td style='width: 260px;font-style:bold; color:black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + rw["Name"].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol+ rw["Balance"].ToString() + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol+ string.Format("{0:n0}", Convert.ToDecimal(rw["Balance"].ToString())) + @"</td>
             </tr>";
                 if (value == true)
                 {
@@ -192,7 +192,7 @@
 <td style='font-size:10px;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='font-size:10px;'>" + rw1["Name"].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + rw1["Balance"].ToString() + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(rw1["Balance"].ToString())) + @"</td>
             </tr>";
                     }
                 }
@@ -203,7 +203,7 @@
 <td style='width: 260px;font-style:bold; color:black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + rw["Name"].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + rw["Balance"].ToString() + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(rw["Balance"].ToString())) + @"</td>
             </tr>";
                 if (value == true)
                 {
@@ -217,7 +217,7 @@
 <td style='width: 260px;font-style:bold; color:black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + rw1["Name"].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + rw1["Balance"].ToString() + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(rw1["Balance"].ToString())) + @"</td>
             </tr>";
                     }
                 }
@@ -318,7 +318,7 @@
             //---------- Asset ----------//
             values += @"<tr>
 <td style='width: 260px;font-style:bold; color:black;text-align: left;'>" + "Closing Stock" + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + Math.Round(dcClosingStock, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(dcClosingStock, 2)) + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
             </tr>";
@@ -331,7 +331,7 @@
 <td style='width: 260px;font-style:bold; color:black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "Closing Stock" + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + Math.Round(dcClosingStock, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(dcClosingStock, 2)) + @"</td>
             </tr>";
             dcTotalLiability += -dcClosingStock;
         }
@@ -362,7 +362,7 @@
                     }
                     values += @"<tr>
 <td style='width: 260px;font-style:bold; color:black;text-align: left;'>" + "" + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + Math.Round(decTotalProfitAndLoss + decCurrentProfitLoss, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(decTotalProfitAndLoss + decCurrentProfitLoss, 2)) + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
             </tr>";
@@ -371,14 +371,14 @@
             //-------------- Asset ---------------//
             values += @"<tr>
 <td style='width: 260px;font-style:bold; color:DarkSlateGray;text-align: left;'>" + "Profit And Loss (Opening)" + @"</td>
-<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + Math.Round(decTotalProfitAndLoss, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(decTotalProfitAndLoss, 2)) + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
             </tr>";
             //-------------- Asset ---------------//
             values += @"<tr>
 <td style='width: 260px;font-style:bold; color:DarkSlateGray;text-align: left;'>" + "Current Period" + @"</td>
-<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + Math.Round(decCurrentProfitLoss, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(decCurrentProfitLoss, 2)) + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
             </tr>";
@@ -406,7 +406,7 @@
 <td style='width: 260px;font-style:bold; color:Black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:Black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:DarkSlateGray;'>" + dRow[1].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + Math.Round(decTotalProfitAndLoss + decCurrentProfitLoss, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(decTotalProfitAndLoss + decCurrentProfitLoss, 2)) + @"</td>
             </tr>";
                 }
             }
@@ -415,7 +415,7 @@
 <td style='width: 260px;font-style:bold; color:Black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:Black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:DarkSlateGray;'>" + "Profit And Loss (Opening)" + @"</td>
-<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + Math.Round(decTotalProfitAndLoss, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(decTotalProfitAndLoss, 2)) + @"</td>
             </tr>";
             dcTotalLiability += decOpeningOfProfitAndLoss;
             //------------ Liability ------------//
@@ -424,7 +424,7 @@
 <td style='width: 260px;font-style:bold; color:Black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:Black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:DarkSlateGray;'>" + "Current Period" + @"</td>
-<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + Math.Round(decCurrentProfitLoss, 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:DarkSlateGray;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round(decCurrentProfitLoss, 2)) + @"</td>
             </tr>";
             dcTotalLiability = dcTotalLiability + (decCurrentProfitLoss + decTotalProfitAndLoss); //dcProfit;
             values += @"<tr>
@@ -447,7 +447,7 @@
 <td style='width: 260px;font-style:bold; color:Black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:Black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:DarkRed;'>" + "Difference" + @"</td>
-<td style='width: 140px;font-style:bold; color:Black;'>" + PublicVariables._Symbol + Math.Round((dcTotalAsset - dcTotalLiability), 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:Black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round((dcTotalAsset - dcTotalLiability), 2)) + @"</td>
             </tr>";
                 dcDiffLiability = dcTotalAsset - dcTotalLiability;
             }
@@ -458,7 +458,7 @@
 <td style='width: 260px;font-style:bold; color:Black;text-align: left;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:Black;'>" + "" + @"</td>
 <td style='width: 260px;font-style:bold; color:DarkRed;'>" + "Difference" + @"</td>
-<td style='width: 140px;font-style:bold; color:Black;'>" + PublicVariables._Symbol + Math.Round((dcTotalLiability - dcTotalAsset), 2) + @"</td>
+<td style='width: 140px;font-style:bold; color:Black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round((dcTotalLiability - dcTotalAsset), 2)) + @"</td>
             </tr>";
                 dcDiffAsset = dcTotalLiability - dcTotalAsset;
             }
@@ -477,9 +477,9 @@
             </tr>";
         values += @"<tr>
 <td style='width: 260px;font-style:bold; color:Black;text-align: left;'>" + "Total" + @"</td>
-<td style='width: 140px;font-style:bold; text-align:right; color:Black;'>" + PublicVariables._Symbol + Math.Round((dcTotalAsset + dcDiffAsset), 2) + @"</td>
+<td style='width: 140px;font-style:bold; text-align:right; color:Black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round((dcTotalAsset + dcDiffAsset), 2)) + @"</td>
 <td style='width: 260px;font-style:bold; color:DarkRed;'>" + "Total" + @"</td>
-<td style='width: 140px;font-style:bold; text-align:right; color:Black;'>" + PublicVariables._Symbol + Math.Round((dcTotalLiability + dcDiffLiability), 2) + @"</td>
+<td style='width: 140px;font-style:bold; text-align:right; color:Black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Math.Round((dcTotalLiability + dcDiffLiability), 2)) + @"</td>
             </tr>";
         decPrintOrNot = dcTotalAsset + dcDiffAsset;
         decPrintOrNot1 = dcTotalLiability + dcDiffLiability;

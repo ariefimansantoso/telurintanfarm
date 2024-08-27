@@ -32,5 +32,6 @@ namespace QuickAccounting.Data.HrPayroll
         public string ID_BPJS_KES { get; set; }
         public string ID_BPJS_TK { get; set; }
         public string BankAccount { get; set; }
-    }
+		public int SupervisorID { get; set; }
+	}
 }

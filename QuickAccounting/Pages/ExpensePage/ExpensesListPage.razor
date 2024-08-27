@@ -31,8 +31,8 @@
 					<HeaderContent>
 						<MudTh>Supplier</MudTh>
 						<MudTh>Bill No</MudTh>
-						<MudTh>Narration</MudTh>
-						<MudTh>Date</MudTh>
+						<MudTh>Keterangan</MudTh>
+						<MudTh>Tanggal</MudTh>
 						<MudTh>Total</MudTh>
 						<MudTh></MudTh>
 					</HeaderContent>
@@ -41,7 +41,7 @@
 						<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
 						<MudTd DataLabel="Narration">@context.Narration</MudTd>
 						<MudTd DataLabel="Date">@context.Date</MudTd>
-						<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
+						<MudTd DataLabel="Amount">@PublicVariables._Symbol @string.Format("{0:n0}", context.Amount)</MudTd>
 						<MudTd DataLabel="">
 							<a class="me-3" href="/app/expensesview/@context.ExpensiveMasterId">
 								<img src="assets/img/icons/edit.svg" alt="img">

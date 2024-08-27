@@ -236,7 +236,7 @@
 
     private async Task Save()
     {        
-        string userFolder = master.EmployeeID + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
+        string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
         string fileName = await UploadFile(userFolder);
 
         if (PhotoSelfie == string.Empty)
