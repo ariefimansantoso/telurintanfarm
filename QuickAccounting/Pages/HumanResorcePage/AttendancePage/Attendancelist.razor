@@ -5,12 +5,15 @@
 @using System.Security.Claims
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
+@inject IUser _user
+@inject IEmployee _employee
+@inject IHRServices _hr;
 @attribute [Authorize]
-<PageTitle>Attendance</PageTitle>
+<PageTitle>Admin - Laporan Absensi dan Gaji Karyawan</PageTitle>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h4>Attendance</h4>
+            <h4>Admin - Laporan Absensi dan Gaji Karyawan</h4>
         </div>
     </div>
     <div class="card">
@@ -18,10 +21,16 @@
             <div class="row">
                 <div class="col-lg-4 col-sm-6 col-12">
                     <div class="form-group">
-                        <label>Date</label>
+                        <label>Periode</label>                       
                         <div class="row">
                             <div class="col-lg-10 col-sm-10 col-10">
-                                <RadzenDatePicker @bind-Value=@master.Date DateFormat="d" Change="()=>ChangeDate()" Class="w-100" />
+                                <select class="form-control" @onchange="SelectedCutoff">
+                                    @foreach (var cutoff in PayrollCutoffs)
+                                    {
+                                        <option value="@cutoff.PayrollDate.ToString("dd/MM/yyyy")">@cutoff.PayrollPeriode</option>
+                                    }
+                                    <option value="31/08/2024" selected>Agustus 2024</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -31,39 +40,73 @@
                 <table class="table">
                     <thead>
                     <tr>
-                        <th>Employee Code</th>
-                            <th>Employee Name</th>
-                            <th>Status</th>
+                        <th>Karyawan</th>
+                        <th>Harian</th>
+                        <th>BPJS Kes</th>
+                        <th>BPJS TK</th>
+                        <th>Premi</th>
+                        <th>M</th>
+                        <th>A</th>
+                        <th>I</th>
+                        <th>S</th>
+                        <th>L</th>
+                        <th>Cicilan</th>
+                        <th>Total Gaji</th>
                     </tr>
                     </thead>
                <tbody>
-                    @if (listModel != null)
-                    {
-                        @foreach (var item in listModel)
+                        @if (detailAttendances != null)
                         {
-                            <tr>
-                                <td>@item.EmployeeCode</td>
-                                        <td>@item.EmployeeName</td>
-                                <td>
-                                    <select @bind="@item.status">
-                                        @foreach(var item1 in listStatus)
+                            @foreach (var item in detailAttendances)
+                            {
+                                
+                                var employee = activeEmployees.FirstOrDefault(x => x.EmployeeId == item.Key);
+                                var countMasuk = 0;
+                                var groupByDate = item.GroupBy(x => x.Date.Date).ToList();
+                                var alpha = 0;
+                                foreach(var gbd in groupByDate)
+                                {
+                                    if(gbd.Count() == 2)
+                                    {
+                                        countMasuk++;
+                                    }
+
+                                    var masukPerHari = _attendance.GetAttendanceListByDateAndEmployeeId(employee.EmployeeId, gbd.Key).Count;
+                                    if(masukPerHari < 2)
+                                    {
+                                        //check table libur
+                                        var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(employee.EmployeeId, gbd.Key);
+                                        if(adaIjin.Count == 0)
                                         {
-                                        <option value="@item1.StatusPresent">@item1.StatusPresent</option>
+                                            alpha++;
                                         }
-                                    </select>
-                                </td>
-                            </tr>
+                                    }
+                                }
+                                decimal totalGaji = employee.DailyWage * (decimal)countMasuk;
+                                var perijinanKaryawan = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(employee.EmployeeId, SelectedCutoffFrom.Date, DateTime.Today);
+                                var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
+                                var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
+                                var sakit = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SAKIT")).Count();
+                                
+                                <tr>
+                                    <td>@(employee != null ? employee.EmployeeName : "")</td>
+                                    <td>@string.Format("{0:n0}", employee.DailyWage)</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>@countMasuk</td>
+                                    <td>@alpha</td>
+                                    <td>@ijin</td>
+                                    <td>@sakit</td>
+                                    <td>@libur</td>
+                                    <td></td>
+                                    <td>@string.Format("{0:n0}", totalGaji)</td>
+                                </tr>
+                            }
                         }
-                    }
                     </tbody>
                 </table>
-            </div>
-            <br /> <br />
-            <div class="row">
-                <div class="col-lg-12">
-                    <button @onclick="@Save" class="btn btn-submit me-2">Save</button>
-                </div>
-            </div>
+            </div>            
         </div>
     </div>
     <!-- /product list -->
@@ -79,7 +122,20 @@
     IList<DailyAttendanceView> listModel;
     DailyAttendanceDetails details = new DailyAttendanceDetails();
     List<StatusInfo> listStatus = new List<StatusInfo>();
-    string strMenu = "Human Resources";
+    DateTime SelectedCutoffFrom;
+
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+    DateTime LastPayrollCutoff;
+    List<DateTime> PeriodeDates = new List<DateTime>();
+    List<PayrollCutoff> PayrollCutoffs = new List<PayrollCutoff>();
+    List<Employee> activeEmployees = new List<Employee>();
+    List<DailyAttendanceMaster> absensiAllEmployeePerPeriode = new List<DailyAttendanceMaster>();
+    List<IGrouping<int, DailyAttendanceMaster>> detailAttendances = new List<IGrouping<int, DailyAttendanceMaster>>();
+    int PeriodDaysCount = 0;
+
+    string strMenu = "Admin - Laporan Absensi dan Gaji Karyawan";
+
     protected override async Task OnInitializedAsync()
     {
         //CheckPriviliagee
@@ -87,51 +143,43 @@
         var strRole = authState.User;
         string strName = strRole.FindFirst(ClaimTypes.Role).Value;
         var strShow = await _privilege.PriviliageCheck(strMenu, strName);
-        if (strShow.ShowAction == true)
-        {
-            await LoadData();
-        }
-        else
-        {
-            navigation.NavigateTo("/app/dashboard");
-            Snackbar.Add("You dont have to privilege..", Severity.Error);
-        }
+
+        string userName = strRole.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        await LoadData();
+
+        // if (strShow.ShowAction == true)
+        // {
+        //     await LoadData();
+        // }
+        // else
+        // {
+        //     navigation.NavigateTo("/app/dashboard");
+        //     Snackbar.Add("You dont have to privilege..", Severity.Error);
+        // }
     }
     private async Task LoadData()
     {
-        // listStatus.Add(new StatusInfo { StatusPresent = "Absent" });
-        // listStatus.Add(new StatusInfo { StatusPresent = "Present" });
-        // master.Date = DateTime.UtcNow;
-        // String sDate = DateTime.UtcNow.ToString();
-        // DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
+        PayrollCutoffs = await _attendance.GetPayrollCutoffs();
+        SelectedCutoffFrom = (await _attendance.GetLastPayrollCutoff()).PayrollDate;
+        LastPayrollCutoff = SelectedCutoffFrom;
 
-        // String dy = datevalue.Day.ToString();
-        // String mn = datevalue.Month.ToString();
-        // String yy = datevalue.Year.ToString();
-        // master.Narration = dy + mn + yy;
-        // listModel = _attendance.DailyAttendanceDetailsSearchGridFill();
-        // foreach (var item in listModel)
-        // {
-        //     DailyAttendanceDetails statuspaidunpaid = new DailyAttendanceDetails();
-        //     statuspaidunpaid = await _attendance.GetAttandanceDetails(master.Narration, item.EmployeeId);
-        //     if (statuspaidunpaid != null)
-        //     {
-        //         details.Status = statuspaidunpaid.Status;
-        //         details.DailyAttendanceDetailsId = statuspaidunpaid.DailyAttendanceDetailsId;
-        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
-        //         myTodos.status = details.Status;
-        //         myTodos.DailyAttendanceDetailsId = details.DailyAttendanceDetailsId;
-        //         details.Status = "Absent";
-        //         details.DailyAttendanceDetailsId = 0;
-        //     }
-        //     else
-        //     {
-        //         var myTodos = listModel.FirstOrDefault(x => x.DailyAttendanceDetailsId == item.DailyAttendanceDetailsId && x.EmployeeId == item.EmployeeId);
-        //         myTodos.status = "Absent";
-        //         myTodos.DailyAttendanceDetailsId = 0;
-        //     }
+        activeEmployees = await _employee.GetAllEmployeeActive();
+        absensiAllEmployeePerPeriode = await _attendance.GetAttendanceCurrentPeriodeAllEmployee(SelectedCutoffFrom.Date, DateTime.Today);
+        detailAttendances = absensiAllEmployeePerPeriode.GroupBy(x => x.EmployeeID).OrderBy(x => x.Key).ToList();
 
-        // }
+        DateTime endDate = DateTime.Today; // Today's date
+                                           // Iterate from the start date to the end date
+        DateTime currentDate = LastPayrollCutoff;
+        while (currentDate <= endDate)
+        {
+            PeriodDaysCount++;
+            PeriodeDates.Add(currentDate);
+            currentDate = currentDate.AddDays(1); // Move to the next day
+        }
+
         StateHasChanged();
     }
     private async Task ChangeDate()
@@ -171,6 +219,7 @@
         // }
         StateHasChanged();
     }
+
     private async void Save()
     {
 
@@ -209,5 +258,10 @@
         //         }
         //     //}
         // }
+    }
+
+    private async Task SelectedCutoff(ChangeEventArgs e)
+    {
+        LastPayrollCutoff = Convert.ToDateTime(e.Value.ToString());
     }
 }

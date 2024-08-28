@@ -15,7 +15,7 @@ namespace QuickAccounting.Repository.Interface
         List<dynamic> GetPerijinanUnApproved();
         List<dynamic> GetPerijinanBySupervisorID(int supervisorID);
         List<dynamic> GetListPerijinanByEmployeeID(int employeeID);
-
-
-	}
+        List<Perijinan> GetPerijinanByEmployeeIDInPeriodePayroll(int employeeID, DateTime from, DateTime to);
+        List<Perijinan> GetPerijinanByEmployeeIDAndDate(int employeeID, DateTime atDate);
+    }
 }

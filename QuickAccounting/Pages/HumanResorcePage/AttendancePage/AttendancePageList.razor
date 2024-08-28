@@ -1,10 +1,12 @@
 ﻿@page "/app/attendancelist"
-@inject IAttendance _advancePayment
+@inject IAttendance _attendance
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @using System.Security.Claims
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
+@inject IUser _user
+@inject IEmployee _employee
 @attribute [Authorize]
 <PageTitle>Laporan Absensi</PageTitle>
 <div class="content">
@@ -12,28 +14,32 @@
         <div class="page-title">
             <h4>Laporan Absensi Karyawan</h4>
         </div>
-        <div class="page-btn">
+        @* <div class="page-btn">
             <a class="btn btn-added" style="float:left;" href="/app/attendance"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Add New</a>
-        </div>
+        </div> *@
     </div>
     <!-- /product list -->
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
                 <div class="row">
-			        <div class="col-lg col-sm-6 col-12">
+			        <div class="col-lg col-sm-12 col-12">
 				        <div class="form-group">
-					        Dari Tanggal
-					        <input type="date" @bind="@dtFromDate" class="form-control" />
+                            <label>Periode</label>
+                            <div class="row">
+                                <div class="col-lg-10 col-sm-10 col-10">
+                                    <select class="form-control" @onchange="SelectedCutoff">
+                                        @foreach (var cutoff in PayrollCutoffs)
+                                        {
+                                            <option value="@cutoff.PayrollDate.ToString("dd/MM/yyyy")">@cutoff.PayrollPeriode</option>
+                                        }
+                                        <option value="31/08/2024" selected>Agustus 2024</option>
+                                    </select>
+                                </div>
+                            </div>
 				        </div>
-			        </div>
-			        <div class="col-lg col-sm-6 col-12">
-				        <div class="form-group">
-					        Ke Tanggal
-					        <input type="date" @bind="@dtToDate" class="form-control" />
-				        </div>
-			        </div>				
-			        <div class="col-lg-1 col-sm-6 col-12">
+			        </div>			        			
+			        <div class="col-lg-1 col-sm-12 col-12">
 				        <div class="form-group" style="margin-top:20px;">
 					        <Loading IsLoading="isProcessing">
 						        <a class="btn btn-filters ms-auto" @onclick="()=>LoadDataAbsensi()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
@@ -45,6 +51,51 @@
         </div>
     </div>
     <!-- /product list -->
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Pagi</th>
+                            <th>Sore</th>
+                            <th>Gaji Harian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (groupedResults != null)
+                        {
+                            @foreach (var item in PeriodeDates)
+                            {
+                                <tr>
+                                    <td>@item.Date.ToString("dd/MM/yyyy")</td>
+                                    @{
+                                        var attendanceItem = groupedResults.Where(x => x.Date.Date == item.Date).FirstOrDefault();
+                                    }
+                                    @if (attendanceItem != null) 
+                                    {
+                                        <td>
+                                            @attendanceItem.StartTime.ToString("hh:mm")
+                                        </td>
+                                        <td>@attendanceItem.EndTime.ToString("hh:mm")</td>
+                                        <td>@string.Format("{0:n0}", attendanceItem.DailyWage)</td>
+                                    }
+                                    else
+                                    {
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                    }
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -53,11 +104,21 @@
 @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
-    IList<DailyAttendanceView> listModel;
+    IList<DailyAttendanceMaster> listModel;
+    DateTime SelectedCutoffFrom;
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+    DateTime LastPayrollCutoff;
+    List<DateTime> PeriodeDates = new List<DateTime>();
+
+    List<PayrollCutoff> PayrollCutoffs = new List<PayrollCutoff>();
+    decimal DailyWage;
+    List<AbsensiData> groupedResults = new List<AbsensiData>();
+
     private bool dense = true;
     private bool hover = true;
     private string searchString1 = "";
-    string strMenu = "Absensi Karyawan";
+    string strMenu = "Laporan Absensi Karyawan";
     private bool visible;
     private MudBlazor.DialogOptions dialogOptions = new() { FullWidth = true };
     string ShowDialogue;
@@ -71,21 +132,62 @@
         var strRole = authState.User;
         string strName = strRole.FindFirst(ClaimTypes.Role).Value;
         var strShow = await _privilege.PriviliageCheck(strMenu, strName);
-        if (strShow.ShowAction == true)
-        {
-            await LoadData();
-        }
-        else
-        {
-            navigation.NavigateTo("/app/dashboard");
-            Snackbar.Add("You dont have to privilege..", Severity.Error);
-        }
+        string userName = strRole.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+        DailyWage = modelEmployee.DailyWage;
+
+        await LoadData();
+        // if (strShow.ShowAction == true)
+        // {
+        //     await LoadData();
+        // }
+        // else
+        // {
+        //     navigation.NavigateTo("/app/dashboard");
+        //     Snackbar.Add("You dont have to privilege..", Severity.Error);
+        // }
     }
     private async Task LoadData()
     {
-        listModel = await _advancePayment.GetAll();
+        PayrollCutoffs = await _attendance.GetPayrollCutoffs();
+        SelectedCutoffFrom = (await _attendance.GetLastPayrollCutoff()).PayrollDate;
+        LastPayrollCutoff = SelectedCutoffFrom;
+        DateTime endDate = DateTime.Today; // Today's date
+        // Iterate from the start date to the end date
+        DateTime currentDate = LastPayrollCutoff;
+        while (currentDate <= endDate)
+        {
+            PeriodeDates.Add(currentDate);
+            currentDate = currentDate.AddDays(1); // Move to the next day
+        }
+
+        listModel = await _attendance.GetAttendanceCurrentPeriodeByEmployeeId(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, DateTime.Today);
+        groupedResults = listModel.OrderBy(x => x.Date)
+            .GroupBy(dt => dt.Date.Date)
+            .Select(g => new AbsensiData
+            {
+                Date = g.Key,
+                StartTime = g.Min(dt => dt.Date),
+                EndTime = g.Max(dt => dt.Date),
+                DailyWage = DailyWage
+            })
+            .ToList();
         StateHasChanged();
-    }   
+    }  
+
+    public class AbsensiData
+    {
+        public DateTime Date { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public decimal DailyWage { get; set; }
+    }
+
+    private async Task SelectedCutoff(ChangeEventArgs e)
+    {
+        LastPayrollCutoff = Convert.ToDateTime(e.Value.ToString());
+    }
 
     private async Task LoadDataAbsensi()
     {

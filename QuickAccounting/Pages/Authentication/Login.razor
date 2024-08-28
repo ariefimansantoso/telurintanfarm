@@ -8,6 +8,7 @@
 @inject AuthenticationStateProvider authStateProvider
 @inject NavigationManager navManager
 @inject ISnackbar Snackbar
+@inject IEmployee _employee
 <PageTitle>Masuk</PageTitle>
 <!-- Main Wrapper -->
 <div class="account-page">
@@ -86,6 +87,13 @@
             else
             {
                 var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+                var employee = await _employee.GetbyUserId(userAccount.UserId);
+                if(!employee.isActive)
+                {
+                    Snackbar.Add("Akun tidak ditemukan.", Severity.Error);
+                    return;
+                }
+
                 await customAuthStateProvider.UpdateAuthenticationState(new UserSession
                     {
                         Email = userAccount.Email,

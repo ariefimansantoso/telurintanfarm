@@ -79,7 +79,8 @@ namespace QuickAccounting.Data
         public DbSet<PriceMaster> PriceHistory { get; set; }
         public DbSet<Perijinan> Perijinan { get; set; }
         public DbSet<Penalty> Penalty { get; set; }
-
+        public DbSet<Payroll> Payroll { get; set; }
+        public DbSet<PayrollCutoff> PayrollCutoff { get; set; }
         //Budget
         public DbSet<BudgetMaster> BudgetMaster { get; set; }
         public DbSet<BudgetDetails> BudgetDetails { get; set; }

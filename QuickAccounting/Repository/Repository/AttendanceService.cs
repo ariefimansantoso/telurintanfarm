@@ -87,8 +87,47 @@ namespace QuickAccounting.Repository.Repository
         public async Task<List<DailyAttendanceMaster>> GetTodaysAttendanceList(int employeeID)
         {
             DateTime today = DateTime.Now;
-            var attendance = _context.DailyAttendanceMaster.Where(x => x.EmployeeID == employeeID && x.Date.Date.Equals(today.Date)).ToList();
+            var attendance = await _context.DailyAttendanceMaster.Where(x => x.EmployeeID == employeeID && x.Date.Date.Equals(today.Date)).ToListAsync();
             return attendance;
+        }
+
+        public List<DailyAttendanceMaster> GetAttendanceListByDateAndEmployeeId(int employeeID, DateTime date)
+        {
+            var attendance = _context.DailyAttendanceMaster.Where(x => x.EmployeeID == employeeID && x.Date.Date.Equals(date.Date)).ToList();
+            return attendance;
+        }
+
+        public async Task<List<PayrollCutoff>> GetPayrollCutoffs()
+        {            
+            return await _context.PayrollCutoff.OrderByDescending(x => x.PayrollDate).ToListAsync();
+        }
+
+        public async Task<PayrollCutoff> GetLastPayrollCutoff()
+        {
+            var today = DateTime.Today;
+            return await _context.PayrollCutoff.OrderByDescending(x => x.PayrollDate).Where(x => x.PayrollDate.Date < today).FirstOrDefaultAsync();
+        }
+
+        public async Task<List<DailyAttendanceMaster>> GetAttendanceCurrentPeriodeByEmployeeId(int employeeID, DateTime startingPeriode, DateTime endingPeriode)
+        {            
+            var absensiList = await _context.DailyAttendanceMaster.Where(x => x.EmployeeID == employeeID && x.Date.Date >= startingPeriode && x.Date.Date < endingPeriode).ToListAsync();
+            return absensiList;
+        }
+
+        public async Task<List<DailyAttendanceMaster>> GetAttendanceCurrentPeriodeAllEmployee(DateTime startingPeriode, DateTime endingPeriode)
+        {
+            var absensiList = await (from d in _context.DailyAttendanceMaster
+                                     join e in _context.Employee on d.EmployeeID equals e.EmployeeId
+                                     where d.Date.Date >= startingPeriode && d.Date.Date < endingPeriode && e.isActive
+                                     select d).ToListAsync();
+
+            return absensiList;
+        }
+
+        public async Task<List<DailyAttendanceMaster>> GetAttendanceAllUserPerDay(DateTime date)
+        {
+            var absensiList = await _context.DailyAttendanceMaster.Where(x => x.Date.Date == date).ToListAsync();
+            return absensiList;
         }
 
         public async Task<DailyAttendanceDetails> GetAttandanceDetails(string date, int employeeid)

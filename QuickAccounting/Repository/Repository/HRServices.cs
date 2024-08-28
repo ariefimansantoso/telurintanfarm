@@ -98,6 +98,20 @@ namespace QuickAccounting.Repository.Repository
 
 		}
 
+        public List<Perijinan> GetPerijinanByEmployeeIDInPeriodePayroll(int employeeID, DateTime from, DateTime to)
+        {
+            var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID &&
+                                                        x.ForDate.Date >= from && x.ForDate <= to).ToList();
+            return perijinans;
+        }
+
+        public List<Perijinan> GetPerijinanByEmployeeIDAndDate(int employeeID, DateTime atDate)
+        {
+            var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID &&
+                                                        x.ForDate.Date == atDate.Date).ToList();
+            return perijinans;
+        }
+
         public async Task<int> InsertPerijinan(Perijinan perijinan)
         {
             await _context.Perijinan.AddAsync(perijinan);

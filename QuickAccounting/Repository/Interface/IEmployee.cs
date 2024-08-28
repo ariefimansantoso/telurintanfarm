@@ -13,5 +13,6 @@ namespace QuickAccounting.Repository.Interface
         Task<Employee> GetbyId(int id);
         Task<Employee> GetbyUserId(int id);
         Task<bool> Delete(int id);
+        Task<List<Employee>> GetAllEmployeeActive();
     }
 }
