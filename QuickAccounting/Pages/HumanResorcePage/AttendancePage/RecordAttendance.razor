@@ -197,12 +197,14 @@
         PhotoViewer = string.Empty;
         DateTime now = DateTime.Now;
 
+        DateTime nineAM = new DateTime(now.Year, now.Month, now.Day, 9, 0, 0);
+
         todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
-        if(todayAttendances.Count == 2)
+        if (todayAttendances.Count == 1 && todayAttendances[0].Date < nineAM)
         {
             AttendanceCompletedForToday = true;
         }
-        else
+        else if(todayAttendances.Count == 2)
         {
             AttendanceCompletedForToday = false;
         }

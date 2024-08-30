@@ -100,14 +100,14 @@ namespace QuickAccounting.Repository.Repository
 
         public List<Perijinan> GetPerijinanByEmployeeIDInPeriodePayroll(int employeeID, DateTime from, DateTime to)
         {
-            var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID &&
+            var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID && x.IsApproved.HasValue && x.IsApproved.Value == true &&
                                                         x.ForDate.Date >= from && x.ForDate <= to).ToList();
             return perijinans;
         }
 
         public List<Perijinan> GetPerijinanByEmployeeIDAndDate(int employeeID, DateTime atDate)
         {
-            var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID &&
+            var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID && x.IsApproved.HasValue && x.IsApproved.Value == true &&
                                                         x.ForDate.Date == atDate.Date).ToList();
             return perijinans;
         }

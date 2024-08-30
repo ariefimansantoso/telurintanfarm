@@ -7,6 +7,7 @@
 @inject NavigationManager navigation
 @inject IUser _user
 @inject IEmployee _employee
+@inject IHRServices _hr;
 @attribute [Authorize]
 <PageTitle>Laporan Absensi</PageTitle>
 <div class="content">
@@ -72,7 +73,7 @@
                                 <tr>
                                     <td>@item.Date.ToString("dd/MM/yyyy")</td>
                                     @{
-                                        var attendanceItem = groupedResults.Where(x => x.Date.Date == item.Date).FirstOrDefault();
+                                        var attendanceItem = groupedResults.Where(x => x.Date.Date == item.Date).FirstOrDefault();                                        
                                     }
                                     @if (attendanceItem != null) 
                                     {
@@ -84,9 +85,18 @@
                                     }
                                     else
                                     {
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td>-</td>
+                                        var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(modelEmployee.EmployeeId, item.Date);
+                                        var keterangan = "";
+                                        if (adaIjin.Count == 0)
+                                        {
+                                            keterangan = "ALPHA";
+                                        }
+                                        else
+                                        {
+                                            keterangan = adaIjin[0].SubmittedFor;
+                                        }
+
+                                        <td colspan="3">@keterangan</td>                                        
                                     }
                                 </tr>
                             }

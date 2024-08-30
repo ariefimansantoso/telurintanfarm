@@ -35,6 +35,18 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group">
+                        <label>Total Gaji</label>
+                        <div class="row">
+                            <div class="col-lg-10 col-sm-10 col-10">
+                                <span style="font-size:36px; font-weight:bold;">
+                                    @string.Format("{0:n0}", gajiKaryawanTotal)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 </div>
             <div class="table-responsive">
                 <table class="table">
@@ -87,20 +99,34 @@
                                 var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
                                 var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
                                 var sakit = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SAKIT")).Count();
-                                
+                                decimal premi = 0;
+                                decimal gajiBersih = 0;
+                                if(libur <= 3 && ijin == 0 && sakit == 0 && alpha == 0)
+                                {
+                                    premi = totalGaji * (decimal)0.15;
+                                    gajiBersih = totalGaji + premi;
+                                }
+                                else
+                                {
+                                    gajiBersih = totalGaji;
+                                }
+
+                                gajiBersih = gajiBersih - employee.BPJS_KES - employee.BPJS_TK;
+                                gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
+
                                 <tr>
                                     <td>@(employee != null ? employee.EmployeeName : "")</td>
                                     <td>@string.Format("{0:n0}", employee.DailyWage)</td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
+                                    <td>@string.Format("{0:n0}", employee.BPJS_KES)</td>
+                                    <td>@string.Format("{0:n0}", employee.BPJS_TK)</td>
+                                    <td>@string.Format("{0:n0}", premi)</td>
                                     <td>@countMasuk</td>
                                     <td>@alpha</td>
                                     <td>@ijin</td>
                                     <td>@sakit</td>
                                     <td>@libur</td>
                                     <td></td>
-                                    <td>@string.Format("{0:n0}", totalGaji)</td>
+                                    <td>@string.Format("{0:n0}", gajiBersih)</td>
                                 </tr>
                             }
                         }
@@ -123,6 +149,7 @@
     DailyAttendanceDetails details = new DailyAttendanceDetails();
     List<StatusInfo> listStatus = new List<StatusInfo>();
     DateTime SelectedCutoffFrom;
+    decimal gajiKaryawanTotal = 0;
 
     UserMaster modelUser = new UserMaster();
     Employee modelEmployee = new Employee();
