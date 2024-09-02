@@ -198,15 +198,20 @@
         DateTime now = DateTime.Now;
 
         DateTime nineAM = new DateTime(now.Year, now.Month, now.Day, 9, 0, 0);
+        DateTime threePM = new DateTime(now.Year, now.Month, now.Day, 15, 0, 0);
 
         todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
-        if (todayAttendances.Count == 1 && todayAttendances[0].Date < nineAM)
+        if (todayAttendances.Count == 1 && todayAttendances[0].Date <= nineAM)
         {
             AttendanceCompletedForToday = true;
         }
-        else if(todayAttendances.Count == 2)
+        else if (todayAttendances.Count == 1 && todayAttendances[0].Date >= threePM)
         {
             AttendanceCompletedForToday = false;
+        }
+        else if(todayAttendances.Count == 2)
+        {
+            AttendanceCompletedForToday = true;
         }
 
         master.Date = now;

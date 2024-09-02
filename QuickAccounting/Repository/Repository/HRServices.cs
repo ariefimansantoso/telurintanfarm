@@ -26,7 +26,7 @@ namespace QuickAccounting.Repository.Repository
 
 			var perijinanWithName = (from p in _context.Perijinan
 									 join em in _context.Employee on p.EmployeeID equals em.EmployeeId
-									 where p.ForDate >= DateTime.Now && employeeUnderSupervisor.Contains(p.EmployeeID)
+									 where p.ForDate >= DateTime.Now.Date && employeeUnderSupervisor.Contains(p.EmployeeID)
 									 orderby p.ForDate ascending
 									 select new
 									 {
@@ -51,7 +51,7 @@ namespace QuickAccounting.Repository.Repository
         {
 			var perijinanWithName = (from p in _context.Perijinan
 									 join em in _context.Employee on p.EmployeeID equals em.EmployeeId                                     
-									 where p.ForDate >= DateTime.Now && p.EmployeeID == employeeID
+									 where p.ForDate >= DateTime.Now.Date && p.EmployeeID == employeeID
 									 orderby p.ForDate ascending
 									 select new
 									 {
@@ -76,7 +76,7 @@ namespace QuickAccounting.Repository.Repository
         {
             var perijinanWithName = (from p in _context.Perijinan
                                      join em in _context.Employee on p.EmployeeID equals em.EmployeeId
-                                     where p.ForDate >= DateTime.Now
+                                     where p.ForDate >= DateTime.Now.Date
                                      orderby p.ForDate ascending
                                      select new 
                                      {
@@ -110,6 +110,12 @@ namespace QuickAccounting.Repository.Repository
             var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID && x.IsApproved.HasValue && x.IsApproved.Value == true &&
                                                         x.ForDate.Date == atDate.Date).ToList();
             return perijinans;
+        }
+
+        public List<AbsensiPotongan> GetByCurrentMonthYearAndEmployeeId(int employeeId, int month, int year)
+        {
+            var potongan = _context.AbsensiPotongan.Where(x => x.KARYAWAN_ID == employeeId && x.CUT_OFF_BULAN == month && x.CUT_OFF_TAHUN == year).ToList();
+            return potongan;
         }
 
         public async Task<int> InsertPerijinan(Perijinan perijinan)

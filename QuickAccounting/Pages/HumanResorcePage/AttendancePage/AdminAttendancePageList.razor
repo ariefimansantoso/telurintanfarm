@@ -1,4 +1,4 @@
-﻿@page "/app/attendancelist"
+﻿@page "/app/adminattendancelist"
 @inject IAttendance _attendance
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
@@ -9,11 +9,11 @@
 @inject IEmployee _employee
 @inject IHRServices _hr;
 @attribute [Authorize]
-<PageTitle>Laporan Absensi</PageTitle>
+<PageTitle>Admin - Laporan Absensi Karyawan</PageTitle>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h4>Laporan Absensi Karyawan</h4>
+            <h4>Admin - Laporan Absensi Karyawan</h4>
         </div>
         @* <div class="page-btn">
             <a class="btn btn-added" style="float:left;" href="/app/attendance"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Add New</a>
@@ -24,7 +24,7 @@
         <div class="card-body">
             <div class="table-responsive">
                 <div class="row">
-			        <div class="col-lg col-sm-12 col-12">
+			        <div class="col-lg col-sm-6 col-12">
 				        <div class="form-group">
                             <label>Periode</label>
                             <div class="row">
@@ -33,13 +33,36 @@
                                         @foreach (var cutoff in PayrollCutoffs)
                                         {
                                             <option value="@cutoff.PayrollDate.ToString("dd/MM/yyyy")">@cutoff.PayrollPeriode</option>
-                                        }
+                                        }         
                                         <option value="@DateTime.Today">Bulan Ini</option>
                                     </select>
                                 </div>
                             </div>
 				        </div>
-			        </div>			        						        
+			        </div>			   
+                    <div class="col-lg col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Karyawan</label>
+                            <div class="row">
+                                <div class="col-lg-10 col-sm-10 col-10">
+                                    <select class="form-control" @onchange="SelectedKaryawan">
+                                        @foreach (var karyawan in DaftarKaryawan)
+                                        {
+                                            <option value="@karyawan.EmployeeId">@karyawan.EmployeeName</option>
+                                        }
+                                        
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @* <div class="col-lg-1 col-sm-12 col-12">
+				        <div class="form-group" style="margin-top:20px;">
+					        <Loading IsLoading="isProcessing">
+						        <a class="btn btn-filters ms-auto" @onclick="()=>LoadDataAbsensi()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+					        </Loading>
+				        </div>
+			        </div> *@
 		        </div>
             </div>
         </div>
@@ -78,7 +101,7 @@
                                     }
                                     else
                                     {
-                                        var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(modelEmployee.EmployeeId, item.Date);
+                                        var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(SelectedEmployee.EmployeeId, item.Date);
                                         var keterangan = "";
                                         if (adaIjin.Count == 0)
                                         {
@@ -109,6 +132,7 @@
     public Task<AuthenticationState> authenticationState { get; set; }
     IList<DailyAttendanceMaster> listModel;
     DateTime SelectedCutoffFrom;
+    Employee SelectedEmployee = null;
     UserMaster modelUser = new UserMaster();
     Employee modelEmployee = new Employee();
     DateTime LastPayrollCutoffDate;
@@ -117,11 +141,12 @@
     List<PayrollCutoff> PayrollCutoffs = new List<PayrollCutoff>();
     decimal DailyWage;
     List<AbsensiData> groupedResults = new List<AbsensiData>();
+    List<Employee> DaftarKaryawan = new List<Employee>();
 
     private bool dense = true;
     private bool hover = true;
     private string searchString1 = "";
-    string strMenu = "Laporan Absensi Karyawan";
+    string strMenu = "Admin Laporan Absensi Karyawan";
     private bool visible;
     private MudBlazor.DialogOptions dialogOptions = new() { FullWidth = true };
     string ShowDialogue;
@@ -154,17 +179,19 @@
     private async Task LoadData()
     {
         PeriodeDates = new List<DateTime>();
+        DaftarKaryawan = await _employee.GetAllEmployeeActive();
+        if (SelectedEmployee == null)
+        {
+            SelectedEmployee = DaftarKaryawan.FirstOrDefault();
+        }
         PayrollCutoffs = await _attendance.GetPayrollCutoffs();
-        SelectedCutoffFrom = (await _attendance.GetLastPayrollCutoff()).PayrollDate;
         var lastPayrollCutoff = await _attendance.GetLastPayrollCutoff();
 
-        if (DateTime.Today > lastPayrollCutoff.PayrollDate)
-        {
+        if (DateTime.Today > lastPayrollCutoff.PayrollDate) {
             LastPayrollCutoffDate = DateTime.Today;
             SelectedCutoffFrom = new DateTime(LastPayrollCutoffDate.Year, LastPayrollCutoffDate.Month, 1);
         }
-        else
-        {
+        else {
             SelectedCutoffFrom = lastPayrollCutoff.PayrollDateStart;
             LastPayrollCutoffDate = lastPayrollCutoff.PayrollDate;
         }
@@ -175,7 +202,7 @@
     }  
 
     private async Task ReloadData()
-    {
+    {        
         PeriodeDates = new List<DateTime>();
         DateTime endDate = LastPayrollCutoffDate; // Today's date
                                                   // Iterate from the start date to the end date
@@ -186,7 +213,7 @@
             currentDate = currentDate.AddDays(1); // Move to the next day
         }
 
-        listModel = await _attendance.GetAttendanceCurrentPeriodeByEmployeeId(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, LastPayrollCutoffDate.Date);
+        listModel = await _attendance.GetAttendanceCurrentPeriodeByEmployeeId(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, LastPayrollCutoffDate.Date);
         groupedResults = listModel.OrderBy(x => x.Date)
             .GroupBy(dt => dt.Date.Date)
             .Select(g => new AbsensiData
@@ -198,7 +225,6 @@
                 })
             .ToList();
     }
-
     public class AbsensiData
     {
         public DateTime Date { get; set; }
@@ -208,7 +234,7 @@
     }
 
     private async Task SelectedCutoff(ChangeEventArgs e)
-    {
+    {        
         var selectedDate = Convert.ToDateTime(e.Value.ToString());
         if (selectedDate == DateTime.Today)
         {
@@ -223,6 +249,13 @@
             SelectedCutoffFrom = new DateTime(LastPayrollCutoffDate.Year, LastPayrollCutoffDate.Month, 1);
         }
         groupedResults = new List<AbsensiData>();
+        await ReloadData();
+    }
+
+    private async Task SelectedKaryawan(ChangeEventArgs e)
+    {
+        groupedResults = new List<AbsensiData>();
+        SelectedEmployee = await _employee.GetbyId(Convert.ToInt32(e.Value.ToString()));
         await ReloadData();
     }
 

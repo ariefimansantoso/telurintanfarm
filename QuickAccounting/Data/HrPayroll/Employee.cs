@@ -35,5 +35,6 @@ namespace QuickAccounting.Data.HrPayroll
 		public int SupervisorID { get; set; }
         public decimal BPJS_KES { get; set; }
         public decimal BPJS_TK { get; set; }
+        public decimal Lembur { get; set; }
     }
 }

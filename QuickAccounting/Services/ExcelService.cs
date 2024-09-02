@@ -1,9 +1,11 @@
 ﻿using OfficeOpenXml;
+using OfficeOpenXml.Table;
 using QuickAccounting.Data;
 using QuickAccounting.Data.Setting;
 using QuickAccounting.Repository.Interface;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using System.Data;
 
 namespace QuickAccounting.Services
 {
@@ -51,10 +53,28 @@ namespace QuickAccounting.Services
 				return package.GetAsByteArray();
 			}
 		}
-	}
+
+        public byte[] ExportListToExcel<T>(List<T> data, string sheetName)
+        {
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add(sheetName);
+            worksheet.Cells["A1"].LoadFromCollection(data, true, OfficeOpenXml.Table.TableStyles.Medium1);
+            return package.GetAsByteArray();
+        }
+
+        public byte[] ExportDataTableToExcel(DataTable dataTable, string sheetName)
+        {
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add(sheetName);
+            worksheet.Cells["A1"].LoadFromDataTable(dataTable, true, OfficeOpenXml.Table.TableStyles.Medium1);
+            return package.GetAsByteArray();
+        }
+    }
 
 	public interface IExcelService
 	{
 		Task<byte[]> GenerateExcelWorkbook(int id);
-	}
+		byte[] ExportListToExcel<T>(List<T> data, string sheetName);
+		byte[] ExportDataTableToExcel(DataTable dataTable, string sheetName);
+    }
 }

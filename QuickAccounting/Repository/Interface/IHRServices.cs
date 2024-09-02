@@ -17,5 +17,6 @@ namespace QuickAccounting.Repository.Interface
         List<dynamic> GetListPerijinanByEmployeeID(int employeeID);
         List<Perijinan> GetPerijinanByEmployeeIDInPeriodePayroll(int employeeID, DateTime from, DateTime to);
         List<Perijinan> GetPerijinanByEmployeeIDAndDate(int employeeID, DateTime atDate);
+        List<AbsensiPotongan> GetByCurrentMonthYearAndEmployeeId(int employeeId, int month, int year);
     }
 }

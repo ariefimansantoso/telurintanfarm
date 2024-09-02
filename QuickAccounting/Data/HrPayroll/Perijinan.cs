@@ -72,7 +72,7 @@ namespace QuickAccounting.Data.HrPayroll
     {
         [Key]
         public int ID { get; set; }
-
+        public DateTime PayrollDateStart { get; set; }
         public DateTime PayrollDate { get; set; }
 
         public DateTime DateCreated { get; set; }
@@ -82,5 +82,19 @@ namespace QuickAccounting.Data.HrPayroll
         public int CreatedBy { get; set; }
 
         public decimal PayrollTotal { get; set; }
+        
+    }
+
+    public class AbsensiPotongan
+    {
+        [Key]
+      public int ABSENSI_POTONGAN_ID { get; set; }
+      public int CUT_OFF_BULAN { get; set; }
+        public int CUT_OFF_TAHUN { get; set; }
+        public int KARYAWAN_ID { get; set; }
+        public string STATUS_POTONGAN { get; set; }
+        public decimal RP_POTONGAN { get; set; }
+        public int POT_KE { get; set; }
+
     }
 }
