@@ -690,6 +690,51 @@ namespace QuickAccounting.Repository.Repository
                 var ListofPlan = sqlcon.Query<SalesMasterView>("PaymentInAllocations", para, null, true, 0, commandType: CommandType.StoredProcedure).ToList();
                 return ListofPlan;
             }
-        }        
-    }
+        } 
+        
+        public decimal GetPenjualanTelurUtuh(DateTime dateFrom, DateTime to)
+        {
+            return (from s in _context.SalesMaster
+                    join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+                    join p in _context.Product on sd.ProductId equals p.ProductId
+                    where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA")
+                    select sd.Qty).Sum();
+        }
+
+		public decimal GetPenjualanTelurPutih(DateTime dateFrom, DateTime to)
+		{
+			return (from s in _context.SalesMaster
+									join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+									join p in _context.Product on sd.ProductId equals p.ProductId
+									where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TB")
+									select sd.Qty).Sum();
+		}
+
+		public decimal GetPenjualanTelurBentes(DateTime dateFrom, DateTime to)
+		{
+			return (from s in _context.SalesMaster
+									join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+									join p in _context.Product on sd.ProductId equals p.ProductId
+									where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TC")
+									select sd.Qty).Sum();
+		}
+
+		public decimal GetPenjualanTelurParah(DateTime dateFrom, DateTime to)
+		{
+			return (from s in _context.SalesMaster
+									join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+									join p in _context.Product on sd.ProductId equals p.ProductId
+									where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TD")
+									select sd.Qty).Sum();
+		}
+
+		public decimal GetPenjualanTelurParahSekali(DateTime dateFrom, DateTime to)
+		{
+			return (from s in _context.SalesMaster
+									join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+									join p in _context.Product on sd.ProductId equals p.ProductId
+									where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TE")
+									select sd.Qty).Sum();
+		}
+	}
 }

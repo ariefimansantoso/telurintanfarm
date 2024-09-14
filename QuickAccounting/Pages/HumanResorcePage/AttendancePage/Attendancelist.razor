@@ -75,7 +75,8 @@
                         <th>S</th>
                         <th>L</th>
                         <th>Cicilan</th>
-                            <th>No. Rek</th>
+                            <th>Potongan</th>
+                        <th>No. Rek</th>
                         <th>Total Gaji</th>
                     </tr>
                     </thead>
@@ -111,7 +112,8 @@
                                     }
                                 }
                                 decimal totalGaji = employee.DailyWage * (decimal)countMasuk;
-                                decimal potongan = 0;
+                                decimal cicilan = 0;
+                                decimal potonganNonCicilan = 0;
                                 var perijinanKaryawan = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(employee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
                                 var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
                                 var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
@@ -119,6 +121,7 @@
                                 decimal premi = 0;
                                 decimal gajiBersih = 0;
                                 var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(employee.EmployeeId, 8, 2024);
+                                var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(employee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
                                 decimal lembur = employee.Lembur;
 
                                 if (PeriodDaysCount > (countMasuk + alpha + libur + ijin + sakit))
@@ -130,9 +133,18 @@
                                 {
                                     foreach(var pt in listPotongan)
                                     {
-                                        potongan = potongan + pt.RP_POTONGAN;
+                                        cicilan = cicilan + pt.RP_POTONGAN;
                                     }
                                 }
+
+                                if(listPenalty.Count > 0)
+                                {
+                                    foreach(var penalty in listPenalty)
+                                    {
+                                        potonganNonCicilan = potonganNonCicilan + penalty.PenaltyAmount;
+                                    }
+                                }
+
                                 if(libur <= 3 && ijin == 0 && sakit == 0 && alpha == 0)
                                 {
                                     premi = totalGaji * (decimal)0.15;
@@ -143,7 +155,7 @@
                                     gajiBersih = totalGaji;
                                 }
 
-                                gajiBersih = gajiBersih - employee.BPJS_KES - employee.BPJS_TK - potongan;
+                                gajiBersih = gajiBersih - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan;
                                 gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
                                 if (employee.BankAccount != "0" && employee.BankAccount != "")
                                 {
@@ -168,7 +180,8 @@
                                     <td>@ijin</td>
                                     <td>@sakit</td>
                                     <td>@libur</td>
-                                    <td>@string.Format("{0:n0}", potongan)</td>
+                                    <td>@string.Format("{0:n0}", cicilan)</td>
+                                    <td>@string.Format("{0:n0}", potonganNonCicilan)</td>
                                     <td>@employee.BankAccount</td>
                                     <td>@string.Format("{0:n0}", gajiBersih)</td>
                                 </tr>

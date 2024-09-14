@@ -20,13 +20,28 @@
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
 <div class="content">
+	@* <div class="row">
+
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget" style="background-color:#ff0000;">					
+					<div class="dash-widgetcontent">
+						<span class="counters" style="color:#fff !important;">
+							Pengumuman!<br />
+							Mohon maaf atas ketidaknyamanannya dalam penggajian bulan ini, dikarenakan masalah internal di bank.
+							<br /><br />
+							Gaji tanggal 31 Juli 2024 akan diikutkan pada periode payroll bulan September 2024.
+						</span>						
+					</div>
+				</div>
+			</div>
+	</div> *@
 	@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
 	{
 		<div class="row">
 			<div class="container-fluid">
 				<div class="col-md-12">
 					<div class="brand-text float-left mt-4">
-						<h3>Laporan Penjualan Hari Ini <span></span> </h3>
+						<h3>Laporan Penjualan Hari Ini (Dalam Rupiah)<span></span> </h3>
 					</div>				
 				</div>
 			</div>
@@ -99,6 +114,122 @@
 					<div class="dash-widgetcontent">
 						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", PartaiBank)</span></h5>
 						<h6>Partai Transfer</h6>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Laporan Penjualan Telur Hari Ini<span></span> </h3>
+					</div>				
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",TelurUtuh) KG</span></h5>
+						<h6>Utuh</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",TelurPutih) KG</span></h5>
+						<h6>Putih</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",TelurBentes) KG</span></h5>
+						<h6>Bentes</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",(TelurParah + TelurParahSekali)) KG</span></h5>
+						<h6>Parah dan Parah Sekali</h6>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Laporan Penjualan Telur Total<span></span> </h3>
+					</div>				
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",TotalTelurUtuh) KG</span></h5>
+						<h6>Utuh</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",TotalTelurPutih) KG</span></h5>
+						<h6>Putih</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",TotalTelurBentes) KG</span></h5>
+						<h6>Bentes</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}",(TotalTelurParah + TotalTelurParahSekali)) KG</span></h5>
+						<h6>Parah dan Parah Sekali</h6>
 					</div>
 				</div>
 			</div>
@@ -865,6 +996,18 @@
 	decimal PartaiTunai;
 	decimal PartaiBank;
 
+	decimal TelurUtuh;
+	decimal TelurPutih;
+	decimal TelurBentes;
+	decimal TelurParah;
+	decimal TelurParahSekali;
+
+	decimal TotalTelurUtuh;
+	decimal TotalTelurPutih;
+	decimal TotalTelurBentes;
+	decimal TotalTelurParah;
+	decimal TotalTelurParahSekali;
+
 	DateTime dtFromDate;
 	DateTime dtToDate;
 
@@ -1014,10 +1157,24 @@
 			unapprovedPerijinanCurrentUser = _hr.GetListPerijinanByEmployeeID(modelEmployee.EmployeeId);
 		}
 
+		TelurUtuh = _sales.GetPenjualanTelurUtuh(dtFromDate, dtToDate);
+		TelurPutih = _sales.GetPenjualanTelurPutih(dtFromDate, dtToDate);
+		TelurBentes = _sales.GetPenjualanTelurBentes(dtFromDate, dtToDate);
+		TelurParah = _sales.GetPenjualanTelurParah(dtFromDate, dtToDate);
+		TelurParahSekali = _sales.GetPenjualanTelurParahSekali(dtFromDate, dtToDate);
+
+		DateTime fromBeginning = new DateTime(2018, 1, 1, 0, 0, 0);
+
+		TotalTelurUtuh = _sales.GetPenjualanTelurUtuh(fromBeginning, dtToDate);
+		TotalTelurPutih = _sales.GetPenjualanTelurPutih(fromBeginning, dtToDate);
+		TotalTelurBentes = _sales.GetPenjualanTelurBentes(fromBeginning, dtToDate);
+		TotalTelurParah = _sales.GetPenjualanTelurParah(fromBeginning, dtToDate);
+		TotalTelurParahSekali = _sales.GetPenjualanTelurParahSekali(fromBeginning, dtToDate);
 
 		DaySeven();
 		StateHasChanged();
 	}
+
 	private async Task LoadDataSales() 
 	{		
 		isProcessing = true;
@@ -1034,7 +1191,13 @@
 
 		PartaiTunai = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
 		PartaiBank = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
-
+		
+		TelurUtuh = _sales.GetPenjualanTelurUtuh(dtFromDate, dtToDate);
+		TelurPutih =			_sales.GetPenjualanTelurPutih(dtFromDate, dtToDate);
+		TelurBentes =			_sales.GetPenjualanTelurBentes(dtFromDate, dtToDate);
+		TelurParah =			_sales.GetPenjualanTelurParah(dtFromDate, dtToDate);
+		TelurParahSekali =		_sales.GetPenjualanTelurParahSekali(dtFromDate, dtToDate);
+		
 		isProcessing = false;
 
 		StateHasChanged();

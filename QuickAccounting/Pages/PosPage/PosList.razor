@@ -459,7 +459,7 @@
         setting = await _setting.GetbyId(1);
         listLedger = await _ledger.GetAll(26);
         listProduct = await _product.ProductWithStock();
-        listProduct = listProduct.OrderBy(x => Convert.ToInt32(x.ProductCode)).ToList();
+        listProduct = listProduct.OrderBy(x => x.QueueNumber).ToList();
         master.LedgerId = 0;
         master.VoucherNo = "DRAFT";
         master.Date = DateTime.UtcNow;

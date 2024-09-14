@@ -19,6 +19,10 @@ namespace QuickAccounting.Repository.Interface
         Task<bool> Delete(SalesMaster master);
         Task<string> GetSerialNo();
         Task<List<SalesMasterView>> PaymentInAllocations(int id);
-
-    }
+		decimal GetPenjualanTelurUtuh(DateTime dateFrom, DateTime to);
+		decimal GetPenjualanTelurPutih(DateTime dateFrom, DateTime to);
+		decimal GetPenjualanTelurBentes(DateTime dateFrom, DateTime to);
+		decimal GetPenjualanTelurParah(DateTime dateFrom, DateTime to);
+		decimal GetPenjualanTelurParahSekali(DateTime dateFrom, DateTime to);
+	}
 }

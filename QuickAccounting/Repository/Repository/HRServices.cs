@@ -118,6 +118,12 @@ namespace QuickAccounting.Repository.Repository
             return potongan;
         }
 
+        public List<Penalty> GetPenaltyByCurrentMonthYearAndEmployeeId(int employeeId, DateTime from, DateTime to)
+        {
+            var potongan = _context.Penalty.Where(x => x.EmployeeID == employeeId && x.ForDate.Date >= from.Date && x.ForDate.Date <= to.Date).ToList();
+            return potongan;
+        }
+
         public async Task<int> InsertPerijinan(Perijinan perijinan)
         {
             await _context.Perijinan.AddAsync(perijinan);

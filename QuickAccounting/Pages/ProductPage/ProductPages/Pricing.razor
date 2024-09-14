@@ -63,25 +63,25 @@
 											{
 												<input type="number" value="@inputValues[p]" @onchange="@NumberChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
 											}
+											else if(p == 4)
+											{
+												<input type="number" value="@inputValues[p]" @onchange="@PricePutihChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+											}
 											else if(p == 5)
 											{
 												<input type="number" value="@inputValues[p]" @onchange="@PriceBentesChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
 											}
 											else if(p == 6)
 											{
-												<input type="number" value="@inputValues[p]" @onchange="@PricePutihChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
-											}
-											else if(p == 7)
-											{
 												<input type="number" value="@inputValues[p]" @onchange="@PriceParahChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
 											}
-											else if (p == 8)
+											else if (p == 7)
 											{
 												<input type="number" value="@inputValues[p]" @onchange="@PricePSChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
 											}
 											else
 											{
-												<input type="number" value="@inputValues[p]" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
+												<input type="number" value="@inputValues[p]" @onchange="@PriceAyamAfkirChanged" class="input-price" data-order="@products[p].ProductCode" data-pid="@products[p].ProductId" />
 											}
 										</td>
 										@for (int i = 0; i < prices5Days.Count; i++)
@@ -166,9 +166,11 @@
 		inputValues[1] = value0 - 400;
 		inputValues[2] = value0 - 400 - 100;
 		inputValues[3] = value0 - 400 - 100 - 100;
-		inputValues[4] = value0 - 400 - 100 - 100 - 100;
-		//inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
-		//inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
+
+		inputValues[4] = value0 - 1000;
+		inputValues[5] = value0 - 2000;
+		inputValues[6] = value0 - 3500;
+		inputValues[7] = value0 - 4500;
 	}
 
 	private void NumberChanged(ChangeEventArgs e)
@@ -178,9 +180,17 @@
 		inputValues[1] = value0 - 400;
 		inputValues[2] = value0 - 400 - 100;
 		inputValues[3] = value0 - 400 - 100 - 100;
-		inputValues[4] = value0 - 400 - 100 - 100 - 100;
-		//inputValues[5] = value0 - 400 - 100 - 100 - 100 - 100;
-		//inputValues[6] = value0 - 400 - 100 - 100 - 100 - 100 - 100;
+
+		inputValues[4] = value0 - 1000;
+		inputValues[5] = value0 - 2000;
+		inputValues[6] = value0 - 3500;
+		inputValues[7] = value0 - 4500;
+	}
+
+	private void PricePutihChanged(ChangeEventArgs args)
+	{
+		int value0 = Convert.ToInt32(args.Value);
+		inputValues[4] = value0;
 	}
 
 	private void PriceBentesChanged(ChangeEventArgs args)
@@ -189,19 +199,19 @@
 		inputValues[5] = value0;
 	}
 
-	private void PricePutihChanged(ChangeEventArgs args)
-	{
-		int value0 = Convert.ToInt32(args.Value);
-		inputValues[6] = value0;
-	}
-
 	private void PriceParahChanged(ChangeEventArgs args)
 	{
 		int value0 = Convert.ToInt32(args.Value); 
-		inputValues[7] = value0;
+		inputValues[6] = value0;
 	}
 
 	private void PricePSChanged(ChangeEventArgs args)
+	{
+		int value0 = Convert.ToInt32(args.Value);
+		inputValues[7] = value0;
+	}
+
+	private void PriceAyamAfkirChanged(ChangeEventArgs args)
 	{
 		int value0 = Convert.ToInt32(args.Value);
 		inputValues[8] = value0;
@@ -260,7 +270,7 @@
 		var product4 = await _product.GetbyId(p4.ProductID);
 		product4.SalesRate = p4.Price;
 
-		p5.ProductID = 14;
+		p5.ProductID = 7;
 		p5.Price = inputValues[4];
 		p5.PriceDate = insertDate;
 		p5.ProductCode = 5;
@@ -276,7 +286,7 @@
 		var product6 = await _product.GetbyId(p6.ProductID);
 		product6.SalesRate = p6.Price;
 
-		p7.ProductID = 7;
+		p7.ProductID = 17;
 		p7.Price = inputValues[6];
 		p7.PriceDate = insertDate;
 		p7.ProductCode = 6;
@@ -284,7 +294,7 @@
 		var product7 = await _product.GetbyId(p7.ProductID);
 		product7.SalesRate = p7.Price;
 
-		p8.ProductID = 17;
+		p8.ProductID = 19;
 		p8.Price = inputValues[7];
 		p8.PriceDate = insertDate;
 		p8.ProductCode = 14;
@@ -292,7 +302,7 @@
 		var product8 = await _product.GetbyId(p8.ProductID);
 		product8.SalesRate = p8.Price;
 
-		p9.ProductID = 19;
+		p9.ProductID = 15;
 		p9.Price = inputValues[8];
 		p9.PriceDate = insertDate;
 		p9.ProductCode = 16;

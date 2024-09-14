@@ -138,14 +138,14 @@ namespace QuickAccounting.Repository.Repository
         {
             using (SqlConnection sqlcon = new SqlConnection(_conn.DbConn))
             {
-                var val = sqlcon.Query<string>("SELECT ISNULL(MAX(ProductCode+1),1) as ProductCode FROM Product", null, null, true, 0, commandType: CommandType.Text).FirstOrDefault();
+                var val = sqlcon.Query<string>("SELECT ISNULL(MAX(ProductId+1),1) as ProductCode FROM Product", null, null, true, 0, commandType: CommandType.Text).FirstOrDefault();
                 return val;
             }
         }
 
         public async Task<int> Save(Product model)
         {
-            model.QueueNumber = 16;
+            model.QueueNumber = Convert.ToInt32(GetProductNo());
 			await _context.Product.AddAsync(model);
             await _context.SaveChangesAsync();
             int id = model.ProductId;
