@@ -1,0 +1,39 @@
+﻿body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+.payslip-container {
+    width: 100%;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    padding: 20px;
+}
+.header, .footer {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.header h1 {
+    margin: 0;
+}
+.details, .earnings, .deductions {
+    width: 100%;
+    margin-bottom: 20px;
+}
+.details table, .earnings table, .deductions table {
+    width: 100%;
+    border-collapse: collapse;
+}
+table th, table td {
+    padding: 2px;
+    border: 1px solid #ccc;
+    text-align: left;
+}
+table th {
+    background-color: #f0f0f0;
+}
+.total {
+    font-weight: bold;
+}
+.footer p {
+    margin: 5px 0;
+}

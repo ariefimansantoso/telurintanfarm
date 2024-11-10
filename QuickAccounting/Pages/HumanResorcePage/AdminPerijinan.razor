@@ -1,0 +1,398 @@
+﻿@page "/app/adminperijinan"
+@inject IHRServices _hr
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@using System.Security.Claims
+@using System.Globalization
+@using QuickAccounting.Components
+@using QuickAccounting.Constants;
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<PageTitle>Admin - Perijinan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Admin - Perijinan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+			<div class="row">
+				<div class="col-lg-12 col-sm-12 col-12">
+					<div class="form-group">
+						<label>Pilih Bulan Absensi</label>
+						<div class="row">
+							<div class="col-lg-12 col-sm-12 col-12">
+								<select class="form-control" @onchange="OnMonthChange">
+									<option value="">-- Pilih Bulan --</option>
+									@foreach (var month in months)
+									{
+										<option value="@month.Id">@month.Name</option>
+									}
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-12 col-sm-12 col-12 d-flex">
+					<div class="card flex-fill">
+						<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+							<h5 class="card-title mb-0">Daftar Pengajuan Ijin</h5>
+						</div>
+						<div class="card-body">
+							@if (unapprovedPerijinan != null && unapprovedPerijinan.Count > 0)
+							{
+								<table cellpadding="0" cellspacing="0" style="width: 100%;line-height: inherit;text-align: left;">
+									<tbody>
+										<tr class="heading" style="background: #F3F2F7;">
+											<td style="padding: 5px 1px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Karyawan
+											</td>
+											<td style="padding: 5px 1px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Tanggal
+											</td>
+											<td style="padding: 5px 1px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Jenis
+											</td>
+											<td style="padding: 5px 1px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											</td>
+										</tr>
+										@foreach (dynamic p in unapprovedPerijinan)
+										{
+											bool? isApproved = p.IsApproved != null ? (bool?)p.IsApproved : null;
+
+											<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+												<td style="padding: 10px 2px;vertical-align: middle;">
+													@p.EmployeeName
+												</td>
+												<td style="padding: 10px 2px;vertical-align: middle; ">
+													@p.ForDate.ToString("dd/MM/yyyy")
+												</td>
+												<td style="padding: 10px 2px;vertical-align: middle; ">
+													@p.SubmittedFor
+													@if(p.SubmittedFor == "SAKIT")
+													{
+														<a @onclick="( () => { OpenImageDialog(p.EmployeeID, p.DocPhoto); } )">
+															<span class="badge badge-warning">Surat Dokter</span>
+														</a>
+													}
+												</td>
+												@if (!isApproved.HasValue)
+												{
+													<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+														<a @onclick="( () => { OpenApproveDialog(p.ID); } )"><img src="assets/img/icons/check.png" alt="img" style="width:30px;"></a>
+														<a @onclick="( () => { OpenRejectDialog(p.ID); } )"><img src="assets/img/icons/remove.png" alt="img" style="width:30px;"></a>
+													</td>
+												}
+												else
+												{
+													if (isApproved.Value)
+													{
+														<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+															<span class="badge badge-success">Disetujui</span>
+															<a @onclick="( () => { OpenCancelDialog(p.ID); } )">
+																<span class="badge badge-danger">Cancel</span>
+															</a>
+														</td>														
+													}
+													else
+													{
+														<td style="padding: 10px 2px;vertical-align: middle; text-align:center;">
+															<span class="badge badge-danger">Ditolak</span>
+															<a @onclick="( () => { OpenCancelDialog(p.ID); } )">
+																<span class="badge badge-danger">Cancel</span>
+															</a>
+														</td>														
+													}
+												}
+											</tr>
+											if (isApproved == null && !string.IsNullOrEmpty(p.SubmittedDesc))
+											{
+												<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+													<td style="padding: 10px;vertical-align: top; " colspan="4">
+														@p.SubmittedDesc
+													</td>
+												</tr>
+											}
+
+											if (isApproved.HasValue && isApproved.Value == false)
+											{
+												<tr class="details" style="border-bottom:1px solid #E9ECEF ;">
+													<td style="padding: 10px;vertical-align: top; " colspan="4">
+														<b>Alasan ditolak:</b><br />
+														@p.ApprovalDescription
+													</td>
+												</tr>
+											}
+										}
+
+
+									</tbody>
+								</table>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+        </div>
+    </div>
+    <!-- /product list -->
+</div>
+@if (ApproveDialogOpen)
+{
+	<ModalDialog Title="Setujui Pengajuan Ijin/Libur Karyawan"
+				 Text="Apakah anda yakin anda ingin menyetujui pengajuan ini?"
+				 OnClose="@OnApproveDialogClose"
+				 DialogType="ModalDialog.ModalDialogType.Ok">
+	</ModalDialog>
+}
+@if (RejectDialogOpen)
+{
+	<ModalDialog Title="Tolak Pengajuan Ijin/Libur Karyawan"
+				 Text="Apakah anda yakin anda ingin menolak pengajuan ini? Mohon berikan alasannya pada kolom dibawah ini."
+				 OnClose="@OnRejectDialogClose"
+				 RejectReason="@RejectionReason"
+				 DialogType="ModalDialog.ModalDialogType.Reject">
+	</ModalDialog>
+}
+@if(CancelDialogOpen)
+{
+	<ModalDialog Title="Batalkan Pengajuan Ijin/Libur Karyawan"
+				 Text="Apakah anda yakin anda ingin membatalkan pengajuan ini?"
+				 OnClose="@OnCancelDialogClose"
+				 DialogType="ModalDialog.ModalDialogType.OkCancel">
+	</ModalDialog>
+}
+@if(ImageDialogOpen)
+{
+	<ModalImageViewer Title="Surat Dokter"
+					  ImageUrl="@SuratDokterImageUrl"
+				 OnClose="@OnCancelDialogClose">
+	</ModalImageViewer>
+}
+@code {
+	[CascadingParameter]
+	public Task<AuthenticationState> authenticationState { get; set; }
+	private int SelectedMonth;
+	private List<MonthItem> months = new List<MonthItem>();
+	UserMaster modelUser = new UserMaster();
+	Employee modelEmployee = new Employee();
+	public int SelectedPerijinanID { get; set; }
+	public bool ApproveDialogOpen { get; set; }
+	public bool RejectDialogOpen { get; set; }
+	public bool CancelDialogOpen { get; set; }
+	public bool ImageDialogOpen { get; set; }
+	public string RejectionReason { get; set; }
+	public int CurrentYear { get; set; }
+	public string SuratDokterImageUrl { get; set; }
+	List<dynamic> unapprovedPerijinan;
+	string strMenu = "Admin Perijinan";
+
+	private void OpenApproveDialog(int id)
+	{
+		SelectedPerijinanID = id;
+		ApproveDialogOpen = true;
+		StateHasChanged();
+	}
+
+	private void OpenRejectDialog(int id)
+	{
+		SelectedPerijinanID = id;
+		RejectDialogOpen = true;
+		StateHasChanged();
+	}
+
+	private void OpenCancelDialog(int id)
+	{
+		SelectedPerijinanID = id;
+		CancelDialogOpen = true;
+		StateHasChanged();
+	}
+
+	private async Task OpenImageDialog(int employeeId, string imageFileName)
+	{		
+		ImageDialogOpen = true;
+		var currentEmployee = await _employee.GetbyId(employeeId);
+		string userFolder = currentEmployee.EmployeeId + "_" + currentEmployee.EmployeeName.Replace(" ", "_");
+		SuratDokterImageUrl = "/uploads/perijinan/" + userFolder + "/" + imageFileName;
+		StateHasChanged();
+	}
+
+	private async Task OnApproveDialogClose(bool accepted)
+	{
+		if (accepted)
+		{
+			await ApprovePerijinan();
+		}
+
+		ApproveDialogOpen = false;
+		StateHasChanged();
+
+		navigation.NavigateTo("/app/adminperijinan", true);
+	}
+
+	private async Task OnRejectDialogClose(bool accepted)
+	{
+		if (accepted)
+		{
+			string reason = await JSRuntime.InvokeAsync<string>("checkReason");
+			if (string.IsNullOrEmpty(reason))
+			{
+				await JSRuntime.InvokeVoidAsync("showAlert", "Alasan penolakan mohon diisi.");
+			}
+			else
+			{
+				RejectionReason = reason;
+				await RejectPerijinan();
+			}
+		}
+
+		RejectDialogOpen = false;
+		StateHasChanged();
+
+		navigation.NavigateTo("/app/adminperijinan", true);
+	}
+
+	private async Task OnCancelDialogClose(bool accepted)
+	{
+		if (accepted)
+		{
+			await CancelPerijinan();
+		}
+
+		CancelDialogOpen = false;
+		StateHasChanged();
+
+		navigation.NavigateTo("/app/adminperijinan", true);
+	}
+
+	private async Task RejectPerijinan()
+	{
+		var perijinan = _hr.PerijinanQuery().FirstOrDefault(x => x.ID == SelectedPerijinanID);
+		if(perijinan != null)
+		{
+			perijinan.IsApproved = false;
+			perijinan.ApprovalDescription = RejectionReason;
+			perijinan.ActionDate = DateTime.Now;
+			perijinan.ActionByEmployeeID = modelEmployee.EmployeeId;
+			await _hr.UpdatePerijinan(perijinan);
+		}
+	}
+
+	private async Task ApprovePerijinan()
+	{
+		var perijinan = _hr.PerijinanQuery().FirstOrDefault(x => x.ID == SelectedPerijinanID);
+		if(perijinan != null)
+		{
+			perijinan.IsApproved = true;
+			perijinan.ApprovalDescription = "Disetujui oleh: " + modelEmployee.EmployeeName + "\r\nPada tanggal: " + DateTime.Now.ToString("dd/MM/yyyy hh:mm");
+			perijinan.ActionDate = DateTime.Now;
+			perijinan.ActionByEmployeeID = modelEmployee.EmployeeId;
+			await _hr.UpdatePerijinan(perijinan);
+		}
+	}
+
+	private async Task CancelPerijinan()
+	{
+		var perijinan = _hr.PerijinanQuery().FirstOrDefault(x => x.ID == SelectedPerijinanID);
+		if(perijinan != null)
+		{
+			perijinan.IsApproved = null;
+			perijinan.ApprovalDescription = "";
+			perijinan.ActionDate = DateTime.Now;
+			perijinan.ActionByEmployeeID = modelEmployee.EmployeeId;
+			await _hr.UpdatePerijinan(perijinan);
+		}
+	}
+
+	private async Task<bool> CheckPermission()
+	{
+		//CheckPriviliagee
+		var authState = await authenticationState;
+		var strRole = authState.User;
+		string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+		var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+		if (strShow.ShowAction == true)
+		{
+			return true;
+		}
+		else
+		{
+			return false;            
+		}
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		var authorized = await CheckPermission();
+		if(!authorized)
+		{
+			navigation.NavigateTo("/app/dashboard");
+			Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+		} 
+
+		var authState = await authenticationState;
+		var currentUser = authState.User;
+		string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+		modelUser = await _user.UserProfile(userName);
+		modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+		
+		var currentDate = DateTime.Now;
+		SelectedMonth = currentDate.Month;
+		CurrentYear = currentDate.Year;
+
+		InitMonthsDropdown();
+		if (modelUser.RoleId == RoleConstants.AdminRoleId)
+		{
+			unapprovedPerijinan = _hr.GetPerijinanUnApprovedForAdmin(SelectedMonth, CurrentYear);
+		}
+		else if (modelUser.RoleId == RoleConstants.SupervisorRoleId)
+		{
+			unapprovedPerijinan = _hr.GetPerijinanUnApprovedForSupervisor(modelEmployee.EmployeeId, SelectedMonth, CurrentYear);
+		}				
+
+        //CheckPriviliagee        
+		await LoadData();
+
+		StateHasChanged();
+	}
+
+	private void OnMonthChange(ChangeEventArgs e)
+	{
+		SelectedMonth = Convert.ToInt32(e.Value);
+		unapprovedPerijinan = _hr.GetPerijinanUnApprovedForAdmin(SelectedMonth, CurrentYear);
+	}
+
+	private async Task LoadData()
+	{                
+
+		StateHasChanged();
+	}
+
+	private async Task Save()
+	{
+
+	}
+
+	private void InitMonthsDropdown()
+	{
+		// Initialize month list with Indonesian month names
+		var cultureInfo = new CultureInfo("id-ID");
+		months = Enumerable.Range(1, 12)
+			.Select(i => new MonthItem { Id = i, Name = cultureInfo.DateTimeFormat.GetMonthName(i) })
+			.ToList();
+	}
+
+	private class MonthItem
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+	}
+}

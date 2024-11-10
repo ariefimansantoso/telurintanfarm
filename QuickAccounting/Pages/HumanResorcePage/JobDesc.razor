@@ -1,0 +1,113 @@
+﻿@page "/app/jobdesc"
+@inject IAttendance _attendance
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@using System.Security.Claims
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IUser _user
+@inject IEmployee _employee
+@inject IHRServices _hr;
+@inject IExcelService _excelService;
+@inject PdfService pdfService;
+
+@attribute [Authorize]
+
+<PageTitle>Deskripsi Pekerjaan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Deskripsi Pekerjaan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">                             
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            @modelEmployee.JobDesc
+                        </div>
+                    </div>
+                    
+        </div>
+    </div>    
+    <!-- /product list -->
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    DailyAttendanceMaster master = new DailyAttendanceMaster();
+    IList<DailyAttendanceView> listModel;
+    DailyAttendanceDetails details = new DailyAttendanceDetails();
+    List<StatusInfo> listStatus = new List<StatusInfo>();
+    DateTime SelectedCutoffFrom;
+    DateTime SelectedCutoffTo;
+    decimal gajiKaryawanTotal = 0;
+    PayrollCutoff Cutoff;
+    string UserRoleName;
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+    DateTime LastPayrollCutoff;
+    List<DateTime> PeriodeDates = new List<DateTime>();
+    List<PayrollCutoff> PayrollCutoffs = new List<PayrollCutoff>();
+    List<Employee> activeEmployees = new List<Employee>();
+    List<DailyAttendanceMaster> absensiEmployeePerPeriode = new List<DailyAttendanceMaster>();
+    List<IGrouping<int, DailyAttendanceMaster>> detailAttendances = new List<IGrouping<int, DailyAttendanceMaster>>();
+    int PeriodDaysCount = 0;
+
+    string strMenu = "Slip Gaji";
+    string HtmlContentPdf = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        //CheckPriviliagee
+        var authState = await authenticationState;
+        var strRole = authState.User;
+        string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        UserRoleName = strName;
+
+        string userName = strRole.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        await LoadData();
+
+        // if (strShow.ShowAction == true)
+        // {
+        //     await LoadData();
+        // }
+        // else
+        // {
+        //     navigation.NavigateTo("/app/dashboard");
+        //     Snackbar.Add("You dont have to privilege..", Severity.Error);
+        // }
+    }
+
+    private async Task LoadData()
+    {        
+        PayrollCutoffs = await _attendance.GetPayrollCutoffs();
+        var lastPayroll = await _attendance.GetLastPayrollCutoff();
+        Cutoff = lastPayroll;
+
+        SelectedCutoffFrom = lastPayroll.PayrollDateStart;
+        SelectedCutoffTo = lastPayroll.PayrollDate;
+        LastPayrollCutoff = SelectedCutoffFrom;
+
+        absensiEmployeePerPeriode = await _attendance.GetAttendanceCurrentPeriodeByEmployeeId(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+        //detailAttendances = absensiEmployeePerPeriode.GroupBy(x => x.EmployeeID).OrderBy(x => x.Key).ToList();
+
+        DateTime endDate = SelectedCutoffTo.Date; // Today's date
+                                                  // Iterate from the start date to the end date
+        DateTime currentDate = SelectedCutoffFrom.Date;
+        while (currentDate <= endDate)
+        {
+            PeriodDaysCount++;
+            PeriodeDates.Add(currentDate);
+            currentDate = currentDate.AddDays(1); // Move to the next day
+        }
+
+        StateHasChanged();
+    }
+}

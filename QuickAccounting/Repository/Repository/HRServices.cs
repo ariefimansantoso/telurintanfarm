@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
 using QuickAccounting.Data;
 using QuickAccounting.Data.HrPayroll;
 using QuickAccounting.Pages.HumanResorcePage.EmployeePage;
@@ -98,7 +99,59 @@ namespace QuickAccounting.Repository.Repository
 
 		}
 
-        public List<Perijinan> GetPerijinanByEmployeeIDInPeriodePayroll(int employeeID, DateTime from, DateTime to)
+		public List<dynamic> GetPerijinanUnApprovedForAdmin(int month, int year)
+		{
+			var perijinanWithName = (from p in _context.Perijinan
+									 join em in _context.Employee on p.EmployeeID equals em.EmployeeId
+                                     where p.ForDate.Year == year && p.ForDate.Month == month
+									 orderby p.ForDate descending
+									 select new
+									 {
+										 ID = p.ID,
+										 EmployeeID = p.EmployeeID,
+										 DateSubmitted = p.DateSubmitted,
+										 SubmittedFor = p.SubmittedFor,
+										 SubmittedDesc = p.SubmittedDesc,
+										 DocPhoto = p.DocPhoto,
+										 ForDate = p.ForDate,
+										 IsApproved = p.IsApproved,
+										 ApprovalDescription = p.ApprovalDescription,
+										 ActionDate = p.ActionDate,
+										 ActionByEmployeeID = p.ActionByEmployeeID,
+										 EmployeeName = em.EmployeeName
+									 }).ToList<dynamic>();
+
+			return perijinanWithName;
+
+		}
+
+		public List<dynamic> GetPerijinanUnApprovedForSupervisor(int supervisorId, int month, int year)
+		{
+			var perijinanWithName = (from p in _context.Perijinan
+									 join em in _context.Employee on p.EmployeeID equals em.EmployeeId
+									 where p.ForDate.Year == year && p.ForDate.Month == month && em.SupervisorID == supervisorId
+									 orderby p.ForDate descending
+									 select new
+									 {
+										 ID = p.ID,
+										 EmployeeID = p.EmployeeID,
+										 DateSubmitted = p.DateSubmitted,
+										 SubmittedFor = p.SubmittedFor,
+										 SubmittedDesc = p.SubmittedDesc,
+										 DocPhoto = p.DocPhoto,
+										 ForDate = p.ForDate,
+										 IsApproved = p.IsApproved,
+										 ApprovalDescription = p.ApprovalDescription,
+										 ActionDate = p.ActionDate,
+										 ActionByEmployeeID = p.ActionByEmployeeID,
+										 EmployeeName = em.EmployeeName
+									 }).ToList<dynamic>();
+
+			return perijinanWithName;
+
+		}
+
+		public List<Perijinan> GetPerijinanByEmployeeIDInPeriodePayroll(int employeeID, DateTime from, DateTime to)
         {
             var perijinans = _context.Perijinan.Where(x => x.EmployeeID == employeeID && x.IsApproved.HasValue && x.IsApproved.Value == true &&
                                                         x.ForDate.Date >= from && x.ForDate <= to).ToList();
@@ -120,7 +173,33 @@ namespace QuickAccounting.Repository.Repository
 
         public List<Penalty> GetPenaltyByCurrentMonthYearAndEmployeeId(int employeeId, DateTime from, DateTime to)
         {
-            var potongan = _context.Penalty.Where(x => x.EmployeeID == employeeId && x.ForDate.Date >= from.Date && x.ForDate.Date <= to.Date).ToList();
+            var potongan = _context.Penalty.Where(x => x.EmployeeID == employeeId && 
+											x.ForDate.Date >= from.Date && 
+											x.ForDate.Date <= to.Date).OrderByDescending(x => x.ForDate).ToList();
+            return potongan;
+        }
+
+        public List<Penalty> GetPenaltyByCurrentMonthYearAndSupervisorId(int supervisorId, DateTime fromDate, DateTime toDate)
+        {
+            var potongan = (from p in _context.Penalty
+						   join em in _context.Employee on p.EmployeeID equals em.EmployeeId
+						   where p.ForDate.Date >= fromDate.Date &&
+                                 p.ForDate.Date <= toDate.Date &&
+								 em.SupervisorID == supervisorId
+                            orderby p.ForDate descending
+                            select p).ToList();
+
+            return potongan;
+        }
+
+        public List<Penalty> GetAllPenaltyByCurrentMonthYear(DateTime fromDate, DateTime toDate)
+        {
+            var potongan = (from p in _context.Penalty
+                            where p.ForDate.Date >= fromDate.Date &&
+                                  p.ForDate.Date <= toDate.Date
+							orderby p.ForDate descending
+                            select p).ToList();
+
             return potongan;
         }
 

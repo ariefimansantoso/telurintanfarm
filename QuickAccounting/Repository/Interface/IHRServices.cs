@@ -19,5 +19,11 @@ namespace QuickAccounting.Repository.Interface
         List<Perijinan> GetPerijinanByEmployeeIDAndDate(int employeeID, DateTime atDate);
         List<AbsensiPotongan> GetByCurrentMonthYearAndEmployeeId(int employeeId, int month, int year);
         List<Penalty> GetPenaltyByCurrentMonthYearAndEmployeeId(int employeeId, DateTime from, DateTime to);
+        List<dynamic> GetPerijinanUnApprovedForAdmin(int month, int year);
+        List<dynamic> GetPerijinanUnApprovedForSupervisor(int supervisorId, int month, int year);
+        List<Penalty> GetPenaltyByCurrentMonthYearAndSupervisorId(int supervisorId, DateTime fromDate, DateTime toDate);
+        List<Penalty> GetAllPenaltyByCurrentMonthYear(DateTime fromDate, DateTime toDate);
+
+
     }
 }

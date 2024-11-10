@@ -163,3 +163,23 @@ span {
     align-items: center;
     z-index: 999;
 }
+
+.profile-container {
+    text-align: center;
+    margin-bottom:20px;
+}
+
+.profile-img {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 5px solid #fff; /* Optional border for the circle */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Optional shadow for effect */
+}
+
+.profile-name {
+    margin-top: 10px;
+    font-size: 2em;
+    font-weight: bold;
+}

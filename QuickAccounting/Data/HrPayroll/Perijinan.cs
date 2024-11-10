@@ -28,6 +28,7 @@ namespace QuickAccounting.Data.HrPayroll
         public DateTime ForDate { get; set; }
         public string PenaltyDescription { get; set; }
 	    public decimal PenaltyAmount { get; set; }
+        public string PenaltyPhoto { get; set; }
     }
 
     public class Payroll

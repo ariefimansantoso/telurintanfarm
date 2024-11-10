@@ -38,6 +38,22 @@ $(document).ready(function () {
 		$('#task_window').removeClass('opened');
 	});
 
+	// on mobile view, when any menu item is click, it should automatically hide the menu.
+	$('#sidebar-menu').on('click', 'a', function (event) {
+		if ($(this).attr('href') !== 'javascript:void(0);') {
+			if ($('#mobile_btn').css('display') !== 'none') {
+				$wrapper.toggleClass('slide-nav');
+				$('.sidebar-overlay').toggleClass('opened');
+				$('html').addClass('menu-opened');
+				$('#task_window').removeClass('opened');
+
+				window.location.href = $(this).attr('href');
+
+				return false;
+			}
+		}
+	});
+
 	// Logo Hide Btn
 
 	$(document).on("click", ".hideset", function () {

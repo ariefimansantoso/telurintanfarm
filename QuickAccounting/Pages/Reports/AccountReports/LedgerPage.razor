@@ -120,13 +120,13 @@
         string values = @"<table class='table'>
             <tr style='background: #F3F2F7;'>
                 <th style=''>S.No.</th>
-                <th>Date</th>
-                <th>Voucher No</th>
+                <th>Tanggal</th>
+                <th>Voucher</th>
                 <th>Particular</th>
                 <th>Voucher Type</th>
                 <th>Debit</th>
                 <th>Credit</th>
-                <th>Balance</th>
+                <th>Saldo</th>
             </tr> ";
 
         decimal totlDebit = 0;
@@ -183,8 +183,8 @@
         <td>" + dtblsub.Rows[i]["voucherNo"].ToString() + @" </td>
         <td> " + strName + "-" + dtblsub.Rows[i]["ledgerName"].ToString() + @"</td>
         <td> " + dtblsub.Rows[i]["voucherTypeName"].ToString() + @"</td>
-<td> " + PublicVariables._Symbol + dtblsub.Rows[i]["debit"].ToString() + @"</td>
-        <td> " + PublicVariables._Symbol + dtblsub.Rows[i]["credit"].ToString() + @"</td>
+        <td> " + PublicVariables._Symbol + string.Format("{0:n0}", decimal.Parse(dtblsub.Rows[i]["debit"].ToString())) + @"</td>
+        <td> " + PublicVariables._Symbol + string.Format("{0:n0}", decimal.Parse(dtblsub.Rows[i]["credit"].ToString())) + @"</td>
         <td>" + PublicVariables._Symbol + strBalance.ToString() + @"</td>
     </tr>";
 
@@ -200,9 +200,9 @@
 <td></td>
 <td style='font-style:bold; color:black; font-size:16px;'>Total</td>
 <td>" + "" + @"</td>
-<td style='font-style:bold; color:black; font-size:16px;'>" + decTotlDebitss + @"</td>
-<td style='font-style:bold; color:black; font-size:16px;'>" + decTotlCreditss + @"</td>
-<td>" + decBlnce + @"</td>
+<td style='font-style:bold; color:black; font-size:16px;'>" + string.Format("{0:n0}", decTotlDebitss) + @"</td>
+<td style='font-style:bold; color:black; font-size:16px;'>" + string.Format("{0:n0}", decTotlCreditss) + @"</td>
+<td>" + string.Format("{0:n0}", decBlnce) + @"</td>
 </tr>";
         values += "</table>";
         myMarkup = values;
@@ -248,6 +248,6 @@
         {
             throw ex;
         }
-        return strCurrentBalance = Convert.ToString(decRowBalance) + strCrOrDr;
+        return strCurrentBalance = string.Format("{0:n0}", decRowBalance) + strCrOrDr;
     }
 }

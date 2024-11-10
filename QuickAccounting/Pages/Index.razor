@@ -15,26 +15,34 @@
 @inject IEmployee _employee
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigation
+@inject IAttendance _attendance
 
 @using QuickAccounting.Components
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
 <div class="content">
-	@* <div class="row">
-
-			<div class="col-lg-3 col-sm-6 col-12">
+	<div class="row">
+			<div class="col-12">
 				<div class="dash-widget" style="background-color:#ff0000;">					
 					<div class="dash-widgetcontent">
-						<span class="counters" style="color:#fff !important;">
-							Pengumuman!<br />
-							Mohon maaf atas ketidaknyamanannya dalam penggajian bulan ini, dikarenakan masalah internal di bank.
-							<br /><br />
-							Gaji tanggal 31 Juli 2024 akan diikutkan pada periode payroll bulan September 2024.
+						<span class="counters" style="color:#fff !important; font-weight:bold;">
+						<h2 style="color:#fff !important;">Pengumuman!</h2>
+							Mulai tanggal 4 Nov 2024 dan seterusnya apabila salah satu absensi pagi/sore tidak terisi maka akan ternilai ALPHA. Semoga dapat dimengerti. Terima kasih.
 						</span>						
 					</div>
 				</div>
 			</div>
-	</div> *@
+	</div>
+	<div class="row">
+		<div class="col-12">
+			<div class="profile-container">
+				<img src="@CurrentPhotoUrl" alt="Profile Image" class="profile-img">
+				<div class="profile-name">
+					@modelEmployee.EmployeeName
+				</div>
+			</div>
+		</div>
+	</div>
 	@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
 	{
 		<div class="row">
@@ -103,6 +111,22 @@
 					<div class="dash-widgetcontent">
 						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", PartaiTunai)</span></h5>
 						<h6>Partai Tunai</h6>
+						@if (PartaiCashList != null && PartaiCashList.Count > 0)
+						{
+							<table style="margin-top:10px;">
+								<tr>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Pelanggan</b></td>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Jumlah</b></td>
+								</tr>
+								@foreach(var partaiCashTrx in PartaiCashList)
+								{
+									<tr>
+										<td style="padding:3px 3px;">@partaiCashTrx.LedgerName</td>
+										<td style="padding:3px 3px; text-align:right;">@string.Format("{0:n0}", partaiCashTrx.Amount)</td>
+									</tr>
+								}
+							</table>
+						}
 					</div>
 				</div>
 			</div>
@@ -114,6 +138,22 @@
 					<div class="dash-widgetcontent">
 						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", PartaiBank)</span></h5>
 						<h6>Partai Transfer</h6>
+						@if (PartaiTransferList != null && PartaiTransferList.Count > 0)
+						{
+							<table style="margin-top:10px;">
+								<tr>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Pelanggan</b></td>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Jumlah</b></td>
+								</tr>
+								@foreach (var partaiTransferTrx in PartaiTransferList)
+								{
+									<tr>
+										<td style="padding:3px 3px;">@partaiTransferTrx.LedgerName</td>
+										<td style="padding:3px 3px; text-align:right;">@string.Format("{0:n0}", partaiTransferTrx.Amount)</td>
+									</tr>
+								}
+							</table>
+						}
 					</div>
 				</div>
 			</div>
@@ -306,7 +346,7 @@
 			</div>
 		</div>
 
-		<div class="card mb-0">
+		@* <div class="card mb-0">
 			<div class="card-body">
 				<h4 class="card-title">Transaksi Terkini</h4>
 				<div class="table-responsive">
@@ -536,7 +576,7 @@
 					</MudTabs>
 				</div>
 			</div>
-		</div>
+		</div> *@
 	}
 	
 	
@@ -933,17 +973,29 @@
 			</div>
 		</div>
 	</div>
-	<div class="row">
-		<div class="col-lg-12 col-sm-12 col-12 d-flex">
-			<div class="card flex-fill">
-				<div class="card-header pb-0 d-flex justify-content-between align-items-center">
-					<h5 class="card-title mb-0">Menu Anda</h5>
-				</div>
-				<div class="card-body">
-					<a href="/app/recordattendance" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Absensi Harian</a>
-					<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
-					<a href="/app/attendancelist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Abensi Harian dan Gaji</a>						
-				</div>
+		<div class="row">
+			<div class="col-lg-12 col-sm-12 col-12 d-flex">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Menu Anda</h5>
+					</div>
+					<div class="card-body">
+						<a href="/app/recordattendance" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Absensi Harian</a>
+						<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
+						<a href="/app/attendancelist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Abensi Harian dan Gaji</a>
+						<a href="/app/salaryslip" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Slip Gaji</a>
+						<a href="/app/penalties" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Daftar Sanksi dan Pengurangan Gaji</a>
+
+						@if (JobDescAvailable)
+						{
+							<a href="/app/jobdesc" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Deskripsi Pekerjaan</a>
+						}
+
+						@if (SOPAvailable)
+						{
+							<a href="/app/sop" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">SOP</a>
+						}
+					</div>
 			</div>
 		</div>
 	</div>
@@ -980,6 +1032,10 @@
 	public string RejectionReason { get; set; }
 	List<dynamic> unapprovedPerijinanBySupervisor;
 	List<dynamic> unapprovedPerijinanCurrentUser;
+	bool JobDescAvailable;
+	bool SOPAvailable;
+	List<dynamic> PartaiCashList;
+	List<dynamic> PartaiTransferList;
 	/* Kode baru */
 
 
@@ -1034,6 +1090,10 @@
 
 	int ledgerIdCash = 1;
 	int ledgerIdBank = 10;
+
+	List<DailyAttendanceMaster> todayAttendances;
+
+	public string CurrentPhotoUrl { get; set; }
 
 	private void OpenApproveDialog(int id)
 	{
@@ -1121,6 +1181,9 @@
 		modelUser = await _userManage.UserProfile(userName);
 		modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
 
+		JobDescAvailable = !string.IsNullOrEmpty(modelEmployee.JobDesc);
+		SOPAvailable = !string.IsNullOrEmpty(modelEmployee.SOP);
+
 		listProduct = await report.GetTopProduct();
 		DateTime today = DateTime.Now;
 		dtFromDate = new DateTime(today.Year, today.Month, today.Day,0,0,0);
@@ -1134,8 +1197,11 @@
 		EcerTunai = listLedgerPostingTunai.Sum(x => x.NetAmounts);
 		EcerBank = listLedgerPostingBank.Sum(x => x.NetAmounts);
 
-		PartaiTunai = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
-		PartaiBank = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+		PartaiCashList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
+		PartaiTransferList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+
+		PartaiTunai = Convert.ToDecimal(PartaiCashList.Sum(x => (decimal)x.Amount));
+		PartaiBank = Convert.ToDecimal(PartaiTransferList.Sum(x => (decimal)x.Amount));
 
 		if(currentUserRole == "Supervisor")
 		{
@@ -1172,7 +1238,22 @@
 		TotalTelurParahSekali = _sales.GetPenjualanTelurParahSekali(fromBeginning, dtToDate);
 
 		DaySeven();
+
+		CurrentPhotoUrl = "img/user.png";
+		await LoadProfilePhoto();
+
+
 		StateHasChanged();
+	}
+
+	private async Task LoadProfilePhoto()
+	{
+		todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
+		if(todayAttendances.Count > 0)
+		{
+			string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
+			CurrentPhotoUrl = "https://telurintanfarm.com/uploads/absensi/" + userFolder + "/" + todayAttendances[0].PhotoSelfie;
+		}
 	}
 
 	private async Task LoadDataSales() 
@@ -1189,8 +1270,11 @@
 		EcerTunai = listLedgerPostingTunai.Sum(x => x.NetAmounts);
 		EcerBank = listLedgerPostingBank.Sum(x => x.NetAmounts);
 
-		PartaiTunai = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
-		PartaiBank = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+		PartaiCashList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
+		PartaiTransferList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+
+		PartaiTunai = Convert.ToDecimal(PartaiCashList.Sum(x => (decimal)x.Amount));
+		PartaiBank = Convert.ToDecimal(PartaiTransferList.Sum(x => (decimal)x.Amount));
 		
 		TelurUtuh = _sales.GetPenjualanTelurUtuh(dtFromDate, dtToDate);
 		TelurPutih =			_sales.GetPenjualanTelurPutih(dtFromDate, dtToDate);

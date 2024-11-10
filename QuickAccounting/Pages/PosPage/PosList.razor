@@ -458,7 +458,7 @@
         listModel = await _category.GetAll();
         setting = await _setting.GetbyId(1);
         listLedger = await _ledger.GetAll(26);
-        listProduct = await _product.ProductWithStock();
+        listProduct = await _product.GetAll(); //ProductWithStock();
         listProduct = listProduct.OrderBy(x => x.QueueNumber).ToList();
         master.LedgerId = 0;
         master.VoucherNo = "DRAFT";

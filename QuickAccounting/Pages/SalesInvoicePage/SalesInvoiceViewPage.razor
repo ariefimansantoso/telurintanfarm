@@ -60,7 +60,7 @@
 							<a href="/app/salesinvoiceedit/@model.SalesMasterId"><img src="assets/img/icons/edit.svg" alt="img">Update</a>
 						</li>
 						<li>
-							<a style="cursor:pointer;" @onclick="@(_ => PrintingService.Print("print-barcode", PrintType.Html))"><img src="assets/img/icons/bar.svg" alt="img">Print Nota QR</a>
+							<a style="cursor:pointer; color:#fff !important;" class="btn btn-primary" @onclick="@(_ => PrintingService.Print("print-barcode", PrintType.Html))">Print Nota QR</a>
 						</li>
 						<li>
 							<a style="cursor:pointer;" @onclick="@(_ => DownloadExcelInvoice())"><img src="assets/img/icons/printer.svg" alt="img">Print</a>

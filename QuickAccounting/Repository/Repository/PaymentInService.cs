@@ -351,16 +351,21 @@ namespace QuickAccounting.Repository.Repository
             return ledgerPostings;
         }
 
-		public async Task<decimal> GetSalesPartai(DateTime dtFrom, DateTime dtTo, int ledgerId)
+		public async Task<dynamic> GetSalesPartai(DateTime dtFrom, DateTime dtTo, int ledgerId)
 		{
 			var ledgerPostings = await (from rm in _context.SalesMaster
                                         join rem in _context.ReceiptMaster on rm.SalesMasterId equals rem.SalesMasterId
-                                        join lp in _context.ReceiptDetails on rm.SalesMasterId equals lp.SalesMasterId
-										where  
+                                        join lp in _context.ReceiptDetails on rem.ReceiptMasterId equals lp.ReceiptMasterId
+                                        join al in _context.AccountLedger on rm.LedgerId equals al.LedgerId
+                                        where  
                                                 rm.LedgerId >= 19 &&
 											  rem.Date >= dtFrom && rem.Date <= dtTo &&
                                               lp.LedgerId == ledgerId
-										select lp.ReceiveAmount).SumAsync();
+										select new
+                                        {
+                                            LedgerName = al.LedgerName,
+                                            Amount = lp.ReceiveAmount
+                                        }).ToListAsync<dynamic>();
 
 			return ledgerPostings;
 		}

@@ -1,0 +1,50 @@
+﻿
+@inject IJSRuntime JSRuntime
+
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">@Title</h4>                
+            </div>
+            <div class="modal-body">
+                <img src="@ImageUrl" style="width:100%;" />                
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick=@ModalOk>Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string ImageUrl { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnClose { get; set; }
+
+    bool isProcessing;
+    private Task ModalCancel()
+    {
+        return OnClose.InvokeAsync(false);
+    }
+
+    private Task ModalOk()
+    {
+        isProcessing = true;
+        
+        try
+        {
+            return OnClose.InvokeAsync(true);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+}

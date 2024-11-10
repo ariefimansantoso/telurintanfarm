@@ -1,0 +1,236 @@
+﻿@page "/app/penalties"
+@inject IAttendance _attendance
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@using System.Security.Claims
+@using System.Globalization;
+@using QuickAccounting.Constants;
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IUser _user
+@inject IEmployee _employee
+@inject IHRServices _hr
+@attribute [Authorize]
+<PageTitle>Laporan Sangsi dan Pengurangan Gaji</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Laporan Sangsi dan Pengurangan Gaji</h4>
+        </div>
+    </div>
+    <!-- /product list -->
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+			        <div class="col-lg col-sm-12 col-12">
+				        <div class="form-group">
+                            <label>Periode</label>
+                            <div class="row">
+                                <div class="col-lg col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnMonthChange">
+									    <option value="">-- Pilih Bulan --</option>
+									    @foreach (var month in months)
+									    {
+										    <option value="@month.Id">@month.Name</option>
+									    }
+								    </select>
+                                </div>
+                            </div>
+				        </div>
+			        </div>			        						        
+		        </div>
+        </div>
+    </div>
+    <!-- /product list -->
+    
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+			            <div class="col-lg col-sm-12 col-12">
+				            <div class="form-group">
+                                <label>Karyawan</label>
+                                <div class="row">
+                                    <div class="col-lg col-sm-12 col-12">
+                                        <select class="form-control" @onchange="SelectedKaryawan">
+                                            @foreach (var karyawan in DaftarKaryawan)
+                                            {
+                                                <option value="@karyawan.EmployeeId">@karyawan.EmployeeName</option>
+                                            }
+
+                                        </select>
+                                    </div>
+                                </div>
+				            </div>
+			            </div>			        						        
+		            </div>
+            </div>
+        </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                @if (penalties.Count > 0)
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Karyawan</th>
+                                <th>Alasan</th>
+                                <th>Potongan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in penalties)
+                            {
+                                var fullName = _employee.GetbyId(item.EmployeeID).Result.EmployeeName;
+
+                                <tr>
+                                    <td>@item.ForDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @fullName
+                                    </td>
+                                    <td>@item.PenaltyDescription</td>
+                                    <td>@string.Format("{0:n0}", item.PenaltyAmount)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <h2>Tidak ada sanksi.</h2>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+    private int SelectedMonth;
+    private int CurrentYear;
+    private List<MonthItem> months = new List<MonthItem>();
+    private List<Penalty> penalties = new List<Penalty>();
+
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+
+    List<Employee> DaftarKaryawan = new List<Employee>();
+    Employee SelectedEmployee = null;
+    private bool ShowKaryawan = false;
+
+    string strMenu = "Penalty Report";
+
+    private async Task<bool> CheckPermission()
+    {
+        return true;
+
+        //CheckPriviliagee
+        var authState = await authenticationState;
+        var strRole = authState.User;
+        string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        if (strShow.ShowAction == true)
+        {
+            return true;
+        }
+        else
+        {
+            return false;            
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //CheckPriviliagee
+        var authState = await authenticationState;
+        var strRole = authState.User;
+        string userName = strRole.Identity.Name;
+        modelUser = _user.UserProfile(userName).Result;
+        try
+        {
+            modelEmployee = _employee.GetbyUserId(modelUser.UserId).Result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error fetching employee: " + ex.Message);
+        }
+        InitMonthsDropdown();        
+        
+        if (modelUser.RoleId == RoleConstants.AdminRoleId)
+        {
+            DaftarKaryawan = await _employee.GetAllEmployeeActive();
+        }
+        else if (modelUser.RoleId == RoleConstants.SupervisorRoleId)
+        {
+            DaftarKaryawan = await _employee.GetAllEmployeeActiveBySupervisorID(modelEmployee.EmployeeId);
+        }
+
+        if (DaftarKaryawan.Count > 0)
+        {
+            ShowKaryawan = true;
+            DaftarKaryawan = DaftarKaryawan.OrderBy(x => x.EmployeeName).ToList();
+        }
+
+        await LoadData();        
+    }
+
+    private async Task LoadData()
+    {
+        
+        SelectedMonth = DateTime.Now.Month;
+        CurrentYear = DateTime.Now.Year;
+
+        var dateFrom = new DateTime(CurrentYear, SelectedMonth, 1, 0,0,0,0);
+        int lastDay = DateTime.DaysInMonth(CurrentYear, SelectedMonth);
+        var dateTo = new DateTime(CurrentYear, SelectedMonth, lastDay, 23,59,59);        
+
+        if (modelUser.RoleId == RoleConstants.AdminRoleId)
+        {
+            penalties = _hr.GetAllPenaltyByCurrentMonthYear(dateFrom, dateTo);
+        }
+        else if (modelUser.RoleId == RoleConstants.SupervisorRoleId)
+        {
+            penalties = _hr.GetPenaltyByCurrentMonthYearAndSupervisorId(modelEmployee.EmployeeId, dateFrom, dateTo);
+        }
+        else
+        {
+            penalties = _hr.GetPenaltyByCurrentMonthYearAndSupervisorId(modelEmployee.EmployeeId, dateFrom, dateTo);
+        }
+
+        StateHasChanged();
+    }  
+
+    private async Task SelectedKaryawan(ChangeEventArgs e)
+    {        
+        SelectedEmployee = await _employee.GetbyId(Convert.ToInt32(e.Value.ToString()));
+    }
+
+    private void OnMonthChange(ChangeEventArgs e)
+    {
+        SelectedMonth = Convert.ToInt32(e.Value);		
+    }
+
+    private async Task LoadKaryawan()
+    {
+        
+    }
+
+    private void InitMonthsDropdown()
+	{
+		// Initialize month list with Indonesian month names
+		var cultureInfo = new CultureInfo("id-ID");
+		months = Enumerable.Range(1, 12)
+			.Select(i => new MonthItem { Id = i, Name = cultureInfo.DateTimeFormat.GetMonthName(i) })
+			.ToList();
+	}
+
+	private class MonthItem
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+	}
+}

@@ -36,5 +36,9 @@ namespace QuickAccounting.Data.HrPayroll
         public decimal BPJS_KES { get; set; }
         public decimal BPJS_TK { get; set; }
         public decimal Lembur { get; set; }
-    }
+        public decimal Tunjangan { get; set; }
+        public string JobDesc { get; set; }
+        public string SOP { get; set; }
+		public int OldEmployeeId { get; set; }
+	}
 }

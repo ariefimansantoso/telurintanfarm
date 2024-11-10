@@ -1,0 +1,29 @@
+﻿@inject IJSRuntime JS
+
+<div id="@EditorId" style="height: 200px;"></div>
+
+@code {
+    [Parameter]
+    public string Value { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    private string EditorId = $"editor_{Guid.NewGuid().ToString()}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize Quill editor
+            await JS.InvokeVoidAsync("initializeQuillEditor", EditorId, DotNetObjectReference.Create(this));
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnContentChanged(string content)
+    {
+        Value = content;
+        await ValueChanged.InvokeAsync(content);
+    }
+}

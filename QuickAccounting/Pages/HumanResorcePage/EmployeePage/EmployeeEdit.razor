@@ -8,11 +8,11 @@
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @attribute [Authorize]
-<PageTitle>Employee</PageTitle>
+<PageTitle>Edit Data Karyawan</PageTitle>
 <div class="content">
 					<div class="page-header">
 						<div class="page-title">
-							<h4>Employee Edit</h4>
+							<h4>Edit Data Karyawan</h4>
 			<h6>Employee</h6>
 						</div>
 					</div>
@@ -24,14 +24,14 @@
 							<div class="row">
 								<div class="col-lg-8 col-sm-6 col-12">
 									<div class="form-group">
-										<label>Employee Name</label>
+										<label>Nama Karyawan</label>
 										<input type="text" @bind="model.EmployeeName" >
 							<ValidationMessage For="@(() => model.EmployeeName)" />
 									</div>
 								</div>
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
-										<label>Employee Code</label>
+										<label>Kode Karyawan</label>
 										<input type="text" @bind="model.EmployeeCode" >
 							<ValidationMessage For="@(() => model.EmployeeCode)" />
 									</div>
@@ -54,7 +54,7 @@
 								</div>
 					<div class="col-lg-4 col-sm-6 col-12">
 						<div class="form-group">
-							<label>Salary Package</label>
+							<label>Salary Package (Abaikan)</label>
 							<select class="form-control" @bind="model.DefaultPackageId">
 								<option value="0">Choose</option>
 								@if (listPackage != null)
@@ -70,55 +70,55 @@
 					</div>
 					<div class="col-lg-8 col-sm-6 col-12">
 						<div class="form-group">
-							<label>Date of birth</label>
+							<label>Tanggal Lahir</label>
 							<RadzenDatePicker @bind-Value=@model.Dob DateFormat="d" Class="w-100" />
 							<ValidationMessage For="@(() => model.Dob)" />
 						</div>
 					</div>
 					<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
-							<label>Marital Status</label>
+							<label>Status Pernikahan</label>
 							<select class="form-control" @bind="model.MaritalStatus">
-								<option value="Married">Married</option>
-								<option value="UnMarried">UnMarried</option>
+								<option value="Married">Menikah</option>
+								<option value="UnMarried">Belum Menikah</option>
 							</select>
 									</div>
 								</div>
 								<hr/>
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
-							<label>Gender</label>
+							<label>Jenis Kelamin</label>
 							<select class="form-control" @bind="model.Gender">
-								<option value="Male">Male</option>
-								<option value="Female">Female</option>
+								<option value="Male">Laki-laki</option>
+								<option value="Female">Perempuan</option>
 							</select>
 									</div>
 								</div>
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
-							<label>Qualification</label>
+							<label>Kualifikasi/Pendidikan</label>
 							<input type="text" @bind="model.Qualification">
 							<ValidationMessage For="@(() => model.Qualification)" />
 									</div>
 								</div>
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
-							<label>Address</label>
+							<label>Alamat</label>
 							<input type="text" @bind="model.Address">
 							<ValidationMessage For="@(() => model.Address)" />
 									</div>
 								</div>
-								<h6>Additional Field</h6>
+								<h6>Data Tambahan</h6>
 					<div class="col-lg-4 col-sm-6 col-12">
 						<div class="form-group">
-							<label>Phone Number</label>
+							<label>No Telepon</label>
 							<input type="text" @bind="model.PhoneNumber">
 							<ValidationMessage For="@(() => model.PhoneNumber)" />
 						</div>
 					</div>
 					<div class="col-lg-4 col-sm-6 col-12">
 						<div class="form-group">
-							<label>Mobile Number</label>
+							<label>Nomor HP</label>
 							<input type="text" @bind="model.MobileNumber">
 							<ValidationMessage For="@(() => model.MobileNumber)" />
 						</div>
@@ -132,21 +132,83 @@
 					</div>
 					<div class="col-lg-4 col-sm-6 col-12">
 						<div class="form-group">
-							<label>Joining Date</label>
+							<label>NIK</label>
+							<input type="text" @bind="model.NIK">
+							<ValidationMessage For="@(() => model.NIK)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>ID BPJS TK</label>
+							<input type="text" @bind="model.ID_BPJS_TK">
+							<ValidationMessage For="@(() => model.ID_BPJS_TK)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>ID BPJS KES</label>
+							<input type="text" @bind="model.ID_BPJS_KES">
+							<ValidationMessage For="@(() => model.ID_BPJS_KES)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>Rekening</label>
+							<input type="text" @bind="model.BankAccount">
+							<ValidationMessage For="@(() => model.BankAccount)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>RP BPJS TK</label>
+							<input type="text" @bind="model.BPJS_TK">
+							<ValidationMessage For="@(() => model.BPJS_TK)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>RP BPJS KES</label>
+							<input type="text" @bind="model.BPJS_KES">
+							<ValidationMessage For="@(() => model.BPJS_KES)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>Tanggal Mulai Kerja</label>
 							<RadzenDatePicker @bind-Value=@model.JoiningDate DateFormat="d" Class="w-100" />
 							<ValidationMessage For="@(() => model.JoiningDate)" />
 						</div>
 					</div>
 					<div class="col-lg-4 col-sm-6 col-12">
-						<label>Salary Type</label>
+						<label>Model Gajian</label>
 						<select @bind="model.SalaryType" class="form-control">
-							<option value="Daily wage">Daily wage</option>
-							<option value="Monthly">Monthly</option>
+							<option value="Daily wage">Harian</option>
+							<option value="Monthly">Bulanan</option>
 						</select>
 					</div>
 					<div class="col-lg-1 col-sm-6 col-12">
-						<label>Daily Wage</label>
+						<label>Gaji Harian</label>
 						<input type="text" class="form-control" @bind="model.DailyWage">
+					</div>
+					<div class="col-lg-1 col-sm-6 col-12">
+						<label>Lemburan Bulan Ini</label>
+						<input type="text" class="form-control" @bind="model.Lembur">
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">	
+							<label>Job Desc</label>
+							<div id="quill-editor-jobdesc" style="height: 200px;"></div>
+							 @*<textarea cols="6" style="width:100%;" @bind="model.JobDesc"></textarea>							
+							<ValidationMessage For="@(() => model.JobDesc)" /> *@
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>SOP</label>
+							<div id="quill-editor-sop" style="height: 200px;"></div>
+							 @*<textarea cols="6" style="width:100%;" @bind="model.SOP"></textarea>
+							<ValidationMessage For="@(() => model.SOP)" /> *@
+						</div>
 					</div>
 								<div class="col-lg-12">
 									<button type="submit" class="btn btn-submit me-2">Submit</button>
@@ -167,7 +229,9 @@
 	Employee model = new Employee();
 	IList<DesignationView> listDesignation;
 	IList<SalaryPackage> listPackage;
-	string strMenu = "Human Resources";
+	string strMenu = "Human Resources";	
+	bool quillRendered = false;
+
 	protected override async Task OnInitializedAsync()
 	{
 		//CheckPriviliagee
@@ -185,6 +249,7 @@
 			Snackbar.Add("You dont have to privilege..", Severity.Error);
 		}
 	}
+
 	private async Task LoadData()
 	{
 		model = await _employee.GetbyId(Convert.ToInt32(id));
@@ -192,6 +257,7 @@
 		listPackage = await _salaryPackage.GetAll();
 		StateHasChanged();
 	}
+
 	private async Task Save()
 	{
 		var isCheck = await _employee.CheckNameId(model.EmployeeName);
@@ -199,6 +265,7 @@
 		{
 			model.Narration = string.Empty;
 			model.isActive = true;
+
 			bool result = await _employee.Update(model);
 			if (result == true)
 			{
@@ -215,6 +282,27 @@
 		else
 		{
 			Snackbar.Add("Employee name already exists.", Severity.Info);
-	    }
+		}
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!quillRendered)
+		{
+			// Initialize Quill editor with initial content
+			await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-jobdesc", model.JobDesc);
+			await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-sop", model.SOP);
+			//quillRendered = true;
+		}
+	}
+
+	[JSInvokable]
+	public void UpdateQuillContent(string elementId, string content)
+	{		
+		if (elementId == "quill-editor-jobdesc")
+			model.JobDesc = content;
+
+		if (elementId == "quill-editor-sop")
+			model.SOP = content;
 	}
 }

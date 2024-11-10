@@ -20,7 +20,7 @@
 
     <div class="card">
         <div class="card-body">
-            @if (AttendanceCompletedForToday == false)
+            @if (AttendanceFormOpen)
             {
                 if (AttendanceSubmitted == false)
                 {
@@ -92,7 +92,18 @@
                 <div class="row">
                     <div class="col-lg-4 col-sm-6 col-12">
                         <div class="form-group" style="text-align: center !important;">
-                            <label style="font-size:24px; font-weight:bold;">Absensi hari ini sudah lengkap.</label>
+                            @if (AttendanceCompletedForMorning && AttendanceCompletedForToday == false)
+                            {
+                                <label style="font-size:24px; font-weight:bold;">Absensi pagi sudah, sore jangan lupa ya.</label>
+                            }
+                            else if (AttendanceCompletedForMorning && AttendanceCompletedForToday)
+                            {
+                                <label style="font-size:24px; font-weight:bold;">Absensi hari ini sudah lengkap.</label>
+                            }
+                            else if (!AttendanceCompletedForMorning && !AttendanceCompletedForToday)
+                            {
+                                <label style="font-size:24px; font-weight:bold;">Anda belum absen sama sekali hari ini.</label>
+                            }
                         </div>
                     </div>
                 </div>
@@ -120,6 +131,8 @@
     private bool AttendanceSubmitted;
     private bool WithinBoundaries;
     private bool AttendanceCompletedForToday;
+    private bool AttendanceCompletedForMorning;
+    private bool AttendanceFormOpen;
 
     MemoryStream uploadedFileStream;
     string uploadedFileExtension;
@@ -182,7 +195,10 @@
         var currentUser = authState.User;
         string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
         modelUser = await _user.UserProfile(userName);
-        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);        
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+        AttendanceCompletedForMorning = false;
+        AttendanceCompletedForToday = false;
+        AttendanceFormOpen = false;
 
         //CheckPriviliagee
         await GetLocation();
@@ -203,14 +219,16 @@
         todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
         if (todayAttendances.Count == 1 && todayAttendances[0].Date <= nineAM)
         {
-            AttendanceCompletedForToday = true;
+            AttendanceCompletedForMorning = true;
         }
         else if (todayAttendances.Count == 1 && todayAttendances[0].Date >= threePM)
         {
+            AttendanceCompletedForMorning = true;
             AttendanceCompletedForToday = false;
         }
         else if(todayAttendances.Count == 2)
         {
+            AttendanceCompletedForMorning = true;
             AttendanceCompletedForToday = true;
         }
 
@@ -227,13 +245,34 @@
         master.Long = location.Longitude.ToString();
 
         var hour = now.Hour;
-        if(hour >= 5 || hour <= 9)
+        if(hour >= 5 && hour <= 9)
         {
+            if (AttendanceCompletedForMorning)
+            {
+                AttendanceFormOpen = false;
+            }
+            else
+            {
+                AttendanceFormOpen = true;
+            }
             WaktuAbsensi = "Absensi Kedatangan";
         }
         else if (hour > 15)
         {
+            if (AttendanceCompletedForToday)
+            {
+                AttendanceFormOpen = false;
+            }
+            else
+            {
+                AttendanceFormOpen = true;
+            }
+            
             WaktuAbsensi = "Absensi Pulang";
+        }
+        else
+        {
+            AttendanceFormOpen = false;
         }
 
         AttendanceSubmitted = false;

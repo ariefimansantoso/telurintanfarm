@@ -17,7 +17,7 @@ namespace QuickAccounting.Repository.Interface
         Task<string> GetSerialNo();
         Task<bool> Delete(ReceiptMaster model);
         Task<List<SalesMaster>> GetLedgerPostingsRetail(DateTime from, DateTime to, string transactionType);
-        Task<decimal> GetSalesPartai(DateTime dtFrom, DateTime dtTo, int ledgerId);
+        Task<dynamic> GetSalesPartai(DateTime dtFrom, DateTime dtTo, int ledgerId);
 
 	}
 }

@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using QuickAccounting.Components
+@using QuickAccounting.ExceptionHandling;
 @layout LoginLayout
 @inject UserAccountService userAccountService
 @inject ICurrency _currency
@@ -56,9 +57,53 @@
         </div>
     </div>
 </div>
+
+<CustomErrorBoundary @ref="errorBoundary">
+	<ChildContent>
+		<div class="page-wrapper @(HideLabel ? "opened" : "")">
+			
+		</div>
+	</ChildContent>
+	<ErrorContent Context="Exception">
+		<div class="modal fade @showModel" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true" style="display:@ModalDisplay; opacity:1;">
+			<div class="modal-dialog" style="top:90px;">
+				<div class="modal-content">
+					<div class="modal-header bg-light p-3">
+						<h5 class="modal-title" id="addAgentModalLabel">Error</h5>
+						<button type="button" class="close" data-bs-dismiss="modal" aria-label="Close" @onclick="() => errorBoundary.Recover()">
+							<span aria-hidden="true">×</span>
+						</button>
+					</div>
+
+					<div class="modal-body">
+						<div class="mb-3">
+
+							<div class="alert alert-danger">
+								<h3>@Exception.GetType()</h3>
+								<h3>@Exception.Message</h3>
+							</div>
+						</div>
+
+					</div>
+					<div class="modal-footer">
+						<div class="hstack gap-2 justify-content-end">
+							<button type="button" class="btn btn-block btn-outline-success active" @onclick="() => errorBoundary.Recover()" data-bs-dismiss="modal">Close</button>
+							<a class="btn btn-primary" @onclick="()=>GoToDashboard()">Go to dashboard</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</ErrorContent>
+</CustomErrorBoundary>
+
 @code {
     UserMaster master = new UserMaster();
+    private bool HideLabel { get; set; } = false;
+    string showModel = "";
     string strMessage;
+    public string ModalDisplay = "none;";
+
     private class Model
     {
         public string Email { get; set; }
@@ -68,11 +113,20 @@
     private Model model = new Model();
     Company company = new Company();
     bool isProcessing;
+    
+	private CustomErrorBoundary errorBoundary;
+
     protected override async Task OnInitializedAsync()
     {
         model.Email = "";
         model.Password = "";
     }
+
+    private async void GoToDashboard()
+	{
+		navManager.NavigateTo("/app/dashboard" , true);
+	}
+
     private async Task Authenticate()
     {
         isProcessing = true;

@@ -21,26 +21,36 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <MudTable Items="@listModel" Dense="@dense" Hover="@hover" Filter="new Func<EmployeeView,bool>(FilterFunc1)">
+                <MudTable Items="@listModel" Dense="@dense" Hover="@hover" Filter="new Func<Employee,bool>(FilterFunc1)">
                     <ToolBarContent>
                         <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
                     </ToolBarContent>
                     <HeaderContent>
-                        <MudTh>Employee Code</MudTh>
-                        <MudTh>Employee Name</MudTh>
-                        <MudTh>Designation</MudTh>
-                        <MudTh>Address</MudTh>
-                        <MudTh>Phone No</MudTh>
-                        <MudTh>Email</MudTh>
+                        <MudTh>ID</MudTh>
+                        <MudTh>Nama</MudTh>
+                        <MudTh>NIK</MudTh>
+                        <MudTh>Gaji Harian</MudTh>
+                        <MudTh>Tunjangan</MudTh>                        
+                        <MudTh>Rekening</MudTh>
+                        <MudTh>No BPJS Kes</MudTh>
+                        <MudTh>No BPJS TK</MudTh>
+                        <MudTh>RP BPJS Kes</MudTh>
+                        <MudTh>RP BPJS Kes</MudTh>
+                        <MudTh>Aktif/Masih Kerja</MudTh>
                         <MudTh></MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd DataLabel="LedgerName">@context.EmployeeCode</MudTd>
-                        <MudTd DataLabel="Email">@context.EmployeeName</MudTd>
-                        <MudTd DataLabel="Phone">@context.DesignationName</MudTd>
-                        <MudTd DataLabel="Address">@context.Address</MudTd>
-                        <MudTd DataLabel="IsDefault">@context.PhoneNumber</MudTd>
-                        <MudTd DataLabel="IsDefault">@context.Email</MudTd>
+                        <MudTd DataLabel="ID">@context.EmployeeId</MudTd>
+                        <MudTd DataLabel="Nama">@context.EmployeeName</MudTd>
+                        <MudTd DataLabel="NIK">@context.NIK</MudTd>
+                        <MudTd DataLabel="GajiHarian">@string.Format("{0:n0}", context.DailyWage)</MudTd>
+                        <MudTd DataLabel="Tunjangan">@string.Format("{0:n0}", context.Tunjangan)</MudTd>
+                        <MudTd DataLabel="Rekening">@context.BankAccount</MudTd>
+                        <MudTd DataLabel="BPJSKes">@context.ID_BPJS_KES</MudTd>
+                        <MudTd DataLabel="BPJSTK">@context.ID_BPJS_TK</MudTd>
+                        <MudTd DataLabel="RPBPJSKes">@string.Format("{0:n0}", context.BPJS_KES)</MudTd>
+                        <MudTd DataLabel="RPBPJSTK">@string.Format("{0:n0}", context.BPJS_TK)</MudTd>
+                        <MudTd DataLabel="Active">@(context.isActive ? "Ya" : "Tidak")</MudTd>
                         <MudTd DataLabel="">
                             <a class="me-3" href="/app/employeeedit/@context.EmployeeId">
                                 <img src="assets/img/icons/edit.svg" alt="img">
@@ -66,7 +76,7 @@
 @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
-    IList<EmployeeView> listModel;
+    IList<Employee> listModel;
     private bool dense = true;
     private bool hover = true;
     private string searchString1 = "";
@@ -93,19 +103,17 @@
     }
     private async Task LoadData()
     {
-        listModel = await _employee.GetAll();
+        listModel = await _employee.GetAllEmployees();
         StateHasChanged();
     }
-    private bool FilterFunc1(EmployeeView element) => FilterFunc(element, searchString1);
+    private bool FilterFunc1(Employee element) => FilterFunc(element, searchString1);
 
-    private bool FilterFunc(EmployeeView element, string searchString)
+    private bool FilterFunc(Employee element, string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
             return true;
         if (element.EmployeeName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (element.DesignationName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
-            return true;
+            return true;        
         return false;
     }
     private async Task Delete(int id)

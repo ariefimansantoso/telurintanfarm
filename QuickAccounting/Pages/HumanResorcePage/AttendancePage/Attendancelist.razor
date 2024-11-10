@@ -29,7 +29,7 @@
                                 <select class="form-control" @onchange="SelectedCutoff">
                                     @foreach (var cutoff in PayrollCutoffs)
                                     {
-                                        <option value="@cutoff.ID">@cutoff.PayrollPeriode</option>
+                                        <option value="@cutoff.PayrollDate.ToString(" dd /MM/yyyy")">@cutoff.PayrollPeriode</option>
                                     }                                    
                                 </select>
                             </div>
@@ -53,11 +53,12 @@
                         <label>&nbsp;</label>
                         <div class="row">
                             <div class="col-lg-10 col-sm-10 col-10">
-                                <input type="button" class="btn btn-primary" @onclick="(e => ExportList())" value="Unduh Payroll Excel" />
+                                @* <input type="button" class="btn btn-primary" @onclick="(e => ExportList())" value="Unduh Payroll Excel" />&nbsp;&nbsp;<input type="button" class="btn btn-primary" @onclick="(e => ExportListWord())" value="Unduh Payroll Word" /> *@
+                                <a class="btn btn-primary" href="payroll/Payroll_2024_10.xlsx">Unduh Payroll Excel</a>&nbsp;&nbsp;<a class="btn btn-primary" href="payroll/payroll_bank-SEPTEMBER-2024.docx">Unduh Payroll Word</a>
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>               
                 </div>
             <div class="table-responsive">
                 <table class="table">
@@ -69,13 +70,14 @@
                         <th>BPJS TK</th>
                         <th>Premi</th>
                         <th>Lembur</th>
+                        <th>Tunjangan</th>
                         <th>M</th>
                         <th>A</th>
                         <th>I</th>
                         <th>S</th>
                         <th>L</th>
                         <th>Cicilan</th>
-                            <th>Potongan</th>
+                        <th>Potongan</th>
                         <th>No. Rek</th>
                         <th>Total Gaji</th>
                     </tr>
@@ -114,13 +116,14 @@
                                 decimal totalGaji = employee.DailyWage * (decimal)countMasuk;
                                 decimal cicilan = 0;
                                 decimal potonganNonCicilan = 0;
+                                decimal tunjangan = modelEmployee.Tunjangan;
                                 var perijinanKaryawan = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(employee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
                                 var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
                                 var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
                                 var sakit = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SAKIT")).Count();
                                 decimal premi = 0;
                                 decimal gajiBersih = 0;
-                                var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(employee.EmployeeId, 8, 2024);
+                                var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(employee.EmployeeId, LastPayrollCutoff.Month, 2024);
                                 var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(employee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
                                 decimal lembur = employee.Lembur;
 
@@ -145,7 +148,7 @@
                                     }
                                 }
 
-                                if(libur <= 3 && ijin == 0 && sakit == 0 && alpha == 0)
+                                if(libur <= 3 && ijin == 0 && alpha == 0)
                                 {
                                     premi = totalGaji * (decimal)0.15;
                                     gajiBersih = totalGaji + premi;
@@ -155,7 +158,7 @@
                                     gajiBersih = totalGaji;
                                 }
 
-                                gajiBersih = gajiBersih - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan;
+                                gajiBersih = gajiBersih - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan + lembur;
                                 gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
                                 if (employee.BankAccount != "0" && employee.BankAccount != "")
                                 {
@@ -175,6 +178,7 @@
                                     <td>@string.Format("{0:n0}", employee.BPJS_TK)</td>
                                     <td>@string.Format("{0:n0}", premi)</td>
                                     <td>@string.Format("{0:n0}", lembur)</td>
+                                    <td>@string.Format("{0:n0}", tunjangan)</td>
                                     <td>@countMasuk</td>
                                     <td>@alpha</td>
                                     <td>@ijin</td>
@@ -309,6 +313,18 @@
     }
 
     private async Task ExportList()
+    {
+        var year = DateTime.Now.Year;
+        var month = DateTime.Now.Month;
+        var fileName = "Payroll_" + year + "_" + month + ".xlsx";
+        var excelData = _excelService.ExportListToExcel(payrollExcel, "Sheet1");
+        var base64String = Convert.ToBase64String(excelData);
+        base64String = base64String.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64String);
+    }
+
+    private async Task ExportListWord()
     {
         var year = DateTime.Now.Year;
         var month = DateTime.Now.Month;

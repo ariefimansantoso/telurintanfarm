@@ -34,7 +34,7 @@
                                         {
                                             <option value="@cutoff.PayrollDate.ToString("dd/MM/yyyy")">@cutoff.PayrollPeriode</option>
                                         }         
-                                        <option value="@DateTime.Today">Bulan Ini</option>
+                                        <option value="@DateTime.Today.ToString("dd/MM/yyyy")">Bulan Ini</option>
                                     </select>
                                 </div>
                             </div>
@@ -86,33 +86,98 @@
                         {
                             @foreach (var item in PeriodeDates)
                             {
-                                <tr>
-                                    <td>@item.Date.ToString("dd/MM/yyyy")</td>
-                                    @{
-                                        var attendanceItem = groupedResults.Where(x => x.Date.Date == item.Date).FirstOrDefault();                                        
-                                    }
-                                    @if (attendanceItem != null) 
+                                var attendanceItem = groupedResults.Where(x => x.Date.Date == item.Date).FirstOrDefault();
+                                var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(SelectedEmployee.EmployeeId, item.Date);
+                                var keterangan = "";
+                                var trStyle = "";
+                                var startHour = "";
+                                var endHour = "";
+
+                                if (attendanceItem != null)
+                                {
+                                    keterangan = string.Format("{0:n0}", SelectedEmployee.DailyWage);
+
+                                    if (attendanceItem.StartTime.Hour < 12)
                                     {
-                                        <td>
-                                            @attendanceItem.StartTime.ToString("hh:mm")
-                                        </td>
-                                        <td>@attendanceItem.EndTime.ToString("hh:mm")</td>
-                                        <td>@string.Format("{0:n0}", attendanceItem.DailyWage)</td>
+                                        startHour = attendanceItem.StartTime.ToString("HH:mm");
+
+                                        if (attendanceItem.StartTime.Hour == 6)
+                                        {
+                                            if (attendanceItem.StartTime.Minute > 30)
+                                            {
+                                                keterangan = "TERLAMBAT";
+                                                trStyle = "background-color:#ffd6d6; color:#000 !important; font-weight:bold !important;";
+                                            }
+                                        }
+                                        else if (attendanceItem.StartTime.Hour > 6)
+                                        {
+                                            keterangan = "TERLAMBAT";
+                                            trStyle = "background-color:#ffd6d6; color:#000 !important; font-weight:bold !important;";
+                                        }
                                     }
-                                    else
+
+                                    if (attendanceItem.StartTime == attendanceItem.EndTime)
                                     {
-                                        var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(SelectedEmployee.EmployeeId, item.Date);
-                                        var keterangan = "";
-                                        if (adaIjin.Count == 0)
+                                        if (attendanceItem.EndTime.Hour > 15)
+                                        {
+                                            endHour = attendanceItem.EndTime.ToString("HH:mm");
+                                        }
+
+                                        trStyle = "background-color:#e86b6b; color:#fff !important; font-weight:bold !important;";
+                                        if (attendanceItem.StartTime.Date == DateTime.Now.Date)
+                                        {
+                                            keterangan = "JANGAN LUPA ABSEN";
+                                        }
+                                        else if (attendanceItem.StartTime.Date < DateTime.Now.Date)
                                         {
                                             keterangan = "ALPHA";
                                         }
-                                        else
+                                    }
+                                    else
+                                    {
+                                        if(startHour == "") startHour = attendanceItem.StartTime.ToString("HH:mm");
+                                        endHour = attendanceItem.EndTime.ToString("HH:mm");
+                                    }
+                                }
+                                else
+                                {
+                                    if (adaIjin.Count == 0)
+                                    {
+                                        keterangan = "ALPHA";
+                                        trStyle = "background-color:#e86b6b; color:#fff !important; font-weight:bold !important;";
+                                    }
+                                    else
+                                    {
+                                        keterangan = adaIjin[0].SubmittedFor;
+                                        switch (keterangan)
                                         {
-                                            keterangan = adaIjin[0].SubmittedFor;
+                                            case "LIBUR":
+                                                trStyle = "background-color:#4e56c7; color:#fff !important; font-weight:bold !important;";
+                                                break;
+                                            case "IJIN":
+                                                trStyle = "background-color:#4e56c7; color:#fff !important; font-weight:bold !important;";
+                                                break;
+                                            case "SAKIT":
+                                                trStyle = "background-color:#fce808; color:#000 !important; font-weight:bold !important;";
+                                                break;
                                         }
+                                    }
+                                }
 
-                                        <td colspan="3">@keterangan</td>                                        
+                                <tr style="@trStyle">
+                                    <td style="@trStyle">@item.Date.ToString("dd/MM/yyyy")</td>
+                                    
+                                    @if (attendanceItem != null) 
+                                    {
+                                        <td style="@trStyle">
+                                            @startHour
+                                        </td style="@trStyle">
+                                        <td style="@trStyle">@endHour</td>
+                                        <td style="@trStyle">@keterangan</td>                                  
+                                    }
+                                    else
+                                    {
+                                        <td colspan="3" style="@trStyle">@keterangan</td>
                                     }
                                 </tr>
                             }
@@ -153,6 +218,7 @@
     DateTime dtFromDate;
     DateTime dtToDate;
     private bool isProcessing;
+
     protected override async Task OnInitializedAsync()
     {
         //CheckPriviliagee
@@ -176,10 +242,12 @@
         //     Snackbar.Add("You dont have to privilege..", Severity.Error);
         // }
     }
+
     private async Task LoadData()
     {
         PeriodeDates = new List<DateTime>();
         DaftarKaryawan = await _employee.GetAllEmployeeActive();
+        DaftarKaryawan = DaftarKaryawan.OrderBy(x => x.EmployeeName).ToList();
         if (SelectedEmployee == null)
         {
             SelectedEmployee = DaftarKaryawan.FirstOrDefault();
@@ -225,6 +293,7 @@
                 })
             .ToList();
     }
+
     public class AbsensiData
     {
         public DateTime Date { get; set; }
@@ -235,8 +304,8 @@
 
     private async Task SelectedCutoff(ChangeEventArgs e)
     {        
-        var selectedDate = Convert.ToDateTime(e.Value.ToString());
-        if (selectedDate == DateTime.Today)
+        var selectedDate = DateTime.ParseExact(e.Value.ToString(), "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+        if (selectedDate != DateTime.Today)
         {
             DateTime firstDayOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
             DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1);
@@ -245,7 +314,7 @@
         }
         else
         {
-            LastPayrollCutoffDate = Convert.ToDateTime(e.Value.ToString());
+            LastPayrollCutoffDate = DateTime.ParseExact(e.Value.ToString(), "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
             SelectedCutoffFrom = new DateTime(LastPayrollCutoffDate.Year, LastPayrollCutoffDate.Month, 1);
         }
         groupedResults = new List<AbsensiData>();

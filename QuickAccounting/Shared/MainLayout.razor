@@ -3,6 +3,8 @@
 @inject NavigationManager navManager
 @inject AuthenticationStateProvider authStateProvider
 @inject IUser _userManage
+@inject IEmployee _employee
+@inject IAttendance _attendance
 
 @using QuickAccounting.ExceptionHandling
 <PageTitle>PT Telur Intan Farm</PageTitle>
@@ -42,7 +44,7 @@
 					<li class="nav-item dropdown has-arrow main-drop">
 						<a href="javascript:void(0);" class="dropdown-toggle nav-link userset" data-bs-toggle="dropdown">
 							<span class="user-img">
-								<img src="img/user.png" alt="">
+									<img src="@CurrentPhotoUrl" alt="">
 								<span class="status online"></span>
 							</span>
 						</a>
@@ -50,8 +52,8 @@
 							<div class="profilename">
 								<div class="profileset">
 									<span class="user-img">
-										<img src="img/user.png" alt="">
-										<span class="status online"></span>
+											<img src="@CurrentPhotoUrl" alt="">
+											<span class="status online"></span>
 									</span>
 									<div class="profilesets">
 										<h6>@context.User.Identity.Name</h6>
@@ -147,11 +149,24 @@
 													<li><a href="/app/payhead">Pay Head </a></li>
 													<li><a href="/app/salarypackage">Salary Package</a></li> *@
 													<li><a href="/app/adminattendancelist">Laporan Absensi Harian</a></li>
-													<li><a href="/app/attendance">Laporan Absensi Harian dan Gaji</a></li>													
-													<li><a href="javascript:void(0);">Sanksi dan Hukuman</a></li>
-													<li><a href="javascript:void(0);">Bonus Deduction</a></li>
-													<li><a href="javascript:void(0);">Job Desc</a></li>
-													<li><a href="javascript:void(0);">Daftar SOP</a></li>
+													<li><a href="/app/attendance">Laporan Absensi Harian dan Gaji</a></li>
+													<li><a href="/app/recordpenalty">Sanksi dan Hukuman</a></li>
+													<li><a href="/app/adminrecordattendance">Absensi Manual</a></li>
+													<li><a href="/app/adminperijinan">Admin Perijinan</a></li>
+													<li><a href="/app/penalties">Laporan Sanksi</a></li>
+												</ul>
+											</li>
+										}
+										@if(currentUserRole == "Supervisor")
+										{
+											
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/users.svg" alt="img"><span>Absensi</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/recordpenalty">Sanksi dan Hukuman</a></li>
+													<li><a href="/app/adminrecordattendance">Absensi Manual</a></li>
+													<li><a href="/app/adminperijinan">Laporan Perijinan</a></li>
+													<li><a href="/app/penalties">Laporan Sanksi</a></li>
 												</ul>
 											</li>
 										}
@@ -162,10 +177,8 @@
 												<ul>													
 													<li><a href="/app/recordattendance">Form Absensi Harian</a></li>
 													<li><a href="/app/recordvacation">Form Ijin / Libur</a></li>
-													<li><a href="javascript:void(0);">Laporan Absensi dan Gaji</a></li>
-													<li><a href="javascript:void(0);">Data Sanksi dan Hukuman</a></li>
-													<li><a href="javascript:void(0);">Deskripsi Pekerjaan</a></li>
-													<li><a href="javascript:void(0);">Daftar SOP</a></li>
+													<li><a href="/app/attendancelist">Laporan Absensi dan Gaji</a></li>
+													<li><a href="/app/penalties">Data Sanksi dan Hukuman</a></li>
 												</ul>
 											</li>
 										}
@@ -230,12 +243,12 @@
 				</div>
 				</div>
 			</div>
-				@* <CustomErrorBoundary @ref="errorBoundary">
-					<ChildContent> *@
+				<CustomErrorBoundary @ref="errorBoundary">
+					<ChildContent>
 						<div class="page-wrapper @(HideLabel ? "opened" : "")">
 							@Body
 						</div>
-					@* </ChildContent>
+					</ChildContent>
 					<ErrorContent Context="Exception">
 						<div class="modal fade @showModel" tabindex="-1" aria-labelledby="addAgentModalLabel" aria-hidden="true" style="display:@ModalDisplay; opacity:1;">
 							<div class="modal-dialog" style="top:90px;">
@@ -267,7 +280,7 @@
 							</div>
 						</div>
 					</ErrorContent>
-				</CustomErrorBoundary> *@
+				</CustomErrorBoundary>
 </div>
 </div>
 </Authorized>
@@ -282,10 +295,20 @@
 	private CustomErrorBoundary errorBoundary;
 	string currentUserRole = "User";
 
+	UserMaster modelUser = new UserMaster();
+	Employee modelEmployee = new Employee();
+
+	List<DailyAttendanceMaster> todayAttendances;
+
+	public string CurrentPhotoUrl { get; set; }
+
 	protected override async Task OnInitializedAsync()
 	{
+		CurrentPhotoUrl = "img/user.png";
+
 		await GetUserRole();
 		await LoadData();
+		//await LoadProfilePhoto();
 	}
 
 	private async Task GetUserRole()
@@ -294,6 +317,18 @@
 		var user = authstate.User;
 		var userName = user.Identity.Name;		
 		currentUserRole = await _userManage.GetUserRole(userName);
+		//modelUser = await _userManage.UserProfile(userName);
+		//modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+	}
+
+	private async Task LoadProfilePhoto()
+	{
+		todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
+		if(todayAttendances.Count > 0)
+		{
+			string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
+			CurrentPhotoUrl = "https://telurintanfarm.com/uploads/absensi/" + userFolder + "/" + todayAttendances[0].PhotoSelfie;
+		}
 	}
 
 	private async Task LoadData()

@@ -1,21 +1,22 @@
-﻿@page "/app/recordvacation"
+﻿@page "/app/recordpenalty"
 @inject IHRServices _hr
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @inject IUser _user
 @inject IEmployee _employee
 @using System.Security.Claims
+@using QuickAccounting.Constants;
 
 @inject IWebHostEnvironment _hostingEnvironment
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @attribute [Authorize]
 
-<PageTitle>Form Ijin / Libur</PageTitle>
+<PageTitle>Form Sangsi / Pengurangan Gaji</PageTitle>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h4>Form Ijin / Libur</h4>
+            <h4>Form Sangsi / Pengurangan Gaji</h4>
         </div>
     </div>
 
@@ -27,10 +28,10 @@
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
-                                <label>Tanggal Ijin / Libur</label>
+                                <label>Tanggal Sangsi</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
-                                        <RadzenDatePicker @bind-Value=@TanggalIjin DateFormat="d" Change="()=>ChangeDate()" Class="w-100" />
+                                        <RadzenDatePicker @bind-Value=@TanggalSangsi DateFormat="d" Change="()=>ChangeDate()" Class="w-100" />
                                     </div>
                                 </div>
                             </div>
@@ -40,27 +41,26 @@
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
-                                <label>Tipe Ijin / Libur</label>
+                                <label>Karyawan</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
-                                        <select class="form-control" @bind="TipeIjin">
-                                            <option value="IJIN">Ijin</option>
-                                            <option value="LIBUR">Libur</option>
-                                            <option value="SAKIT">Sakit</option>
-                                        </select>
-                                        <span style="font-style:italic;">Apabila anda ijin sakit, maka wajib meng-upload surat dokter, dan ketika masuk membawa surat dokter, apabila tidak akan dihitung sebagai ALPHA.</span>
+                                    <select class="form-control" @onchange="SelectedKaryawan">
+                                        @foreach (var karyawan in DaftarKaryawan)
+                                        {
+                                            <option value="@karyawan.EmployeeId">@karyawan.EmployeeName</option>
+                                        }
+
+                                    </select>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                @if(TipeIjin == "SAKIT")
-                {
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
-                                <label>Foto Surat Dokter</label>
+                                <label>Foto Bukti</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
                                         @if (PhotoViewer == string.Empty)
@@ -78,7 +78,6 @@
                             </div>
                         </div>
                     </div>
-                }
 
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
@@ -87,6 +86,19 @@
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
                                     <textarea type="text" style="width:100%;" @bind="Alasan" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Nominal Pengurangan</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="text" style="width:100%;" @bind="Nominal" />
                                     </div>
                                 </div>
                             </div>
@@ -105,7 +117,7 @@
                 <div class="row">
                     <div class="col-lg-4 col-sm-6 col-12">
                         <div class="form-group" style="text-align: center !important;">
-                            <label style="font-size:24px; font-weight:bold;">Form Ijin / Libur berhasil disimpan.</label>
+                            <label style="font-size:24px; font-weight:bold;">Form Sangsi / Pengurangan Gaji berhasil disimpan.</label>
                         </div>
                     </div>
                 </div>
@@ -119,27 +131,46 @@
 @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
-    Perijinan master = new Perijinan();
+    Penalty master = new Penalty();
     UserMaster modelUser = new UserMaster();
     Employee modelEmployee = new Employee();
 
     private string PhotoViewer;
-    private string TipeIjin;
     private string Alasan;
-    private string PhotoSuratDokter;
-    private DateTime? TanggalIjin;
+    private string PhotoBukti;
+    private DateTime? TanggalSangsi;
+    private decimal Nominal;
+    Employee SelectedEmployee = null;
+    List<Employee> DaftarKaryawan = new List<Employee>();
 
     MemoryStream uploadedFileStream;
     string uploadedFileExtension;
 
-    string strMenu = "Form Vacation";
+    string strMenu = "Admin - Form Sangsi";
 
     private bool FormSubmitted;
 
     private async Task ChangeDate()
     {
-        master.ForDate = TanggalIjin.Value;
+        master.ForDate = TanggalSangsi.Value;
         StateHasChanged();
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        //CheckPriviliagee
+        var authState = await authenticationState;
+        var strRole = authState.User;
+        string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        if (strShow.ShowAction == true)
+        {
+            return true;
+        }
+        else
+        {
+            return false;            
+        }
     }
 
     async Task OnFileChange(InputFileChangeEventArgs e)
@@ -169,16 +200,43 @@
         }
     }
 
+    private async Task SelectedKaryawan(ChangeEventArgs e)
+    {
+        SelectedEmployee = await _employee.GetbyId(Convert.ToInt32(e.Value.ToString()));
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        var authorized = await CheckPermission();
+        if(!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+        } 
+
         var authState = await authenticationState;
         var currentUser = authState.User;
         string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
         modelUser = await _user.UserProfile(userName);
         modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
-        PhotoSuratDokter = "";
+        PhotoBukti = "";
         PhotoViewer = "";
-        
+
+        if(modelUser.RoleId == RoleConstants.AdminRoleId) {
+            DaftarKaryawan = await _employee.GetAllEmployeeActive();
+        }
+        else if (modelUser.RoleId == RoleConstants.SupervisorRoleId)
+        {
+            DaftarKaryawan = await _employee.GetAllEmployeeActiveBySupervisorID(modelEmployee.EmployeeId);        
+        }
+
+        DaftarKaryawan = DaftarKaryawan.OrderBy(x => x.EmployeeName).ToList();
+
+        if (SelectedEmployee == null)
+        {
+            SelectedEmployee = DaftarKaryawan.FirstOrDefault();
+        }
+
         //CheckPriviliagee        
         await LoadData();
 
@@ -192,7 +250,7 @@
             return "";
         }
 
-        var uploadDirectory = Path.Combine(_hostingEnvironment.WebRootPath, "uploads/perijinan/" + userFolder);
+        var uploadDirectory = Path.Combine(_hostingEnvironment.WebRootPath, "uploads/sangsi/" + userFolder);
         if (!Directory.Exists(uploadDirectory))
         {
             Directory.CreateDirectory(uploadDirectory);
@@ -205,15 +263,15 @@
         //await file.OpenReadStream(file.Size).CopyToAsync(fs);
         uploadedFileStream.Position = 0;
         await uploadedFileStream.CopyToAsync(fs);
-        PhotoSuratDokter = fileName;
+        PhotoBukti = fileName;
         return fileName;
     }
 
     private async Task LoadData()
     {                
-        TanggalIjin = null;              
+        TanggalSangsi = null;
         Alasan = string.Empty;
-        TipeIjin = string.Empty;
+        Nominal = 0;
 
         FormSubmitted = false;
 
@@ -222,45 +280,41 @@
 
     private async Task Save()
     {
-        if (TanggalIjin.HasValue == false || TipeIjin == string.Empty)
+        if (TanggalSangsi.HasValue == false || Nominal == 0)
         {
-            Snackbar.Add("Anda belum mengisi tanggal atau Tipe Ijin. Keduanya wajib diisi.", Severity.Error);
+            Snackbar.Add("Anda belum mengisi tanggal atau Nominal. Keduanya wajib diisi.", Severity.Error);
             return;
         }
 
-        if (TipeIjin == "SAKIT")
-        {
-            string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
-            string fileName = await UploadFile(userFolder);
+        string userFolder = SelectedEmployee.EmployeeId + "_" + SelectedEmployee.EmployeeName.Replace(" ", "_");
+        string fileName = await UploadFile(userFolder);
 
-            if (PhotoSuratDokter == "")
-            {
-                Snackbar.Add("Anda belum mengambil foto surat dokter.", Severity.Error);
-                return;
-            }
+        if (PhotoBukti == "")
+        {
+            Snackbar.Add("Anda belum mengambil foto bukti.", Severity.Error);
+            return;
         }
 
         DateTime now = DateTime.Now;
-        master.ForDate = TanggalIjin.Value;
-        master.IsApproved = null;
-        master.ApprovalDescription = string.Empty;
-        master.SubmittedDesc = Alasan;
+        master.ForDate = TanggalSangsi.Value;
+        master.PenaltyDescription = Alasan;
+        master.PenaltyAmount = Nominal;
         master.DateSubmitted = now;
-        master.SubmittedFor = TipeIjin;
-        master.EmployeeID = modelEmployee.EmployeeId;
-        master.DocPhoto = PhotoSuratDokter;
-        
-        var result = await _hr.InsertPerijinan(master);
+        master.EmployeeID = SelectedEmployee.EmployeeId;
+        master.AdminUserID = modelEmployee.EmployeeId;
+        master.PenaltyPhoto = PhotoBukti;
+
+        var result = await _hr.InsertPenalty(master);
 
         if (result > 0)
         {
-            Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
+            Snackbar.Add(strMenu + " telah berhasil disimpan.", Severity.Success);
             FormSubmitted = true;
             StateHasChanged();
         }
         else
         {
-            Snackbar.Add("Form Ijin gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
+            Snackbar.Add(strMenu + " gagal disimpan, silakan coba lagi, atau hubungi programmer.", Severity.Error);
         }
     }
 }

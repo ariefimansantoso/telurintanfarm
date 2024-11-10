@@ -123,7 +123,9 @@ namespace QuickAccounting.Repository.Repository
                                    UnitName = d.UnitName,
                                    Image = a.Image,
                                    Narration = a.Narration,
-                                   QueueNumber = a.QueueNumber
+                                   QueueNumber = a.QueueNumber,
+                                   UnitId = a.UnitId,
+                                   TaxId = a.TaxId                                   
                                }).ToListAsync();
             return result;
         }

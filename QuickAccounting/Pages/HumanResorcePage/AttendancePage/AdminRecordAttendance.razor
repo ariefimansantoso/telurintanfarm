@@ -1,0 +1,241 @@
+﻿@page "/app/adminrecordattendance"
+@inject IAttendance _attendance
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@using System.Security.Claims
+@using QuickAccounting.Constants;
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<PageTitle>Admin - Form Absensi Harian</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Admin - Form Absensi Harian</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (AttendanceSubmitted == false)
+            {
+                if (WithinBoundaries)
+                {
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group">
+                                <label>Karyawan</label>
+                                <select class="form-control" @onchange="SelectedKaryawan">
+                                    @foreach (var karyawan in DaftarKaryawan)
+                                    {
+                                        <option value="@karyawan.EmployeeId">@karyawan.EmployeeName</option>
+                                    }
+
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group">
+                                <label>Pilih Tanggal Absensi</label>
+                                <input type="date" @bind="@AbsenDate" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group">
+                                <label>Pilih Absensi Pagi/Sore</label>
+                                <select class="form-control" @onchange="WaktuAbsenChanged">
+                                    <option value="PAGI">Pagi</option>
+                                    <option value="SORE">Sore</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <br /> <br />
+                    <div class="row">
+                        <div class="col-lg-12" style="text-align: center !important;">
+                            <input type="button" @onclick="@(e => Save())" class="btn btn-submit me-2" value="Simpan Absensi" />
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Absensi berhasil disimpan.</label>
+                            <a href="/app/adminattendancelist" class="btn btn-primary">Kembali ke Laporan Absensi Karyawan</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <!-- /product list -->
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    DailyAttendanceMaster master = new DailyAttendanceMaster();
+    List<Employee> DaftarKaryawan = new List<Employee>();
+    Employee SelectedEmployee = null;
+    DateTime AbsenDate;
+    string WaktuAbsen;
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+
+    string strMenu = "Admin Record Attendance";
+
+    private bool AttendanceSubmitted;
+    private bool WithinBoundaries;
+
+    private async Task GetLocation()
+    {
+        WithinBoundaries = true;
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        //CheckPriviliagee
+        var authState = await authenticationState;
+        var strRole = authState.User;
+        string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        if (strShow.ShowAction == true)
+        {
+            return true;
+        }
+        else
+        {
+            return false;            
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authorized = await CheckPermission();
+        if(!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+        }        
+
+        //CheckPriviliagee
+        await GetLocation();
+        await LoadData();
+
+        StateHasChanged();
+    }
+
+    private async Task LoadData()
+    {
+        var authState = await authenticationState;
+		var currentUser = authState.User;
+		string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+		modelUser = await _user.UserProfile(userName);
+		modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        WaktuAbsen = "PAGI";
+        if (modelUser.RoleId == RoleConstants.AdminRoleId)
+        {
+            DaftarKaryawan = await _employee.GetAllEmployeeActive();
+        }
+        else if (modelUser.RoleId == RoleConstants.SupervisorRoleId)
+        {
+            DaftarKaryawan = await _employee.GetAllEmployeeActiveBySupervisorID(modelEmployee.EmployeeId);
+        }
+
+        DaftarKaryawan = DaftarKaryawan.OrderBy(x => x.EmployeeName).ToList();
+
+        if (SelectedEmployee == null)
+        {
+            SelectedEmployee = DaftarKaryawan.FirstOrDefault();
+        }
+
+        DateTime now = DateTime.Now;
+        AbsenDate = now;
+        DateTime nineAM = new DateTime(now.Year, now.Month, now.Day, 9, 0, 0);
+        DateTime threePM = new DateTime(now.Year, now.Month, now.Day, 15, 0, 0);
+
+        master.Date = now;
+        String sDate = now.ToString();
+        DateTime datevalue = (Convert.ToDateTime(sDate.ToString()));
+
+        String dy = datevalue.Day.ToString();
+        String mn = datevalue.Month.ToString();
+        String yy = datevalue.Year.ToString();
+        master.Narration = dy + mn + yy;                
+
+        master.Lat = LocationConstant.Latitude;
+        master.Long = LocationConstant.Longitude;
+
+        var hour = now.Hour;        
+        AttendanceSubmitted = false;
+
+        StateHasChanged();
+    }
+
+    private async Task Save()
+    {        
+        string userFolder = SelectedEmployee.EmployeeId + "_" + SelectedEmployee.EmployeeName.Replace(" ", "_");
+        string fileName = "noimage.png";
+
+        DateTime now = DateTime.Now;
+        master.AddedDate = now;
+        if(WaktuAbsen == "PAGI")
+        {
+            AbsenDate = AbsenDate.Date.Add(new TimeSpan(6, 30, 0));
+        }
+        else
+        {
+            AbsenDate = AbsenDate.Date.Add(new TimeSpan(16, 00, 0));
+        }
+
+        master.Date = AbsenDate;
+
+        master.Lat = LocationConstant.Latitude;
+        master.Long = LocationConstant.Longitude;
+        master.EmployeeID = SelectedEmployee.EmployeeId;
+
+        // by default alpha, sampai nanti pas payroll baru di set masuk klo ada absensi 2 kali dalam sehari.
+        master.AttendanceStatus = "ALPHA";        
+
+        master.PhotoSelfie = fileName;
+
+        var result = await _attendance.Save(master);
+
+        if (result > 0)
+        {
+            Snackbar.Add("Absensi telah berhasil disimpan.", Severity.Success);
+            AttendanceSubmitted = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Absensi gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
+        }
+    }
+
+    private async Task SelectedKaryawan(ChangeEventArgs e)
+    {        
+        SelectedEmployee = await _employee.GetbyId(Convert.ToInt32(e.Value.ToString()));
+    }
+
+    private async Task WaktuAbsenChanged(ChangeEventArgs e)
+    {
+        WaktuAbsen = e.Value.ToString();
+    }
+}
