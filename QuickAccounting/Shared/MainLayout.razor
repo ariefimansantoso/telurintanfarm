@@ -182,9 +182,30 @@
 												</ul>
 											</li>
 										}
-										@if (currentUserRole == "Admin")
+										@if(currentUserRole == "Kandang")
 										{
-										<li class="submenu">
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Recording</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/henpopulation">Populasi</a></li>
+													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
+													<li><a href="javascript:void(0);">Produksi Telur</a></li>
+													<li><a href="javascript:void(0);">Informasi Hen Day</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole == "Admin")
+										{											
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Recording</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/henpopulation">Populasi</a></li>
+													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
+													<li><a href="javascript:void(0);">Produksi Telur</a></li>
+													<li><a href="javascript:void(0);">Informasi Hen Day</a></li>
+												</ul>
+											</li>										///
+											<li class="submenu">
 											<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Anggaran</span> <span class="menu-arrow"></span></a>
 											<ul>
 												<li><a href="/app/budget">Anggaran</a></li>

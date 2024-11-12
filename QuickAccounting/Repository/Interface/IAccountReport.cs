@@ -17,5 +17,8 @@ namespace QuickAccounting.Repository.Interface
         decimal StockValueGetOnDate(DateTime date, DateTime dtToDate, string calculationMethod, bool isOpeningStock, bool isFromBalanceSheet);
         DataSet DayBook(DateTime fromDate, DateTime toDate, int VoucherTypeId, int LedgerId);
         DataSet LedgercountReport(DateTime fromDate, DateTime toDate, int LedgerId, string LedgerName, int CompanyId);
-    }
+        List<dynamic> GetOpsCost(DateTime startDate, DateTime endDate);
+        List<dynamic> GetSales(DateTime startDate, DateTime endDate);
+        List<dynamic> GetHPP(DateTime startDate, DateTime endDate);
+	}
 }

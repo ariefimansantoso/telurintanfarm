@@ -4,7 +4,9 @@ using QuickAccounting.Data.Authentication;
 using QuickAccounting.Data.BudgetModel;
 using QuickAccounting.Data.HrPayroll;
 using QuickAccounting.Data.Inventory;
+using QuickAccounting.Data.Recording;
 using QuickAccounting.Data.Setting;
+using System.Reflection.Emit;
 
 namespace QuickAccounting.Data
 {
@@ -18,7 +20,9 @@ namespace QuickAccounting.Data
         {
             base.OnModelCreating(builder);
 
-        }
+			builder.Entity<DailyRecording>()
+			    .HasKey(dr => new { dr.CageNumber, dr.RecordDate, dr.StrainName });
+		}
         public DbSet<Role> Role { get; set; }
         public DbSet<UserMaster> UserMaster { get; set; }
         public DbSet<Privilege> Privilege { get; set; }
@@ -85,5 +89,7 @@ namespace QuickAccounting.Data
         //Budget
         public DbSet<BudgetMaster> BudgetMaster { get; set; }
         public DbSet<BudgetDetails> BudgetDetails { get; set; }
+        public DbSet<DailyRecording> DailyRecording { get; set; }
+        public DbSet<Kandang> Kandang { get; set; }
     }
 }

@@ -505,5 +505,59 @@ namespace QuickAccounting.Repository.Repository
             }
             return dtbl;
         }
-    }
+
+        public List<dynamic> GetOpsCost(DateTime startDate, DateTime endDate)
+        {
+			//var startDate = new DateTime(2024, 8, 1, 0, 0, 0);
+			//var endDate = new DateTime(2024, 8, 31, 23, 59, 59);
+
+			var result = (from ed in _context.ExpensesDetails
+						  join em in _context.ExpenseMaster on ed.ExpensiveMasterId equals em.ExpensiveMasterId
+						  join al in _context.AccountLedger on ed.LedgerId equals al.LedgerId
+						  where em.Date >= startDate && em.Date <= endDate
+						  group ed by al.LedgerName into grouped
+						  select new
+						  {
+							  LedgerName = grouped.Key,
+							  TotalAmount = grouped.Sum(ed => ed.Amount)
+						  }).ToList<dynamic>();
+
+            return result;
+		}
+
+        public List<dynamic> GetSales(DateTime startDate, DateTime endDate)
+        {
+			var result = (from sd in _context.SalesDetails
+						  join sm in _context.SalesMaster on sd.SalesMasterId equals sm.SalesMasterId
+						  join p in _context.Product on sd.ProductId equals p.ProductId
+						  join al in _context.AccountLedger on sm.LedgerId equals al.LedgerId
+						  where sm.Date >= startDate && sm.Date <= endDate
+						  group sd by p.ProductName into grouped
+						  select new
+						  {
+							  ProductName = grouped.Key,
+							  TotalNetAmount = grouped.Sum(sd => sd.NetAmount)
+						  }).ToList<dynamic>();
+
+            return result;
+		}
+
+        public List<dynamic> GetHPP(DateTime startDate, DateTime endDate)
+        {			
+			var result = (from pd in _context.PurchaseDetails
+						  join pm in _context.PurchaseMaster on pd.PurchaseMasterId equals pm.PurchaseMasterId
+						  join p in _context.Product on pd.ProductId equals p.ProductId
+						  join al in _context.AccountLedger on pm.LedgerId equals al.LedgerId
+						  where pm.Date >= startDate && pm.Date <= endDate
+						  group pd by al.LedgerName into grouped
+						  select new
+						  {
+							  LedgerName = grouped.Key,
+							  TotalNetAmount = grouped.Sum(pd => pd.NetAmount)
+						  }).ToList<dynamic>();
+
+            return result;
+		}
+
+	}
 }

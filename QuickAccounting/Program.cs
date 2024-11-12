@@ -67,6 +67,8 @@ builder.Services.AddTransient<IExcelService, ExcelService>();
 builder.Services.AddTransient<IBarcodeService, BarcodeService>();
 builder.Services.AddTransient<IPricingService, PricingService>();
 builder.Services.AddTransient<IHRServices, HRServices>();
+builder.Services.AddTransient<IDailyRecordingService, DailyRecordingService>();
+builder.Services.AddTransient<IKandangService, KandangService>();
 builder.Services.AddTransient<PdfService>();
 builder.Services.AddTransient<DataAccess>();
 builder.Services.AddTransient<DatabaseConnection>();

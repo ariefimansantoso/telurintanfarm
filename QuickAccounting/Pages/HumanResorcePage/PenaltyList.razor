@@ -12,6 +12,7 @@
 @inject IHRServices _hr
 @attribute [Authorize]
 <PageTitle>Laporan Sangsi dan Pengurangan Gaji</PageTitle>
+
 <div class="content">
     <div class="page-header">
         <div class="page-title">
@@ -149,15 +150,9 @@
         var authState = await authenticationState;
         var strRole = authState.User;
         string userName = strRole.Identity.Name;
-        modelUser = _user.UserProfile(userName).Result;
-        try
-        {
-            modelEmployee = _employee.GetbyUserId(modelUser.UserId).Result;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error fetching employee: " + ex.Message);
-        }
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
         InitMonthsDropdown();        
         
         if (modelUser.RoleId == RoleConstants.AdminRoleId)
@@ -179,8 +174,7 @@
     }
 
     private async Task LoadData()
-    {
-        
+    {        
         SelectedMonth = DateTime.Now.Month;
         CurrentYear = DateTime.Now.Year;
 
@@ -200,8 +194,6 @@
         {
             penalties = _hr.GetPenaltyByCurrentMonthYearAndSupervisorId(modelEmployee.EmployeeId, dateFrom, dateTo);
         }
-
-        StateHasChanged();
     }  
 
     private async Task SelectedKaryawan(ChangeEventArgs e)
@@ -212,11 +204,6 @@
     private void OnMonthChange(ChangeEventArgs e)
     {
         SelectedMonth = Convert.ToInt32(e.Value);		
-    }
-
-    private async Task LoadKaryawan()
-    {
-        
     }
 
     private void InitMonthsDropdown()

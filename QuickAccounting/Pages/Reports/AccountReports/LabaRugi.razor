@@ -1,0 +1,677 @@
+﻿@page "/app/labarugi"
+@inject IAttendance _attendance
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@using System.Security.Claims
+@using QuickAccounting.Constants;
+@using System.Globalization;
+@using System.Text;
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IAccountReport _account
+@inject PdfService pdfService;
+@attribute [Authorize]
+
+<PageTitle>Admin - Laba Rugi</PageTitle>
+<link rel='stylesheet' href='https://telurintanfarm.com/css/slipgaji.css' />
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Admin - Laba Rugi</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group">
+                        <label>Pilih Periode</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnMonthChange">
+                                    <option value="">-- Pilih Bulan --</option>
+                                    @foreach (var month in months)
+                                    {
+                                        <option value="@month.Id">@month.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <br /> <br />
+            <div class="row">
+                <div class="col-lg-12" style="text-align: center !important;">
+                    <input type="button" @onclick="@(e => Submit())" class="btn btn-submit me-2" value="Buka Laporan" />
+                    <input type="button" @onclick="@(e => SubmitNonOwner())" class="btn btn-submit me-2" value="Buka Laporan (Tanpa Data Owner)" />
+                    <input type="button" @onclick="@(e => DownloadPdf())" class="btn btn-primary me-2" value="Unduh Laporan PDF" />
+                    <input type="button" @onclick="@(e => DownloadPdfNonOwner())" class="btn btn-primary me-2" value="Unduh Laporan PDF (Tanpa Data Owner)" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /product list -->
+    @if (Submitted) {
+    <div class="card">
+        <div class="card-body">
+            <div class='payslip-container'>               
+                <!-- Earnings Section -->
+                <div class='earnings'>
+                    <h3>Pendapatan</h3>
+                    <table>
+                        <tr>
+                            <th>Nama Akun</th>
+                            <th>Jumlah (Rp)</th>
+                        </tr>                        
+                        @foreach(var saleItem in Sales)
+                        {                            
+                            <tr>
+                                <td>@saleItem.ProductName</td>
+                                <td style="text-align:right; width: 35%;">@string.Format("{0:n0}", saleItem.TotalNetAmount)</td>
+                            </tr>
+                        }                        
+                        <tr class='total'>
+                            <td>Total Pendapatan</td>
+                                <td style="text-align:right;">@string.Format("{0:n0}", TotalSales)</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Deductions Section -->
+                <div class='deductions'>
+                    <h3>Pembelian/HPP</h3>
+                    <table>
+                        <tr>
+                            <th>Nama Akun</th>
+                            <th>Jumlah (Rp)</th>
+                        </tr>                        
+                        @foreach (var hpp in HPP)
+                        {                            
+                            <tr>
+                                <td>@hpp.LedgerName</td>
+                                    <td style="text-align:right; width: 35%;">@string.Format("{0:n0}", hpp.TotalNetAmount)</td>
+                            </tr>
+                        }
+                        <tr class='total'>
+                            <td>Total Pembelian/HPP</td>
+                                <td style="text-align:right;">@string.Format("{0:n0}", TotalHPP)</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class='deductions'>
+                    <h3>Biaya Operasional</h3>
+                    <table>
+                        <tr>
+                            <th>Nama Akun</th>
+                            <th>Jumlah (Rp)</th>
+                        </tr>                        
+                        @foreach (var cost in Cost)
+                        {                            
+                            <tr>
+                                <td>@cost.LedgerName</td>
+                                    <td style="text-align:right; width: 35%;">@string.Format("{0:n0}", cost.TotalAmount)</td>
+                            </tr>
+                        }
+                        <tr class='total'>
+                            <td>Total Biaya Operasional</td>
+                                <td style="text-align:right;">@string.Format("{0:n0}", TotalOpsCost)</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class='deductions'>
+                    <h3>Laba/Rugi</h3>
+                    <table>
+                        <tr>
+                            <td>Laba/Rugi</td>
+                                <td style="text-align:right; width: 35%;">@string.Format("{0:n0}", TotalLabaRugi)</td>
+                        </tr>
+                    </table>
+                </div>
+
+                    @if(NonOwnerData)
+                    {
+                        <div class='deductions'>
+                            <h3>Prive Owner dan Lainnya</h3>
+                            <table>
+                                <tr>
+                                    <th>Nama Akun</th>
+                                    <th>Jumlah (Rp)</th>
+                                </tr>
+                                @foreach (var cost in CostNonOwner)
+                                {
+                                    <tr>
+                                        <td>@cost.LedgerName</td>
+                                        <td style="text-align:right; width: 35%;">@string.Format("{0:n0}", cost.TotalAmount)</td>
+                                    </tr>
+                                }
+                                <tr class='total'>
+                                    <td>Total Biaya Operasional</td>
+                                    <td style="text-align:right;">@string.Format("{0:n0}", TotalPriveOwner)</td>
+                                </tr>
+                            </table>
+                        </div>
+                    }
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+<script>
+    function downloadPdf(base64String, fileName) {
+        const link = document.createElement('a');
+        link.href = base64String;
+        link.download = fileName;
+        link.click();
+    }
+</script>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    private int SelectedMonth;
+    private List<MonthItem> months = new List<MonthItem>();
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+    public int CurrentYear { get; set; }
+    public decimal TotalSales { get; set; }
+    public decimal TotalHPP { get; set; }
+    public decimal TotalOpsCost { get; set; }
+    public decimal AdminBank { get; set; }
+    public decimal TotalLabaRugi { get; set; }
+    public decimal TotalPriveOwner { get; set; }
+    private List<dynamic> Sales = new List<dynamic>();
+    private List<dynamic> HPP = new List<dynamic>();
+    private List<dynamic> Cost = new List<dynamic>();
+    private List<dynamic> CostNonOwner = new List<dynamic>();
+
+    string strMenu = "Admin - Laba Rugi";
+    string HtmlContentPdf = "";
+    private bool Submitted = false;
+    private bool NonOwnerData = false;
+
+    private async Task<bool> CheckPermission()
+    {
+        //CheckPriviliagee
+        var authState = await authenticationState;
+        var strRole = authState.User;
+        string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        if (strShow.ShowAction == true)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authorized = await CheckPermission();
+        if (!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+        }
+
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        var currentDate = DateTime.Now;
+        SelectedMonth = currentDate.Month;
+        CurrentYear = currentDate.Year;
+
+        InitMonthsDropdown();
+
+        StateHasChanged();
+    }
+
+    private void OnMonthChange(ChangeEventArgs e)
+    {
+        SelectedMonth = Convert.ToInt32(e.Value);
+        Submitted = false;
+        NonOwnerData = false;
+    }
+
+    private void InitMonthsDropdown()
+    {
+        // Initialize month list with Indonesian month names
+        var cultureInfo = new CultureInfo("id-ID");
+        months = Enumerable.Range(1, 12)
+            .Select(i => new MonthItem { Id = i, Name = cultureInfo.DateTimeFormat.GetMonthName(i) })
+            .ToList();
+    }
+
+    private async Task Submit()
+    {
+        ClearData(); 
+
+        var dateFrom = new DateTime(CurrentYear, SelectedMonth, 1, 0, 0, 0);
+        int lastDay = DateTime.DaysInMonth(CurrentYear, SelectedMonth);
+        var dateTo = new DateTime(CurrentYear, SelectedMonth, lastDay, 23, 59, 59);		
+
+        Sales = _account.GetSales(dateFrom, dateTo);
+        HPP = _account.GetHPP(dateFrom, dateTo);
+        Cost = _account.GetOpsCost(dateFrom, dateTo);
+
+        TotalSales = (decimal)Sales.Sum(x => (decimal)x.TotalNetAmount);
+        TotalHPP = (decimal)HPP.Sum(x => (decimal)x.TotalNetAmount);
+        TotalOpsCost = (decimal)Cost.Sum(x => (decimal)x.TotalAmount);
+
+        TotalLabaRugi = TotalSales - TotalHPP - TotalOpsCost;
+
+        Submitted = true;
+        NonOwnerData = false;
+    }
+
+    private void ClearData()
+    {
+        Sales = new List<dynamic>();
+        HPP = new List<dynamic>();
+        Cost = new List<dynamic>();
+        CostNonOwner = new List<dynamic>();
+
+        TotalSales = 0;
+        TotalHPP = 0;
+        TotalOpsCost = 0;
+        TotalPriveOwner = 0;
+    }
+
+    private async Task SubmitNonOwner()
+    {
+        ClearData();
+
+        var dateFrom = new DateTime(CurrentYear, SelectedMonth, 1, 0, 0, 0);
+        int lastDay = DateTime.DaysInMonth(CurrentYear, SelectedMonth);
+        var dateTo = new DateTime(CurrentYear, SelectedMonth, lastDay, 23, 59, 59);
+
+        Sales = _account.GetSales(dateFrom, dateTo);
+        HPP = _account.GetHPP(dateFrom, dateTo);
+        Cost = _account.GetOpsCost(dateFrom, dateTo);
+
+        TotalSales = (decimal)Sales.Sum(x => (decimal)x.TotalNetAmount);
+        TotalHPP = (decimal)HPP.Sum(x => (decimal)x.TotalNetAmount);
+        TotalOpsCost = (decimal)Cost.Sum(x => (decimal)x.TotalAmount);        
+
+        var item = Cost.FirstOrDefault<dynamic>(i => i.LedgerName == "Gaji Owner");
+        if (Cost.Contains(item)) // Check if item exists in sourceList
+        {
+            Cost.Remove(item); // Remove from source
+            CostNonOwner.Add(item); // Add to destination
+        }
+
+        item = Cost.FirstOrDefault<dynamic>(i => i.LedgerName == "Prive Owner");
+        if (Cost.Contains(item)) // Check if item exists in sourceList
+        {
+            Cost.Remove(item); // Remove from source
+            CostNonOwner.Add(item); // Add to destination
+        }
+
+        item = Cost.FirstOrDefault<dynamic>(i => i.LedgerName == "Sumbangan");
+        if (Cost.Contains(item)) // Check if item exists in sourceList
+        {
+            Cost.Remove(item); // Remove from source
+            CostNonOwner.Add(item); // Add to destination
+        }
+
+        TotalPriveOwner = (decimal)CostNonOwner.Sum(x => (decimal)x.TotalAmount);
+        TotalOpsCost = TotalOpsCost - TotalPriveOwner;
+
+        TotalLabaRugi = TotalSales - TotalHPP - TotalOpsCost;
+
+
+        Submitted = true;
+        NonOwnerData = true;
+    }
+    private async Task DownloadPdf()
+    {
+        ClearData();
+
+        var dateFrom = new DateTime(CurrentYear, SelectedMonth, 1, 0, 0, 0);
+        int lastDay = DateTime.DaysInMonth(CurrentYear, SelectedMonth);
+        var dateTo = new DateTime(CurrentYear, SelectedMonth, lastDay, 23, 59, 59);		
+
+        Sales = _account.GetSales(dateFrom, dateTo);
+        HPP = _account.GetHPP(dateFrom, dateTo);
+        Cost = _account.GetOpsCost(dateFrom, dateTo);
+
+        TotalSales = (decimal)Sales.Sum(x => (decimal)x.TotalNetAmount);
+        TotalHPP = (decimal)HPP.Sum(x => (decimal)x.TotalNetAmount);
+        TotalOpsCost = (decimal)Cost.Sum(x => (decimal)x.TotalAmount);
+
+        TotalLabaRugi = TotalSales - TotalHPP - TotalOpsCost;
+
+        Submitted = true;
+        NonOwnerData = false;
+
+        StringBuilder sb = new StringBuilder();
+        foreach (var salesItem in Sales)
+        {
+            sb.Append("<tr>");
+            sb.Append("<td>" + salesItem.ProductName + "</td>");
+            sb.Append("<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", salesItem.TotalNetAmount) + "</td>");
+            sb.Append("</tr>");
+        }
+
+        StringBuilder sbHPP = new StringBuilder();
+        foreach (var hpp in HPP)
+        {
+            sbHPP.Append("<tr>");
+            sbHPP.Append("<td>" + hpp.LedgerName + "</td>");
+            sbHPP.Append("<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", hpp.TotalNetAmount) + "</td>");
+            sbHPP.Append("</tr>");
+        }
+
+        StringBuilder sbCost = new StringBuilder();
+        foreach (var cost in Cost)
+        {
+            sbCost.Append("<tr>");
+            sbCost.Append("<td>" + cost.LedgerName + "</td>");
+            sbCost.Append("<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", cost.TotalAmount) + "</td>");
+            sbCost.Append("</tr>");
+        }
+
+        HtmlContentPdf =
+                        "<!DOCTYPE html>" +
+                        "<html lang='en'>" +
+                        "<head>" +
+                            "<meta charset='UTF-8'>" +
+                            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                            "<title>Slip Gaji</title>" +
+                            "<link rel='stylesheet' href='https://telurintanfarm.com/css/slipgaji.css' />" +
+                        "</head>" +
+                        "<body>" +
+                            "<div class='payslip-container'>" +
+                                "<!-- Payslip Header -->" +
+                                "<div class='header'>" +
+                                    "<h1>Laba Rugi</h1>" +
+                                    "<p>PT Telur Intan Farm</p>" +
+                                    $"<p>{SelectedMonth}/{CurrentYear}</p>" +  // String interpolation here
+                                "</div>" +
+
+                                "<!-- Earnings Section -->" +
+                                "<div class='earnings'>" +
+                                    "<h3>Pendapatan</h3>" +
+                                    "<table>" +
+                                        "<tr>" +
+                                        "<th>Nama Akun</th>" +
+                                        "<th>Jumlah (Rp)</th>" +
+                                        "</tr>" +
+                                        sb.ToString() +                                        
+                                     "<tr class='total'>" +
+                                     "<td>Total Pendapatan</td>" +
+                                            "<td style='text-align:right;'>" + string.Format("{0:n0}", TotalSales) + "</td>" +
+                                     "</tr>" +
+                                    "</table>" +
+                                "</div>" +
+
+                                "<div class='earnings'>" +
+                                    "<h3>Pembelian/HPP</h3>" +
+                                    "<table>" +
+                                        "<tr>" +
+                                        "<th>Nama Akun</th>" +
+                                        "<th>Jumlah (Rp)</th>" +
+                                        "</tr>" +
+                                            sbHPP.ToString() +                                        
+                                         "<tr class='total'>" +
+                                         "<td>Total Pembelian/HPP</td>" +
+                                                "<td style='text-align:right;'>" + string.Format("{0:n0}", TotalHPP) + "</td>" +
+                                         "</tr>" +
+                                    "</table>" +
+                                "</div>" +
+
+                                "<div class='earnings'>" +
+                                    "<h3>Biaya Operasional</h3>" +
+                                    "<table>" +
+                                        "<tr>" +
+                                        "<th>Nama Akun</th>" +
+                                        "<th>Jumlah (Rp)</th>" +
+                                        "</tr>" +
+                                            sbCost.ToString() +
+                                         "<tr class='total'>" +
+                                         "<td>Total Pembelian/HPP</td>" +
+                                                "<td style='text-align:right;'>" + string.Format("{0:n0}", TotalOpsCost) + "</td>" +
+                                         "</tr>" +
+                                    "</table>" +
+                                "</div>" +
+
+                                                 "<div class='deductions'>" +
+                                                     "<h3>Laba/Rugi</h3>" +
+                                                     "<table>" +
+                                                         "<tr>" +
+                                                             "<td>Laba/Rugi</td>" +
+                                                             "<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", TotalLabaRugi) + "</td>" +
+                                                         "</tr>" +
+                                                     "</table>" +
+                                             "</div>" +
+
+                                "<div class='footer'>" +
+                                    
+                                    "<img src='https://telurintanfarm.com/img/ttd.png' style='width: 200px' />" +
+                                "</div>" +
+
+                            "</div>" +
+                        "</body>" +
+                        "</html>";
+
+
+        var fileNamePdf = "labarugi_" + SelectedMonth + "-" + CurrentYear + "_.pdf";
+
+        var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+        // Initiate the download
+        // Using Javascript to download PDF
+        var base64 = Convert.ToBase64String(pdfResult);
+        var url = $"data:application/pdf;base64,{base64}";
+
+        await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+    }
+
+    private async Task DownloadPdfNonOwner()
+    {
+        ClearData();
+
+        var dateFrom = new DateTime(CurrentYear, SelectedMonth, 1, 0, 0, 0);
+        int lastDay = DateTime.DaysInMonth(CurrentYear, SelectedMonth);
+        var dateTo = new DateTime(CurrentYear, SelectedMonth, lastDay, 23, 59, 59);
+
+        Sales = _account.GetSales(dateFrom, dateTo);
+        HPP = _account.GetHPP(dateFrom, dateTo);
+        Cost = _account.GetOpsCost(dateFrom, dateTo);
+
+        TotalSales = (decimal)Sales.Sum(x => (decimal)x.TotalNetAmount);
+        TotalHPP = (decimal)HPP.Sum(x => (decimal)x.TotalNetAmount);
+        TotalOpsCost = (decimal)Cost.Sum(x => (decimal)x.TotalAmount);
+
+        var item = Cost.FirstOrDefault<dynamic>(i => i.LedgerName == "Gaji Owner");
+        if (Cost.Contains(item)) // Check if item exists in sourceList
+        {
+            Cost.Remove(item); // Remove from source
+            CostNonOwner.Add(item); // Add to destination
+        }
+
+        item = Cost.FirstOrDefault<dynamic>(i => i.LedgerName == "Prive Owner");
+        if (Cost.Contains(item)) // Check if item exists in sourceList
+        {
+            Cost.Remove(item); // Remove from source
+            CostNonOwner.Add(item); // Add to destination
+        }
+
+        item = Cost.FirstOrDefault<dynamic>(i => i.LedgerName == "Sumbangan");
+        if (Cost.Contains(item)) // Check if item exists in sourceList
+        {
+            Cost.Remove(item); // Remove from source
+            CostNonOwner.Add(item); // Add to destination
+        }
+
+        TotalPriveOwner = (decimal)CostNonOwner.Sum(x => (decimal)x.TotalAmount);
+        TotalOpsCost = TotalOpsCost - TotalPriveOwner;
+
+        TotalLabaRugi = TotalSales - TotalHPP - TotalOpsCost;
+
+        StringBuilder sb = new StringBuilder();
+        foreach (var salesItem in Sales)
+        {
+            sb.Append("<tr>");
+            sb.Append("<td>" + salesItem.ProductName + "</td>");
+            sb.Append("<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", salesItem.TotalNetAmount) + "</td>");
+            sb.Append("</tr>");
+        }
+
+        StringBuilder sbHPP = new StringBuilder();
+        foreach (var hpp in HPP)
+        {
+            sbHPP.Append("<tr>");
+            sbHPP.Append("<td>" + hpp.LedgerName + "</td>");
+            sbHPP.Append("<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", hpp.TotalNetAmount) + "</td>");
+            sbHPP.Append("</tr>");
+        }
+
+        StringBuilder sbCost = new StringBuilder();
+        foreach (var cost in Cost)
+        {
+            sbCost.Append("<tr>");
+            sbCost.Append("<td>" + cost.LedgerName + "</td>");
+            sbCost.Append("<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", cost.TotalAmount) + "</td>");
+            sbCost.Append("</tr>");
+        }
+
+        StringBuilder sbOwner = new StringBuilder();
+        foreach (var costNonOwner in CostNonOwner)
+        {
+            sbOwner.Append("<tr>");
+            sbOwner.Append("<td>" + costNonOwner.LedgerName + "</td>");
+            sbOwner.Append("<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", costNonOwner.TotalAmount) + "</td>");
+            sbOwner.Append("</tr>");
+        }
+
+        HtmlContentPdf =
+                        "<!DOCTYPE html>" +
+                        "<html lang='en'>" +
+                        "<head>" +
+                            "<meta charset='UTF-8'>" +
+                            "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                            "<title>Slip Gaji</title>" +
+                            "<link rel='stylesheet' href='https://telurintanfarm.com/css/slipgaji.css' />" +
+                        "</head>" +
+                        "<body>" +
+                            "<div class='payslip-container'>" +
+                                "<!-- Payslip Header -->" +
+                                "<div class='header'>" +
+                                    "<h1>Laba Rugi</h1>" +
+                                    "<p>PT Telur Intan Farm</p>" +
+                                    $"<p>{SelectedMonth}/{CurrentYear}</p>" +  // String interpolation here
+                                "</div>" +
+
+                                "<!-- Earnings Section -->" +
+                                "<div class='earnings'>" +
+                                    "<h3>Pendapatan</h3>" +
+                                    "<table>" +
+                                        "<tr>" +
+                                        "<th>Nama Akun</th>" +
+                                        "<th>Jumlah (Rp)</th>" +
+                                        "</tr>" +
+                                        sb.ToString() +
+                                     "<tr class='total'>" +
+                                     "<td>Total Pendapatan</td>" +
+                                            "<td style='text-align:right;'>" + string.Format("{0:n0}", TotalSales) + "</td>" +
+                                     "</tr>" +
+                                    "</table>" +
+                                "</div>" +
+
+                                "<div class='earnings'>" +
+                                    "<h3>Pembelian/HPP</h3>" +
+                                    "<table>" +
+                                        "<tr>" +
+                                        "<th>Nama Akun</th>" +
+                                        "<th>Jumlah (Rp)</th>" +
+                                        "</tr>" +
+                                            sbHPP.ToString() +
+                                         "<tr class='total'>" +
+                                         "<td>Total Pembelian/HPP</td>" +
+                                                "<td style='text-align:right;'>" + string.Format("{0:n0}", TotalHPP) + "</td>" +
+                                         "</tr>" +
+                                    "</table>" +
+                                "</div>" +
+
+                                "<div class='earnings'>" +
+                                    "<h3>Biaya Operasional</h3>" +
+                                    "<table>" +
+                                        "<tr>" +
+                                        "<th>Nama Akun</th>" +
+                                        "<th>Jumlah (Rp)</th>" +
+                                        "</tr>" +
+                                            sbCost.ToString() +
+                                         "<tr class='total'>" +
+                                         "<td>Total Pembelian/HPP</td>" +
+                                                "<td style='text-align:right;'>" + string.Format("{0:n0}", TotalOpsCost) + "</td>" +
+                                         "</tr>" +
+                                    "</table>" +
+                                "</div>" +
+
+                                                 "<div class='deductions'>" +
+                                                     "<h3>Laba/Rugi</h3>" +
+                                                     "<table>" +
+                                                         "<tr>" +
+                                                             "<td>Laba/Rugi</td>" +
+                                                             "<td style='text-align:right; width: 35%;'>" + string.Format("{0:n0}", TotalLabaRugi) + "</td>" +
+                                                         "</tr>" +
+                                                     "</table>" +
+                                             "</div>" +
+
+                                "<div class='earnings'>" +
+                                    "<h3>Prive Owner</h3>" +
+                                    "<table>" +
+                                        "<tr>" +
+                                        "<th>Nama Akun</th>" +
+                                        "<th>Jumlah (Rp)</th>" +
+                                        "</tr>" +
+                                            sbOwner.ToString() +
+                                         "<tr class='total'>" +
+                                         "<td>Total Pembelian/HPP</td>" +
+                                                "<td style='text-align:right;'>" + string.Format("{0:n0}", TotalPriveOwner) + "</td>" +
+                                         "</tr>" +
+                                    "</table>" +
+                                "</div>" +
+
+                                "<div class='footer'>" +
+
+                                    "<img src='https://telurintanfarm.com/img/ttd.png' style='width: 200px' />" +
+                                "</div>" +
+
+                            "</div>" +
+                        "</body>" +
+                        "</html>";
+
+
+        var fileNamePdf = "labarugi_prive_owner_" + SelectedMonth + "-" + CurrentYear + "_.pdf";
+
+        var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+        // Initiate the download
+        // Using Javascript to download PDF
+        var base64 = Convert.ToBase64String(pdfResult);
+        var url = $"data:application/pdf;base64,{base64}";
+
+        await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+    }
+
+	private class MonthItem
+	{
+		public int Id { get; set; }
+		public string Name { get; set; }
+	}
+}
