@@ -217,5 +217,26 @@ namespace QuickAccounting.Repository.Repository
 			// Return the record, or null if not found
 			return record;
 		}
+
+		public async Task<List<DailyRecording>> GetDailyRecordingStrain(string strainName, DateTime from, DateTime to)
+		{			
+			var strainData = await _context.DailyRecording
+				.Where(recording => recording.StrainName == strainName &&
+					recording.RecordDate >= from && recording.RecordDate <= to)
+				.OrderBy(recording => recording.RecordDate)				
+				.ToListAsync();
+
+			return strainData;
+		}
+
+		public async Task<List<string>> GetStrainNameList()
+		{
+			var listNames = await _context.DailyRecording
+								.Select(recording => recording.StrainName)
+								.Distinct()
+								.ToListAsync();
+
+			return listNames;
+		}
 	}
 }

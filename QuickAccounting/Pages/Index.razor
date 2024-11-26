@@ -16,8 +16,10 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigation
 @inject IAttendance _attendance
+@inject IDailyRecordingService _recording
 
 @using QuickAccounting.Components
+@using QuickAccounting.Data.Recording
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
 <div class="content">
@@ -275,22 +277,37 @@
 			</div>
 		</div>
 
-		<div class="row">		
-			@* <div class="col-lg-6 col-sm-12 col-12 d-flex">
+		<div class="row">	
+			<div class="col-lg col-sm-12 col-12">
+				<div class="form-group">
+                    <label>Pilih Strain</label>
+                    <div class="row">
+                        <div class="col-lg col-sm-12 col-12">
+                            <select class="form-control" @onchange="SelectedStrainChange">
+								@foreach (var karyawan in DaftarStrain)
+                                {
+                                    <option value="@karyawan">@karyawan</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+				</div>
+			</div>		
+
+			 <div class="col-lg-6 col-sm-12 col-12 d-flex">
 				<div class="card flex-fill">
 					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
-						<h5 class="card-title mb-0">Income</h5>
+						<h5 class="card-title mb-0">Grafik Performa</h5>
 					</div>
 					<div class="card-body">
-						<RadzenChart>
-							<RadzenPieSeries Data="@listIncomeExpenses" Title="Income" CategoryProperty="LedgerName" ValueProperty="Credit">
-								<RadzenSeriesDataLabels Visible="@showDataLabels" />
-							</RadzenPieSeries>
-						</RadzenChart>
+						@if(ChartDataLoaded) 
+						{
+							<MudChart ChartType="ChartType.Line" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
+						}
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-6 col-sm-12 col-12 d-flex">
+			@* <div class="col-lg-6 col-sm-12 col-12 d-flex">
 				<div class="card flex-fill">
 					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
 						<h5 class="card-title mb-0">Top 10 Product</h5>
@@ -303,8 +320,8 @@
 						</RadzenChart>
 					</div>
 				</div>
-			</div>
- *@
+			</div> *@
+ 
 
 			<div class="col-lg-12 col-sm-12 col-12 d-flex">
 				<div class="card flex-fill">
@@ -344,239 +361,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
-
-		@* <div class="card mb-0">
-			<div class="card-body">
-				<h4 class="card-title">Transaksi Terkini</h4>
-				<div class="table-responsive">
-					<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
-
-						<MudTabPanel Text="Sales">
-							<MudTable Items="@listSales" Dense="@dense" Hover="@hover">
-								<HeaderContent>
-									<MudTh>Nama Pelanggan</MudTh>
-									<MudTh>Nomor Nota</MudTh>
-									<MudTh>Reference</MudTh>
-									<MudTh>Tanggal</MudTh>
-									<MudTh>Total</MudTh>
-									<MudTh>Status</MudTh>
-								</HeaderContent>
-								<RowTemplate>
-									<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
-									<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-									<MudTd DataLabel="Reference">@context.Reference</MudTd>
-									<MudTd DataLabel="Date">@context.Date</MudTd>
-									<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @string.Format("{0:n0}", context.GrandTotal)</MudTd>
-									@if (context.PaymentStatus == "Draft")
-									{
-										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br />
-										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-									}
-									else
-									{
-										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightgreen">@context.PaymentStatus</MudTd>
-									}
-								</RowTemplate>
-								<PagerContent>
-									<MudTablePager />
-								</PagerContent>
-							</MudTable>
-
-						</MudTabPanel>
-
-						<MudTabPanel Text="Purchase">
-							<MudTable Items="@listPurchase" Dense="@dense" Hover="@hover">
-								<HeaderContent>
-									<MudTh>Supplier Name</MudTh>
-									<MudTh>Bill No</MudTh>
-									<MudTh>Reference</MudTh>
-									<MudTh>Date</MudTh>
-									<MudTh>Total</MudTh>
-									<MudTh>Status</MudTh>
-								</HeaderContent>
-								<RowTemplate>
-									<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
-									<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-									<MudTd DataLabel="Reference">@context.Reference</MudTd>
-									<MudTd DataLabel="Date">@context.Date</MudTd>
-									<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
-									@if (context.PaymentStatus == "Draft")
-									{
-										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">@context.PaymentStatus</MudTd> <br />
-										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-									}
-									else
-									{
-										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightgreen">@context.PaymentStatus</MudTd>
-									}
-								</RowTemplate>
-								<PagerContent>
-									<MudTablePager />
-								</PagerContent>
-							</MudTable>
-						</MudTabPanel>
-
-
-						<MudTabPanel Text="Credit Note">
-							<MudTabPanel Text="Credit Note">
-								<MudTable Items="@listSalesReturn" Dense="@dense" Hover="@hover">
-									<HeaderContent>
-										<MudTh>Supplier Name</MudTh>
-										<MudTh>Bill No</MudTh>
-										<MudTh>Date</MudTh>
-										<MudTh>Total</MudTh>
-										<MudTh>Status</MudTh>
-									</HeaderContent>
-									<RowTemplate>
-										<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
-										<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-										<MudTd DataLabel="Date">@context.Date</MudTd>
-										<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
-										@if (context.Status == "Draft")
-										{
-											<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />
-											<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-										}
-										else
-										{
-											<MudTd DataLabel="Status" Class="badges bg-lightgreen">@context.Status</MudTd>
-										}
-									</RowTemplate>
-									<PagerContent>
-										<MudTablePager />
-									</PagerContent>
-								</MudTable>
-							</MudTabPanel>
-
-						</MudTabPanel>
-
-
-						<MudTabPanel Text="Debit Note">
-							<MudTable Items="@listPurchaseReturn" Dense="@dense" Hover="@hover">
-								<HeaderContent>
-									<MudTh>Supplier Name</MudTh>
-									<MudTh>Bill No</MudTh>
-									<MudTh>Date</MudTh>
-									<MudTh>Total</MudTh>
-									<MudTh>Status</MudTh>
-									<MudTh></MudTh>
-								</HeaderContent>
-								<RowTemplate>
-									<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
-									<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
-									<MudTd DataLabel="Date">@context.Date</MudTd>
-									<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
-									@if (context.Status == "Draft")
-									{
-										<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />
-										<MudTd DataLabel="PaymentStatus" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-									}
-									else
-									{
-										<MudTd DataLabel="Status" Class="badges bg-lightgreen">@context.Status</MudTd>
-									}
-								</RowTemplate>
-								<PagerContent>
-									<MudTablePager />
-								</PagerContent>
-							</MudTable>
-						</MudTabPanel>
-
-
-
-						<MudTabPanel Text="Journal Voucher">
-							<MudTable Items="@listVoucher" Dense="@dense" Hover="@hover">
-								<HeaderContent>
-									<MudTh>Date</MudTh>
-									<MudTh>Voucher No</MudTh>
-									<MudTh>Amount</MudTh>
-									<MudTh>Narration</MudTh>
-									<MudTh>Status</MudTh>
-								</HeaderContent>
-								<RowTemplate>
-									<MudTd DataLabel="LedgerName">@context.Date</MudTd>
-									<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
-									<MudTd DataLabel="Narration">@PublicVariables._Symbol@context.Amount</MudTd>
-									<MudTd DataLabel="Date">@context.Narration</MudTd>
-									@if (context.Status == "Draft")
-									{
-										<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />
-										<MudTd DataLabel="Status" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-									}
-									else
-									{
-										<MudTd DataLabel="Status" Class="badges bg-lightgreen">@context.Status</MudTd>
-									}
-								</RowTemplate>
-								<PagerContent>
-									<MudTablePager />
-								</PagerContent>
-							</MudTable>
-						</MudTabPanel>
-						<MudTabPanel Text="Receipt Voucher">
-							<MudTable Items="@listPaymentIn" Dense="@dense" Hover="@hover">
-								<HeaderContent>
-									<MudTh>Receipt Date</MudTh>
-									<MudTh>Receipt No</MudTh>
-									<MudTh>Paid From</MudTh>
-									<MudTh>Amount</MudTh>
-									<MudTh>Status</MudTh>
-								</HeaderContent>
-								<RowTemplate>
-									<MudTd DataLabel="LedgerName">@context.Date</MudTd>
-									<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
-									<MudTd DataLabel="Date">@context.LedgerName</MudTd>
-									<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
-									@if (context.PaymentType == "Draft")
-									{
-										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">@context.PaymentType</MudTd> <br />
-										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-									}
-									else
-									{
-										<MudTd DataLabel="PaymentType" Class="badges bg-lightgreen">@context.PaymentType</MudTd>
-									}
-								</RowTemplate>
-								<PagerContent>
-									<MudTablePager />
-								</PagerContent>
-							</MudTable>
-						</MudTabPanel>
-						<MudTabPanel Text="Payment Voucher">
-							<MudTable Items="@listPaymentOut" Dense="@dense" Hover="@hover">
-								<HeaderContent>
-									<MudTh>Payment Date</MudTh>
-									<MudTh>Payment No</MudTh>
-									<MudTh>Paid From</MudTh>
-									<MudTh>Amount</MudTh>
-									<MudTh>Status</MudTh>
-								</HeaderContent>
-								<RowTemplate>
-									<MudTd DataLabel="LedgerName">@context.Date</MudTd>
-									<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
-									<MudTd DataLabel="Date">@context.LedgerName</MudTd>
-									<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
-									@if (context.PaymentType == "Draft")
-									{
-										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">@context.PaymentType</MudTd> <br />
-										<MudTd DataLabel="PaymentType" Class="badges bg-lightred">APPROVAL PENDING</MudTd>
-									}
-									else
-									{
-										<MudTd DataLabel="PaymentType" Class="badges bg-lightgreen">@context.PaymentType</MudTd>
-									}
-								</RowTemplate>
-								<PagerContent>
-									<MudTablePager />
-								</PagerContent>
-							</MudTable>
-						</MudTabPanel>
-
-					</MudTabs>
-				</div>
-			</div>
-		</div> *@
+		</div>		
 	}
 	
 	
@@ -1036,6 +821,15 @@
 	bool SOPAvailable;
 	List<dynamic> PartaiCashList;
 	List<dynamic> PartaiTransferList;
+	private List<QuickAccounting.Data.Recording.DailyRecording> StrainData;
+	List<string> DaftarStrain;
+	string SelectedStrain;
+	private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
+	private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
+	public ChartOptions Options = new ChartOptions();
+	public List<ChartSeries> Series = new List<ChartSeries>();	
+	private int SeriesIndex = -1;
+	bool ChartDataLoaded = false;
 	/* Kode baru */
 
 
@@ -1170,6 +964,29 @@
 		}
 	}
 
+	private async Task GetStrainGraphData()
+	{
+		DateTime from = new DateTime(2024, 1, 1, 0, 0, 0);
+		DateTime to = new DateTime(2024, 7, 31, 23,59,59);
+		StrainData = await _recording.GetDailyRecordingStrain(SelectedStrain, from, to);
+
+		Series = new List<ChartSeries>();
+		ChartSeries series = new ChartSeries();
+		series.Name = SelectedStrain;
+		series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualHenDay)).ToArray();
+		Series.Add(series);
+
+		// Map strainData to chart data
+		XAxisLabels = StrainData.Select(record => record.HenAgeWeeks.ToString()).ToArray();
+		yAxisValues = StrainData.Select(record => record.ActualHenDay).ToList();
+	}
+
+	private async Task SelectedStrainChange(ChangeEventArgs e)
+	{        
+		SelectedStrain = e.Value.ToString();
+		await GetStrainGraphData();
+	}
+
 	protected async override void OnInitialized()
 	{
 		AdaPerijinan = true;
@@ -1183,6 +1000,11 @@
 
 		JobDescAvailable = !string.IsNullOrEmpty(modelEmployee.JobDesc);
 		SOPAvailable = !string.IsNullOrEmpty(modelEmployee.SOP);
+
+		DaftarStrain = await _recording.GetStrainNameList();
+		SelectedStrain = DaftarStrain.FirstOrDefault();
+
+		await GetStrainGraphData();
 
 		listProduct = await report.GetTopProduct();
 		DateTime today = DateTime.Now;
@@ -1241,7 +1063,7 @@
 
 		CurrentPhotoUrl = "img/user.png";
 		await LoadProfilePhoto();
-
+		ChartDataLoaded = true;
 
 		StateHasChanged();
 	}
