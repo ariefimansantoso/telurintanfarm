@@ -242,7 +242,7 @@ namespace QuickAccounting.Repository.Repository
             return true;
         }
 
-        public async Task<bool> DeletePerijinan(Penalty model)
+        public async Task<bool> DeletePenalty(Penalty model)
         {
             _context.Penalty.Remove(model);
             await _context.SaveChangesAsync();

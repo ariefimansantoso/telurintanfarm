@@ -55,7 +55,7 @@ namespace QuickAccounting.Services
 							  Narration = a.Narration,
 							  QueueNumber = a.QueueNumber,
 							  SalesRate = a.SalesRate
-						  }).Take(9).ToList();
+						  }).Take(10).ToList();
 			return result;
 		}
 	}

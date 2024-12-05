@@ -29,6 +29,11 @@
                             <button type="button" class="btn btn-danger" @onclick=@ModalOk>TOLAK</button>
                         </Loading>
                         break;
+                    case ModalDialogType.Delete:
+                        <Loading IsLoading="isProcessing">
+                            <button type="button" class="btn btn-danger" @onclick=@ModalOk>HAPUS</button>
+                        </Loading>
+                        break;
                     case ModalDialogType.OkCancel:
                         <button type="button" class="btn" @onclick="@ModalCancel">BATAL</button>
                         <button type="button" class="btn btn-primary" @onclick=@ModalOk>OK</button>
@@ -83,6 +88,7 @@
         Ok,
         OkCancel,
         DeleteCancel,
-        Reject
+        Reject,
+        Delete
     }
 }

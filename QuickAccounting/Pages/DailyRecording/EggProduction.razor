@@ -1,0 +1,405 @@
+﻿@page "/app/eggproduction"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@attribute [Authorize]
+
+<PageTitle>Form Recording Produksi Telur</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Recording Produksi Telur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (FormSubmitted == false)
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pilih Nomor Kandang</label>
+                            <div class="row">
+                                <div class="col-lg col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnCageChanged">
+                                    <option value="TIDAK">PILIH NO KANDANG</option>
+                                    @foreach (var kandangItem in CageList)
+                                    {
+                                        <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                    }
+                                </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Strain</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="StrainName" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Tanggal Recording</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" value="@RecordDate.ToString("dd/MM/yyyy")" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pilih Jenis Telur</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnJenisTelurChanged">
+                                        <option value="UTUH">UTUH</option>
+                                        <option value="BENTES">BENTES</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>                
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Ukuran Tray</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnUkuranTrayChanged">
+                                        <option value="21">Besar (0,21)</option>
+                                        <option value="16">Kecil (0,16)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (UtuhVisible)
+                {
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Utuh Butir (mohon diisi dulu)</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="number" class="form-control" value="@TelurUtuhButir" @onchange="OnTelurUtuhButirChanged" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Utuh KG (timbangan)</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="text" class="form-control" value="@TelurUtuhKG" @onchange="OnTelurUtuhKGChanged" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Utuh Netto KG</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="text" class="form-control" @bind="TelurUtuhActualKG" disabled />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (BentesVisible)
+                {
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Bentes Butir (mohon diisi dulu)</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="number" class="form-control" @bind="TelurBentesButir" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Bentes KG</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="text" class="form-control" @bind="TelurBentesKG" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Telur Bentes Netto KG</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="TelurBentesActualKG" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+
+                <br /> <br />
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <input type="button" @onclick="@(e => SaveEggProductionAsync())" class="btn btn-submit me-2" value="Simpan Data Produksi Telur" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Data Produksi Telur telah tersimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+    private DateTime RecordDate { get; set; }
+    //private decimal HenAgeWeek { get; set; }
+    public string StrainName { get; set; }    
+    //public decimal HenAgeDays { get; set; }
+    public int TelurUtuhButir { get; set; }
+    public decimal TelurUtuhKG { get; set; }
+    public int TelurBentesButir { get; set; }
+    public decimal TelurBentesKG { get; set; }
+    public decimal TelurUtuhActualKG { get; set; }
+    public decimal TelurBentesActualKG { get; set; }
+    private bool FormSubmitted { get; set; }
+    string SelectedNoKandang = "";
+    string SelectedTray = "";
+    string SelectedJenisTelur = "";
+    bool UtuhVisible = true;
+    bool BentesVisible = false;
+    DateTime TodaysDate;
+    private List<Kandang> CageList = new List<Kandang>(); // Placeholder for cage numbers.
+    private DailyRecording CurrentRecording;
+    string strMenu = "Form Recording Produksi Telur";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+
+    private void SetTodaysDate()
+    {
+        var today = DateTime.Now;
+        TodaysDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string strName = currentUser.FindFirst(ClaimTypes.Role).Value;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        if (strShow.ShowAction == true)
+        {           
+            SetTodaysDate();
+            TelurUtuhButir = 0;
+            TelurUtuhKG = 0;
+            TelurBentesButir = 0;
+            TelurBentesKG = 0;
+            SelectedJenisTelur = "UTUH";
+            SelectedTray = "21";
+
+            // Fetch cage numbers, can be populated dynamically from a service or DB
+            CageList = await _kandang.GetAll();
+        }
+        else
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {        
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
+            RecordDate = CurrentRecording.RecordDate;            
+            StrainName = CurrentRecording.StrainName;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnJenisTelurChanged(ChangeEventArgs e)
+    {
+        SelectedJenisTelur = e.Value.ToString();
+
+        if (SelectedJenisTelur == "UTUH")
+        {
+            UtuhVisible = true;
+            BentesVisible = false;
+        }
+        else if (SelectedJenisTelur == "BENTES")
+        {
+            UtuhVisible = false;
+            BentesVisible = true;
+        }
+    }
+
+    private void OnTelurUtuhButirChanged(ChangeEventArgs e)
+    {
+        TelurUtuhButir = Convert.ToInt32(e.Value.ToString());
+
+        Calculate();
+    }
+
+    private void OnTelurUtuhKGChanged(ChangeEventArgs e)
+    {
+        TelurUtuhKG = Convert.ToDecimal(e.Value.ToString());
+
+        Calculate();
+    }
+
+    private void OnUkuranTrayChanged(ChangeEventArgs e)
+    {
+        SelectedTray = e.Value.ToString();
+
+        Calculate();
+    }
+
+    private async Task SaveEggProductionAsync()
+    {
+        if (SelectedNoKandang == "")
+        {
+            Snackbar.Add("Mohon pilih No Kandang terlebih dahulu.", Severity.Error);
+            return;
+        }
+
+        bool result = false;
+
+
+        try
+        {            
+            var totalEgg = TelurBentesButir + TelurUtuhButir;
+            var totalEggKG = TelurUtuhActualKG + TelurBentesActualKG;
+
+            // insert to egg stock report;
+            DailyEggPickup dailyEggPickup = new DailyEggPickup();
+            dailyEggPickup.ReceivedBy = -99;
+            dailyEggPickup.ReceivedOn = DateTime.Now;
+            dailyEggPickup.RecordDate = RecordDate;
+            dailyEggPickup.CageNumber = int.Parse(SelectedNoKandang).ToString();
+            dailyEggPickup.StrainName = StrainName;
+            dailyEggPickup.TelurBentesButir = TelurBentesButir;
+            dailyEggPickup.TelurBentesKG = TelurBentesKG;
+            dailyEggPickup.TelurBentesNettKG = TelurBentesActualKG;
+            dailyEggPickup.TelurUtuhButir = TelurUtuhButir;
+            dailyEggPickup.TelurUtuhNettKG = TelurUtuhActualKG;
+            dailyEggPickup.TelurUtuhKG = TelurUtuhKG;
+            dailyEggPickup.TotalButir = TelurBentesButir + TelurUtuhButir;
+            dailyEggPickup.TotalNettKG = TelurBentesActualKG + TelurUtuhActualKG;
+            dailyEggPickup.CreatedBy = modelEmployee.EmployeeId;
+
+            var eggReport = await _egg.CreateAsync(dailyEggPickup);
+
+            result = await _recording.SaveEggProductionAsync(SelectedNoKandang, StrainName, RecordDate,
+                TelurUtuhButir, TelurUtuhActualKG, TelurBentesButir, TelurBentesActualKG,
+                totalEgg, totalEggKG, modelEmployee.EmployeeId);
+
+
+        }
+        catch (DbUpdateException ex)
+        {
+            Console.WriteLine($"Database Update Exception: {ex.InnerException?.Message}");            
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Terjadi kesalahan pada system. Tolong di screenshot: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+
+
+        if (result)
+        {
+            Snackbar.Add("Data produksi telur telah tersimpan.", Severity.Success);
+            FormSubmitted = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Recording tidak ditemukan untuk kandang yang dipilih.", Severity.Error);
+        }
+    }
+
+    private async Task Calculate()
+    {
+        int numberOfTray = (int)Math.Ceiling((double)TelurUtuhButir / 30);
+        decimal beratTray = (decimal.Parse(SelectedTray) / (decimal)100) * (decimal)numberOfTray;
+        if (UtuhVisible)
+        {
+            TelurUtuhActualKG = TelurUtuhKG - beratTray;
+        }
+        else if (BentesVisible)
+        {
+            TelurBentesActualKG = TelurBentesKG - beratTray;
+        }
+
+        StateHasChanged();
+    }
+}

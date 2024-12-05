@@ -302,7 +302,7 @@
 					<div class="card-body">
 						@if(ChartDataLoaded) 
 						{
-							<MudChart ChartType="ChartType.Line" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
+							<MudChart ChartType="ChartType.Line" ChartOptions="@Options" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
 						}
 					</div>
 				</div>
@@ -966,19 +966,28 @@
 
 	private async Task GetStrainGraphData()
 	{
+		var now = DateTime.Now;
+		var currentMonth = now.Month;
 		DateTime from = new DateTime(2024, 1, 1, 0, 0, 0);
 		DateTime to = new DateTime(2024, 7, 31, 23,59,59);
 		StrainData = await _recording.GetDailyRecordingStrain(SelectedStrain, from, to);
 
 		Series = new List<ChartSeries>();
 		ChartSeries series = new ChartSeries();
-		series.Name = SelectedStrain;
+		series.Name = "+/- HD";
 		series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualHenDay)).ToArray();
+		Series.Add(series);
+
+		series = new ChartSeries();
+		series.Name = "EW(gr)";
+		series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualEggWeightG)).ToArray();
 		Series.Add(series);
 
 		// Map strainData to chart data
 		XAxisLabels = StrainData.Select(record => record.HenAgeWeeks.ToString()).ToArray();
 		yAxisValues = StrainData.Select(record => record.ActualHenDay).ToList();
+
+		Options.YAxisTicks = 20;
 	}
 
 	private async Task SelectedStrainChange(ChangeEventArgs e)

@@ -111,22 +111,22 @@
 											@item.ProductName	
 										</td>
 										<td style="padding: 10px;vertical-align: top; ">
-											@item.Qty
+											@string.Format("{0:n0}", item.Qty)
 										</td>
 								<td style="padding: 10px;vertical-align: top; ">
 									@item.UnitName
 								</td>
 										<td style="padding: 10px;vertical-align: top; ">
-											@item.Rate
+											@string.Format("{0:n0}", item.Rate)
 										</td>
 										<td style="padding: 10px;vertical-align: top; ">
-											@item.DiscountAmount
+											@string.Format("{0:n0}", item.DiscountAmount)
 										</td>
 										<td style="padding: 10px;vertical-align: top; ">
-											@item.TaxAmount
+											@string.Format("{0:n0}", item.TaxAmount)
 										</td>
 										<td style="padding: 10px;vertical-align: top; ">
-											@PublicVariables._Symbol @item.TotalAmount
+											@PublicVariables._Symbol @string.Format("{0:n0}", item.TotalAmount)
 										</td>
 									</tr>
 									}
@@ -135,17 +135,17 @@
 						<tr class="total-order w-100 max-widthauto m-auto mb-4">
 									<td colspan="5"></td>
 									<td style="font-weight:700;">Subtotal</td>
-							<td style="font-weight:700;">@PublicVariables._Symbol @model.NetAmounts</td>
+							<td style="font-weight:700;">@PublicVariables._Symbol @string.Format("{0:n0}", model.NetAmounts)</td>
 								</tr>
 						<tr class="total-order w-100 max-widthauto m-auto mb-4">
 									<td colspan="5"></td>
 									<td>Discount</td>
-									<td>@PublicVariables._Symbol @model.BillDiscount</td>
+									<td>@PublicVariables._Symbol @string.Format("{0:n0}", model.BillDiscount)</td>
 								</tr>
 						<tr class="total-order w-100 max-widthauto m-auto mb-4">
 									<td colspan="5"></td>
 									<td style="font-weight:700;">Taxable Total</td>
-							<td style="font-weight:700;">@PublicVariables._Symbol @model.TotalAmount</td>
+							<td style="font-weight:700;">@PublicVariables._Symbol @string.Format("{0:n0}", model.TotalAmount)</td>
 								</tr>
 						<tr class="total-order w-100 max-widthauto m-auto mb-4">
 							<td colspan="5"></td>
@@ -155,7 +155,7 @@
 						<tr class="total-order w-100 max-widthauto m-auto mb-4">
 							<td colspan="5"></td>
 							<td style="font-weight:700;">Grand Total</td>
-							<td style="font-weight:700;">@PublicVariables._Symbol @model.GrandTotal</td>
+							<td style="font-weight:700;">@PublicVariables._Symbol @string.Format("{0:n0}", model.GrandTotal)</td>
 						</tr>
 							</tfoot>	
 							</table>

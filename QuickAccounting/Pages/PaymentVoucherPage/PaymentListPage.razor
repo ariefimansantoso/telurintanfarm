@@ -71,7 +71,7 @@
 						<MudTd DataLabel="LedgerName">@context.Date</MudTd>
 						<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
 						<MudTd DataLabel="Date">@context.LedgerName</MudTd>
-						<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
+						<MudTd DataLabel="Amount">@PublicVariables._Symbol @string.Format("{0:n0}", context.Amount)</MudTd>
 						@if (context.PaymentType == "Draft")
 						{
 							<MudTd DataLabel="PaymentType" Class="badges bg-lightred">@context.PaymentType</MudTd> <br />

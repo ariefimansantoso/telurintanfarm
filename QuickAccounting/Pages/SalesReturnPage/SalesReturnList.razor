@@ -78,7 +78,7 @@
 								<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
 								<MudTd DataLabel="Email">@context.VoucherNo</MudTd>
 								<MudTd DataLabel="Date">@context.Date</MudTd>
-								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @context.GrandTotal</MudTd>
+								<MudTd DataLabel="GrandTotal">@PublicVariables._Symbol @string.Format("{0:n0}", context.GrandTotal)</MudTd>
 						@if (context.Status == "Draft")
 								{
 							<MudTd DataLabel="Status" Class="badges bg-lightred">@context.Status</MudTd> <br />

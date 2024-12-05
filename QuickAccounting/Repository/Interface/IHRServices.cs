@@ -4,7 +4,7 @@ namespace QuickAccounting.Repository.Interface
 {
     public interface IHRServices
     {
-        Task<bool> DeletePerijinan(Penalty model);
+        Task<bool> DeletePenalty(Penalty model);
         Task<bool> DeletePerijinan(Perijinan model);
         Task<int> InsertPenalty(Penalty perijinan);
         Task<int> InsertPerijinan(Perijinan perijinan);

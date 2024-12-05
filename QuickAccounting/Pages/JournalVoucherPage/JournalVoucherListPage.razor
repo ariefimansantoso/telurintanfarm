@@ -70,7 +70,7 @@
 					<RowTemplate>
 						<MudTd DataLabel="LedgerName">@context.Date</MudTd>
 						<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
-						<MudTd DataLabel="Narration">@PublicVariables._Symbol@context.Amount</MudTd>
+						<MudTd DataLabel="Narration">@PublicVariables._Symbol @string.Format("{0:n0}", context.Amount)</MudTd>
 						<MudTd DataLabel="Date">@context.Narration</MudTd>
 						@if (context.Status == "Draft")
 						{

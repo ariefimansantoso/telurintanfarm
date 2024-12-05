@@ -74,7 +74,7 @@
 						<MudTd DataLabel="LedgerName">@context.LedgerName</MudTd>
 						<MudTd DataLabel="VoucherNo">@context.VoucherNo</MudTd>
 						<MudTd DataLabel="Date">@context.Date</MudTd>
-						<MudTd DataLabel="Amount">@PublicVariables._Symbol@context.Amount</MudTd>
+						<MudTd DataLabel="Amount">@PublicVariables._Symbol @string.Format("{0:n0}", context.Amount)</MudTd>
 						@*@foreach(var item in listCashOrBank)
 						{
 							@if(@item.LedgerId == @context.CashBankid)

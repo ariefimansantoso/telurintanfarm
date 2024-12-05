@@ -185,6 +185,8 @@
         var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
         var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
         var sakit = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SAKIT")).Count();
+        var ijinLembur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LEMBUR")).Count();
+        var setengahHari = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SETENGAH HARI")).Count();
 
         decimal premi = 0;
         decimal gajiBersih = 0;
@@ -292,6 +294,12 @@
                                             <td>{23}</td>
                                         </tr>
                                         <tr>
+                                            <th>Setengah Hari:</th>
+                                            <td>{26}</td>
+                                            <th>Lembur:</th>
+                                            <td>{27}</td>
+                                        </tr>
+                                        <tr>
                                             <th>Alpha:</th>
                                             <td>{24}</td>
                                             <th>Gaji Harian:</th>
@@ -381,7 +389,7 @@
 
                                 "Jenis Potongan", string.Format("{0:n0}", cicilan), string.Format("{0:n0}", potonganNonCicilan), string.Format("{0:n0}", totalPotongan),
                                 string.Format("{0:n0}", gajiBersih), "none",
-                                countMasuk, libur, ijin, sakit, alpha, string.Format("{0:n0}", modelEmployee.DailyWage));
+                                countMasuk, libur, ijin, sakit, alpha, string.Format("{0:n0}", modelEmployee.DailyWage), ijinLembur, setengahHari);
         
         var fileNamePdf = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
         

@@ -71,8 +71,7 @@
 	private string searchString1 = "";
 	string strMenu = "Expenses";
 	protected override async Task OnInitializedAsync()
-	{
-		
+	{		
 		//CheckPriviliagee
 		var authState = await authenticationState;
 		var strRole = authState.User;

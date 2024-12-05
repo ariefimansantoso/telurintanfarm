@@ -50,7 +50,7 @@
                             <label>Strain</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="StrainName" disabled />
+                                    <input type="text" class="form-control" @bind="StrainName" disabled />
                                 </div>
                             </div>
                         </div>
@@ -63,38 +63,12 @@
                             <label>Record Date</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="date" class="form-control" @bind="RecordDate" disabled />
+                                    <input type="text" class="form-control" value="@RecordDate.ToString("dd/MM/yyyy")" disabled />
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>                
-
-                <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
-                        <div class="form-group" style="text-align: center !important;">
-                            <label>Umur Minggu</label>
-                            <div class="row">
-                                <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="text" class="form-control" @bind="HenAgeWeek" disabled />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
-                        <div class="form-group" style="text-align: center !important;">
-                            <label>Umur Hari</label>
-                            <div class="row">
-                                <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="text" class="form-control" @bind="HenAgeDays" disabled />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </div>                                
 
                 <div class="row">
                     <div class="col-lg-4 col-sm-6 col-12">
@@ -115,7 +89,7 @@
                             <label>Mati</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="DeadCount" />
+                                    <input type="number" class="form-control" value="@DeadCount" @onchange="OnDeadChanged" />
                                 </div>
                             </div>
                         </div>
@@ -128,7 +102,7 @@
                             <label>Afkir</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="UnproductiveCount" />
+                                    <input type="number" class="form-control" value="@UnproductiveCount" @onchange="OnAfkirChanged" />
                                 </div>
                             </div>
                         </div>
@@ -141,7 +115,7 @@
                             <label>Sakit</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="SickCount" />
+                                    <input type="number" class="form-control" value="@SickCount" @onchange="OnSickChanged" />
                                 </div>
                             </div>
                         </div>
@@ -154,7 +128,7 @@
                             <label>Pindah Masuk</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="MoveInCount" />
+                                    <input type="number" class="form-control" value="@MoveInCount" @onchange="OnMoveInChanged" />
                                 </div>
                             </div>
                         </div>
@@ -167,7 +141,7 @@
                             <label>Pindah Keluar</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="MoveOutCount" />
+                                    <input type="number" class="form-control" value="@MoveOutCount" @onchange="OnMoveOutChanged" />
                                 </div>
                             </div>
                         </div>
@@ -180,7 +154,7 @@
                             <label>Populasi Akhir</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="PopulationEndCount" />
+                                    <input type="number" class="form-control" @bind="PopulationEndCount" disabled />
                                 </div>
                             </div>
                         </div>
@@ -239,7 +213,7 @@
         TodaysDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
     }
 
-    private async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         var authState = await authenticationState;
         var currentUser = authState.User;
@@ -270,10 +244,43 @@
         if (e.Value.ToString() != "TIDAK")
         {
             SelectedNoKandang = e.Value.ToString();
-            CurrentRecording = await _recording.GetDailyRecordForTodayAsync(SelectedNoKandang, TodaysDate);
+            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
             RecordDate = CurrentRecording.RecordDate;
-            HenAgeWeek = CurrentRecording.HenAgeWeeks;
+            StrainName = CurrentRecording.StrainName;
+            PopulationCount = CurrentRecording.PopulationEnd;
+            PopulationEndCount = CurrentRecording.PopulationEnd;
+            StateHasChanged();
         }
+    }
+
+    private async Task OnDeadChanged(ChangeEventArgs e)
+    {
+        DeadCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnAfkirChanged(ChangeEventArgs e)
+    {
+        UnproductiveCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnSickChanged(ChangeEventArgs e)
+    {
+        SickCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnMoveInChanged(ChangeEventArgs e)
+    {
+        MoveInCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnMoveOutChanged(ChangeEventArgs e)
+    {
+        MoveOutCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
     }
 
     private async Task SaveHenPopulationAsync()

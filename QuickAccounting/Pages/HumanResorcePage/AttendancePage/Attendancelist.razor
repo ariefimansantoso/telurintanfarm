@@ -29,7 +29,7 @@
                                 <select class="form-control" @onchange="SelectedCutoff">
                                     @foreach (var cutoff in PayrollCutoffs)
                                     {
-                                        <option value="@cutoff.PayrollDate.ToString(" dd /MM/yyyy")">@cutoff.PayrollPeriode</option>
+                                        <option value="@cutoff.PayrollDate.ToString("dd/MM/yyyy")">@cutoff.PayrollPeriode</option>
                                     }                                    
                                 </select>
                             </div>
@@ -75,6 +75,8 @@
                         <th>A</th>
                         <th>I</th>
                         <th>S</th>
+                        <th>1/2</th>
+                        <th>Lembur</th>
                         <th>L</th>
                         <th>Cicilan</th>
                         <th>Potongan</th>
@@ -89,7 +91,7 @@
                             payrollExcel = new List<PayrollExcel>();
                             int no = 1;
                             @foreach (var item in detailAttendances)
-                            {
+                            {              
                                 
                                 var employee = activeEmployees.FirstOrDefault(x => x.EmployeeId == item.Key);
                                 var countMasuk = 0;
@@ -121,6 +123,8 @@
                                 var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
                                 var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
                                 var sakit = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SAKIT")).Count();
+                                var setengahHari = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SETENGAH HARI")).Count();
+                                var ijinLembur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LEMBUR")).Count();
                                 decimal premi = 0;
                                 decimal gajiBersih = 0;
                                 var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(employee.EmployeeId, LastPayrollCutoff.Month, 2024);
@@ -130,6 +134,12 @@
                                 if (PeriodDaysCount > (countMasuk + alpha + libur + ijin + sakit))
                                 {
                                     alpha = PeriodDaysCount - (countMasuk + alpha + libur + ijin + sakit);
+                                }
+
+                                decimal potonganSetengahHari = 0;
+                                if(setengahHari > 0)
+                                {
+                                    potonganSetengahHari = potonganSetengahHari + (employee.DailyWage / 2);
                                 }
 
                                 if(listPotongan.Count > 0)
@@ -158,7 +168,7 @@
                                     gajiBersih = totalGaji;
                                 }
 
-                                gajiBersih = gajiBersih - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan + lembur;
+                                gajiBersih = gajiBersih - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan - potonganSetengahHari + lembur;
                                 gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
                                 if (employee.BankAccount != "0" && employee.BankAccount != "")
                                 {
@@ -183,9 +193,11 @@
                                     <td>@alpha</td>
                                     <td>@ijin</td>
                                     <td>@sakit</td>
+                                    <td>@setengahHari</td>
+                                    <td>@ijinLembur</td>
                                     <td>@libur</td>
                                     <td>@string.Format("{0:n0}", cicilan)</td>
-                                    <td>@string.Format("{0:n0}", potonganNonCicilan)</td>
+                                    <td>@string.Format("{0:n0}", potonganNonCicilan + potonganSetengahHari)</td>
                                     <td>@employee.BankAccount</td>
                                     <td>@string.Format("{0:n0}", gajiBersih)</td>
                                 </tr>

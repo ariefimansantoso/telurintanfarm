@@ -76,15 +76,15 @@
                         <tfoot>
                             <tr style="background:#eaf1f9">
                                 <td style="font-weight:600;">Total</td>
-                                <td style="font-weight:600;">@PublicVariables._Symbol@decTotalDebit</td>
-                                <td style="font-weight:600;">@PublicVariables._Symbol@decTotalCredit</td>
+                                <td style="font-weight:600;">@PublicVariables._Symbol @string.Format("{0:n0}", decTotalDebit)</td>
+                                <td style="font-weight:600;">@PublicVariables._Symbol @string.Format("{0:n0}", decTotalCredit)</td>
                                 <td></td>
                                 <td></td>
                             </tr>
                             <tr>
                                 <td style="float:right; font-weight:600;"></td>
                                 <td></td>
-                                <td style="font-weight:600;">Different: &nbsp;&nbsp;@PublicVariables._Symbol@decimalTotalDifferent</td>
+                                <td style="font-weight:600;">Different: &nbsp;&nbsp;@PublicVariables._Symbol @string.Format("{0:n0}", decimalTotalDifferent)</td>
                                 <td></td>
                                 <td></td>
                             </tr>

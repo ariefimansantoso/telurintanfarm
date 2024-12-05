@@ -111,8 +111,8 @@
                                     <td>@td.UnitName</td>
 								<td><input type="number" @bind-value="td.SalesRate" style="width: 120px" class="form-control" @onkeyup="@(e => editItem(td.ProductId))" @onclick="@(e => editItem(td.ProductId))" @bind-value:event="oninput"></td>
 								<td><input type="number" @bind-value="@td.DiscountAmount" style="width: 100px" class="form-control" @onkeyup="@(e => editItem(td.ProductId))" @onclick="@(e => editItem(td.ProductId))" @bind-value:event="oninput"></td>
-                                    <td class="text-end">@td.TaxAmount</td>
-                                    <td class="text-end">@PublicVariables._Symbol @td.TotalAmount</td>
+                                    <td class="text-end">@string.Format("{0:n0}", td.TaxAmount)</td>
+                                    <td class="text-end">@PublicVariables._Symbol @string.Format("{0:n0}", td.TotalAmount)</td>
 								<td>
                                         <a @onclick="@(e => Edit(td.ProductId))"><img src="assets/img/icons/edit.svg" alt="svg"></a>
                                         <a @onclick="@(e => deleteItem(td.Id , td.SalesDetailsId))"><img src="assets/img/icons/delete.svg" alt="svg"></a>

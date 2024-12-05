@@ -50,7 +50,7 @@
                             <label>Strain</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="StrainName" disabled />
+                                    <input type="text" class="form-control" @bind="StrainName" disabled />
                                 </div>
                             </div>
                         </div>
@@ -63,7 +63,7 @@
                             <label>Record Date</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="date" class="form-control" @bind="RecordDate" disabled />
+                                    <input type="text" class="form-control" value="@RecordDate.ToString("dd/MM/yyyy")" disabled />
                                 </div>
                             </div>
                         </div>
@@ -73,62 +73,10 @@
                 <div class="row">
                     <div class="col-lg-4 col-sm-6 col-12">
                         <div class="form-group" style="text-align: center !important;">
-                            <label>Umur Minggu</label>
-                            <div class="row">
-                                <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="text" class="form-control" @bind="HenAgeWeek" disabled />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
-                        <div class="form-group" style="text-align: center !important;">
-                            <label>Umur Hari</label>
-                            <div class="row">
-                                <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="text" class="form-control" @bind="HenAgeDays" disabled />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
-                        <div class="form-group" style="text-align: center !important;">
-                            <label>Jenis Concentrate</label>
-                            <div class="row">
-                                <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="ConcentrateType" disabled />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
-                        <div class="form-group" style="text-align: center !important;">
                             <label>Kirim</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="ActualFoodNeededKG" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
-                        <div class="form-group" style="text-align: center !important;">
-                            <label>Saldo</label>
-                            <div class="row">
-                                <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="SaldoFoodKG" disabled />
+                                    <input type="text" class="form-control" @bind="ActualFoodNeededKG" disabled />
                                 </div>
                             </div>
                         </div>
@@ -141,7 +89,7 @@
                             <label>Pakai</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="FoodNeededTodayKg" disabled />
+                                    <input type="text" class="form-control" @bind="FoodNeededTodayKg" disabled />
                                 </div>
                             </div>
                         </div>
@@ -154,7 +102,7 @@
                             <label>Sisa</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="RemainingFoodKg" />
+                                    <input type="text" class="form-control" @bind="RemainingFoodKg" disabled />
                                 </div>
                             </div>
                         </div>
@@ -167,7 +115,7 @@
                             <label>FI</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="FoodIntakePerHen" />
+                                    <input type="text" class="form-control" value="@FoodIntakePerHen" @onchange="FoodIntakeChanged" />
                                 </div>
                             </div>
                         </div>
@@ -180,7 +128,7 @@
                             <label>-/+ FI</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="number" class="form-control" @bind="FoodIntakeDeviation" />
+                                    <input type="text" class="form-control" @bind="FoodIntakeDeviation" disabled />
                                 </div>
                             </div>
                         </div>
@@ -216,11 +164,13 @@
     private decimal HenAgeWeek { get; set; }
     private string ConcentrateType { get; set; }
     private decimal ActualFoodNeededKG { get; set; }
-    private int SaldoFoodKG { get; set; }
-    private int FoodNeededTodayKg { get; set; }
-    private int RemainingFoodKg { get; set; }
-    private int FoodIntakePerHen { get; set; }
-    private int FoodIntakeDeviation { get; set; }
+    private decimal SaldoFoodKG { get; set; }
+    private decimal FoodNeededTodayKg { get; set; }
+    private decimal RemainingFoodKg { get; set; }
+    private decimal PreviousFoodIntakePerHen { get; set; }
+    private decimal FoodIntakePerHen { get; set; }
+    private decimal FoodIntakeDeviation { get; set; }
+    private int PopulasiAwal { get; set; }
     private string StrainName { get; set; }
     public int HenAgeDays { get; set; }
     private bool FormSubmitted { get; set; }
@@ -239,7 +189,7 @@
         TodaysDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
     }
 
-    private async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         var authState = await authenticationState;
         var currentUser = authState.User;
@@ -252,6 +202,12 @@
         if (strShow.ShowAction == true)
         {           
             SetTodaysDate();
+            FoodIntakePerHen = 0;
+            FoodNeededTodayKg = 0;
+            ActualFoodNeededKG = 0;
+            FoodIntakeDeviation = 0;
+            RemainingFoodKg = 0;
+            PreviousFoodIntakePerHen = 0;
 
             // Fetch cage numbers, can be populated dynamically from a service or DB
             CageList = await _kandang.GetAll();
@@ -265,14 +221,27 @@
         StateHasChanged();
     }
 
+    private async Task FoodIntakeChanged(ChangeEventArgs e)
+    {
+        FoodIntakePerHen = Convert.ToDecimal(e.Value.ToString());
+        FoodNeededTodayKg = (FoodIntakePerHen * (decimal)PopulasiAwal) / (decimal)1000;
+        ActualFoodNeededKG = FoodNeededTodayKg - RemainingFoodKg;
+        FoodIntakeDeviation = FoodIntakePerHen - PreviousFoodIntakePerHen;
+    }
+
     private async Task OnCageChanged(ChangeEventArgs e)
-    {        
+    {
         if (e.Value.ToString() != "TIDAK")
         {
             SelectedNoKandang = e.Value.ToString();
-            CurrentRecording = await _recording.GetDailyRecordForTodayAsync(SelectedNoKandang, TodaysDate);
+            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
             RecordDate = CurrentRecording.RecordDate;
-            HenAgeWeek = CurrentRecording.HenAgeWeeks;
+            StrainName = CurrentRecording.StrainName;
+            PopulasiAwal = CurrentRecording.PopulationStart;
+            RemainingFoodKg = CurrentRecording.RemainingFoodKg;
+            PreviousFoodIntakePerHen = CurrentRecording.FoodIntakePerHen;
+            ConcentrateType = CurrentRecording.ConcentrateType;
+            StateHasChanged();
         }
     }
 
