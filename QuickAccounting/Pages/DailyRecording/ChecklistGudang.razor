@@ -1,0 +1,242 @@
+﻿@page "/app/eggverification"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Timbang Telur</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important;
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Timbang Telur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: left !important;">
+                        <h1>
+                            Total Diambil: @TotalDiambil
+                        </h1>    
+                        <h1>
+                            Total Ditimbang: @TotalDitimbang
+                        </h1>
+                        <h1>
+                            Sisa: @TotalSisa
+                        </h1>
+                    </div>
+                </div>
+            </div> 
+            
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Jenis Telur</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnJenisTelurChanged">
+                                    <option value="UTUH">UTUH</option>
+                                    <option value="BENTES">BENTES</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Timbangan</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@Timbangan" @onchange="OnTimbanganChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;" disabled="@( !IsValid )">Timbang</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <br /><br />
+                        <h4>Hanya dipencet kalau sudah selesai timbang semua</h4>
+                        <button @onclick="() => Finalize()" class="btn btn-primary" style="color:#fff !important;">Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Timbang Telur Gudang";
+
+    decimal TotalDiambil = 0;
+    decimal TotalDitimbang = 0;
+    decimal TotalSisa = 0;
+    string JenisTelurSelected = "UTUH";
+    decimal Timbangan = 0;
+    bool TimbangDone = false;
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+
+    bool isProcessing;
+    bool IsValid = true;
+
+    private async Task OnTimbanganChanged(ChangeEventArgs e)
+    {
+        // if (e.Value.ToString().Contains("."))
+        // {
+        //     Snackbar.Add("Input tidak benar. Mohon pakai KOMA.", Severity.Warning);
+        //     IsValid = false;
+        //     return;
+        // }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            Timbangan = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task Finalize()   
+    {
+        try
+        {
+            var now = DateTime.Now;
+            var timbangan = await _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy < 0 && x.RecordDate.Date == now.Date).ToListAsync();
+            timbangan.ForEach(x => x.VerifiedBy = modelEmployee.EmployeeId);
+            timbangan.ForEach(x => x.VerifiedOn = now);
+            _db.UpdateRange(timbangan);
+            await _db.SaveChangesAsync();
+            Snackbar.Add("Data produksi telur telah tersimpan.", Severity.Success);
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task Save()   
+    {
+        try
+        {
+            var timbangan = new StockGudang();
+            timbangan.TotalDitimbang = Timbangan;
+            timbangan.CreatedBy = modelEmployee.EmployeeId;
+            timbangan.DateDitimbang = DateTime.Now;
+            timbangan.EggType = JenisTelurSelected;
+            _db.StockGudang.Add(timbangan);
+            await _db.SaveChangesAsync();
+            Snackbar.Add("Data produksi telur telah tersimpan.", Severity.Success);
+            Timbangan = 0;
+            await LoadData();
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task LoadData()
+    {
+        if(JenisTelurSelected == "UTUH")
+        {
+            TotalDiambil = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);
+            TotalSisa = _db.DailyEggPickup.Where(x => x.ReceivedBy < 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);
+            TotalDitimbang = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy > 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);// _db.StockGudang.Where(x => x.EggType == "UTUH" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
+        }
+        else
+        {
+            TotalDiambil = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurBentesKG);
+            TotalSisa = _db.DailyEggPickup.Where(x => x.ReceivedBy < 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurBentesKG);
+            TotalDitimbang = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy > 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurBentesKG); //_db.StockGudang.Where(x => x.EggType == "BENTES" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
+        }
+
+        if (TotalDiambil == 0)
+        {
+            IsValid = false;
+            TotalSisa = 0;
+            Snackbar.Add("Data tidak ada/telur sudah habis ditimbang.", Severity.Warning);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnJenisTelurChanged(ChangeEventArgs e)
+    {
+        JenisTelurSelected = e.Value.ToString();
+
+        await LoadData();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        await LoadData();
+    }
+}    

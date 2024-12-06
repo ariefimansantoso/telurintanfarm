@@ -92,5 +92,7 @@ namespace QuickAccounting.Data
         public DbSet<DailyRecording> DailyRecording { get; set; }
         public DbSet<Kandang> Kandang { get; set; }
         public DbSet<DailyEggPickup> DailyEggPickup { get; set; }
+        
+        public DbSet<StockGudang> StockGudang { get; set; }
     }
 }

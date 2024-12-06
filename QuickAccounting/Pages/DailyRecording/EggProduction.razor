@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore;
 @using QuickAccounting.Data.Recording;
 @using System.Transactions;
+@using System.Globalization;
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @inject IUser _user
@@ -191,7 +192,7 @@
                 <br /> <br />
                 <div class="row">
                     <div class="col-lg-12" style="text-align: center !important;">
-                        <input type="button" @onclick="@(e => SaveEggProductionAsync())" class="btn btn-submit me-2" value="Simpan Data Produksi Telur" />
+                        <input type="button" @onclick="@(e => SaveEggProductionAsync())" disabled="@( !IsValid )" class="btn btn-submit me-2" value="Simpan Data Produksi Telur" />
                     </div>
                 </div>
             }
@@ -229,6 +230,7 @@
     string SelectedJenisTelur = "";
     bool UtuhVisible = true;
     bool BentesVisible = false;
+    bool IsValid = true;
     DateTime TodaysDate;
     private List<Kandang> CageList = new List<Kandang>(); // Placeholder for cage numbers.
     private DailyRecording CurrentRecording;
@@ -305,16 +307,47 @@
 
     private void OnTelurUtuhButirChanged(ChangeEventArgs e)
     {
-        TelurUtuhButir = Convert.ToInt32(e.Value.ToString());
-
-        Calculate();
+        int c;
+        if(int.TryParse(e.Value.ToString(), out c))
+        {
+            IsValid = true;
+            TelurUtuhButir = c;
+            Calculate();
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Utuh Butir tidak benar. Masukkan angka bulat.", Severity.Warning);
+        }                
     }
 
     private void OnTelurUtuhKGChanged(ChangeEventArgs e)
     {
-        TelurUtuhKG = Convert.ToDecimal(e.Value.ToString());
+        // if (e.Value.ToString().Contains("."))
+        // {
+        //     Snackbar.Add("Input Telur Utuh KG tidak benar. Mohon pakai KOMA.", Severity.Warning);
+        //     IsValid = false;
+        //     return;
+        // }
 
-        Calculate();
+        decimal d;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out d))
+        {
+            TelurUtuhKG = d;     
+            if(TelurUtuhKG > 20)
+            {
+                IsValid = false;
+                Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);
+                return;
+            }
+            IsValid = true;
+            Calculate();
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Utuh KG tidak benar.", Severity.Warning);
+        }      
     }
 
     private void OnUkuranTrayChanged(ChangeEventArgs e)
@@ -333,7 +366,7 @@
         }
 
         bool result = false;
-
+        IsValid = false;
 
         try
         {            
@@ -344,6 +377,7 @@
             DailyEggPickup dailyEggPickup = new DailyEggPickup();
             dailyEggPickup.ReceivedBy = -99;
             dailyEggPickup.ReceivedOn = DateTime.Now;
+            dailyEggPickup.VerifiedBy = -99;
             dailyEggPickup.RecordDate = RecordDate;
             dailyEggPickup.CageNumber = int.Parse(SelectedNoKandang).ToString();
             dailyEggPickup.StrainName = StrainName;
@@ -379,6 +413,8 @@
         {
             Snackbar.Add("Data produksi telur telah tersimpan.", Severity.Success);
             FormSubmitted = true;
+            IsValid = true;
+            navigation.NavigateTo("/app/eggproduction", true);
             StateHasChanged();
         }
         else
@@ -391,13 +427,23 @@
     {
         int numberOfTray = (int)Math.Ceiling((double)TelurUtuhButir / 30);
         decimal beratTray = (decimal.Parse(SelectedTray) / (decimal)100) * (decimal)numberOfTray;
+        decimal beratTelur = 0;
         if (UtuhVisible)
         {
             TelurUtuhActualKG = TelurUtuhKG - beratTray;
+            beratTelur = TelurUtuhActualKG;
         }
         else if (BentesVisible)
         {
             TelurBentesActualKG = TelurBentesKG - beratTray;
+            beratTelur = TelurBentesActualKG;
+        }
+
+        if (beratTelur > 20)
+        {
+            IsValid = false;
+            Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);
+            return;
         }
 
         StateHasChanged();

@@ -169,6 +169,23 @@
 													<li><a href="/app/penaltylist">Laporan Sanksi</a></li>
 												</ul>
 											</li>
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Recording</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/henpopulation">Populasi</a></li>
+													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
+													<li><a href="/app/eggproduction">Produksi Telur</a></li>
+													<li><a href="javascript:void(0);">Informasi Hen Day</a></li>
+													<li><a href="/app/recordingreportscage">Laporan Recording</a></li>
+												</ul>
+											</li>
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Gudang Telur</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/checklistegg">Ambil Telur</a></li>
+													<li><a href="/app/eggverification">Timbang Telur</a></li>
+												</ul>
+											</li>
 										}
 										@if (currentUserRole != "Admin")
 										{
@@ -195,6 +212,16 @@
 												</ul>
 											</li>
 										}
+										@if (currentUserRole == "Packaging")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Gudang Telur</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/checklistegg">Ambil Telur</a></li>
+													<li><a href="/app/eggverification">Timbang Telur</a></li>
+												</ul>
+											</li>
+										}
 										@if (currentUserRole == "Admin")
 										{											
 											<li class="submenu">
@@ -206,7 +233,15 @@
 													<li><a href="javascript:void(0);">Informasi Hen Day</a></li>
 													<li><a href="/app/recordingreports">Laporan Recording</a></li>
 												</ul>
-											</li>										///
+											</li>
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Packaging</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/checklistegg">Ambil Telur</a></li>
+													<li><a href="/app/eggverification">Timbang Telur</a></li>
+												</ul>
+											</li>
+											///
 											<li class="submenu">
 											<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Anggaran</span> <span class="menu-arrow"></span></a>
 											<ul>

@@ -29,7 +29,7 @@
 					<div class="dash-widgetcontent">
 						<span class="counters" style="color:#fff !important; font-weight:bold;">
 						<h2 style="color:#fff !important;">Pengumuman!</h2>
-							Mulai tanggal 4 Nov 2024 dan seterusnya apabila salah satu absensi pagi/sore tidak terisi maka akan ternilai ALPHA. Semoga dapat dimengerti. Terima kasih.
+							Laporan Recording (Telur, Populasi) harap menggunakan aplikasi baru (Telurintanfarm.com), aplikasi lama akan dimatikan.
 						</span>						
 					</div>
 				</div>
@@ -662,6 +662,14 @@
 						<a href="/app/recordattendance" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Absensi Harian</a>
 						<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
 						<a href="/app/attendancelist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Abensi Harian dan Gaji</a>
+						<a href="/app/checklistegg" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Ambil Telur</a>
+						<a href="/app/eggverification" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Timbang Telur</a>
+
+						<a class="btn btn-primary" style="width:100%; margin-bottom: 20px;" href="/app/henpopulation">Populasi</a>
+						<a class="btn btn-primary" style="width:100%; margin-bottom: 20px;" href="/app/foodintake">Food Intake/Konsumsi Pakan</a>
+						<a class="btn btn-primary" style="width:100%; margin-bottom: 20px;" href="/app/eggproduction">Produksi Telur</a>
+						<a class="btn btn-primary" style="width:100%; margin-bottom: 20px;" href="javascript:void(0);">Informasi Hen Day</a>
+						<a class="btn btn-primary" style="width:100%; margin-bottom: 20px;" href="/app/recordingreportscage">Laporan Recording</a>
 					</div>
 				</div>
 			</div>
@@ -770,6 +778,20 @@
 						<a href="/app/attendancelist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Abensi Harian dan Gaji</a>
 						<a href="/app/salaryslip" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Slip Gaji</a>
 						<a href="/app/penalties" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Daftar Sanksi dan Pengurangan Gaji</a>
+
+						@if (currentUserRole == "Packaging")
+						{
+							<a href="/app/checklistegg" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Ambil Telur</a>
+							<a href="/app/eggverification" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Timbang Telur</a>
+						}
+
+						@if (currentUserRole == "Kandang")
+						{
+							<a href="/app/henpopulation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Input Populasi</a>
+							<a href="/app/foodintake" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Input Konsumsi Pakan</a>
+							<a href="/app/eggproduction" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Input Produksi Telur</a>
+							<a href="/app/recordingreportscage" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Recording</a>
+						}
 
 						@if (JobDescAvailable)
 						{

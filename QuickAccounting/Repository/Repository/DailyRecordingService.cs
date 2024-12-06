@@ -4,6 +4,7 @@ using DocumentFormat.OpenXml;
 using Microsoft.EntityFrameworkCore;
 using QuickAccounting.Data;
 using QuickAccounting.Data.Recording;
+using QuickAccounting.Helpers;
 using QuickAccounting.Repository.Interface;
 
 namespace QuickAccounting.Repository.Repository
@@ -19,7 +20,9 @@ namespace QuickAccounting.Repository.Repository
 
         public async Task<List<DailyRecording>> GetRecordingsByKandang(string cageNumber, DateTime from, DateTime to)
         {
-            var results = await _context.DailyRecording.Where(x => x.CageNumber == int.Parse(cageNumber).ToString() &&
+			cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+            var results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber &&
                                     x.RecordDate >= from && x.RecordDate <= to)
                                     .OrderByDescending(x => x.RecordDate).ToListAsync();
 
@@ -31,8 +34,10 @@ namespace QuickAccounting.Repository.Repository
 			int populationStart, int populationEnd, int deadHenCount, int unproductiveHenCount,
 			int sickHenCount, int newHenCount, int moveOutHenCount, int modifiedBy)
 		{
-			var record = await _context.DailyRecording
-				.FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString() && r.RecordDate == recordDate && r.StrainName == strainName);
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+            var record = await _context.DailyRecording
+				.FirstOrDefaultAsync(r => r.CageNumber == cageNumber && r.RecordDate == recordDate && r.StrainName == strainName);
 
 			if (record != null)
 			{
@@ -68,8 +73,10 @@ namespace QuickAccounting.Repository.Repository
 			string concentrateType, decimal foodIntakePerHen, decimal remainingFoodKg, decimal foodNeededTodayKg,
 			decimal actualFoodNeededKG, decimal saldoFoodKG, decimal foodIntakeDeviation, int modifiedBy)
 		{
-			var record = await _context.DailyRecording
-				.FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString() && r.RecordDate == recordDate && r.StrainName == strainName);
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+            var record = await _context.DailyRecording
+				.FirstOrDefaultAsync(r => r.CageNumber == cageNumber && r.RecordDate == recordDate && r.StrainName == strainName);
 
 			if (record != null)
 			{
@@ -83,7 +90,9 @@ namespace QuickAccounting.Repository.Repository
 				record.ModifiedBy = modifiedBy;
 				record.ModifiedDate = DateTime.Now;
 
-				_context.DailyRecording.Update(record);
+				record.FeedConversionRatio = record.TotalEggKg / foodNeededTodayKg;
+
+                _context.DailyRecording.Update(record);
 				await _context.SaveChangesAsync();
 				return true;
 			}
@@ -98,8 +107,10 @@ namespace QuickAccounting.Repository.Repository
 			int perfectEggCount, decimal perfectEggKg, int brokenEggCount, decimal brokenEggKg,
 			int totalEggCount, decimal totalEggKg, int modifiedBy)
 		{
-			var record = await _context.DailyRecording
-				.FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString() &&
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+            var record = await _context.DailyRecording
+				.FirstOrDefaultAsync(r => r.CageNumber == cageNumber &&
 					r.RecordDate == recordDate && r.StrainName == strainName);
 
 			if (record != null)
@@ -111,10 +122,18 @@ namespace QuickAccounting.Repository.Repository
 				record.TotalEggCount = record.TotalEggCount + totalEggCount;
 				record.TotalEggKg = record.TotalEggKg + totalEggKg;
 
-                record.ActualHenDay = (decimal)record.TotalEggCount / (decimal)record.PopulationStart;
+				if (record.PopulationStart > 0 && record.TotalEggCount > 0)
+				{
+					record.ActualHenDay = (decimal)record.TotalEggCount / (decimal)record.PopulationStart;
+				}
+
+				if (record.TotalEggKg > 0 && record.FoodNeededTodayKg > 0)
+				{
+					record.FeedConversionRatio = record.TotalEggKg / record.FoodNeededTodayKg;
+				}
 
                 record.ModifiedBy = modifiedBy;
-				record.ModifiedDate = DateTime.Now;
+				record.ModifiedDate = DateTime.Now.Date;
 
 				_context.DailyRecording.Update(record);
 				await _context.SaveChangesAsync();
@@ -133,8 +152,10 @@ namespace QuickAccounting.Repository.Repository
 			decimal standardEggWeightG, decimal eggWeightDeviation, decimal feedConversionRatio,
 			int modifiedBy)
 		{
-			var record = await _context.DailyRecording
-				.FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString()
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+            var record = await _context.DailyRecording
+				.FirstOrDefaultAsync(r => r.CageNumber == cageNumber
                     && r.RecordDate == recordDate && r.StrainName == strainName);
 
 			if (record != null)
@@ -227,9 +248,10 @@ namespace QuickAccounting.Repository.Repository
 
 		public async Task<DailyRecording> GetDailyRecordForTodayForConsoleAsync(string cageNumber, DateTime recordDate)
 		{
-			// Fetch the record for the specified cage ID, date, and hen week
-			var record = await _context.DailyRecording
-				.FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString() && r.RecordDate.Date == recordDate.Date);
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+            // Fetch the record for the specified cage ID, date, and hen week
+            var record = await _context.DailyRecording
+				.FirstOrDefaultAsync(r => r.CageNumber == cageNumber && r.RecordDate.Date == recordDate.Date);
 			
 			// Return the record, or null if not found
 			return record;
@@ -237,22 +259,26 @@ namespace QuickAccounting.Repository.Repository
 
 		public async Task<DailyRecording> GetForUpdate(string cageNumber, DateTime recordDate)
 		{
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+
             var record = await _context.DailyRecording
-                .FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString() && r.RecordDate.Date == recordDate.Date);
+                .FirstOrDefaultAsync(r => r.CageNumber == cageNumber && r.RecordDate.Date == recordDate.Date);
 
 			return record;
         }
         public async Task<DailyRecording> GetDailyRecordForTodayForFormAsync(string cageNumber, DateTime recordDate, int modifiedBy)
         {
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+
             // Fetch the record for the specified cage ID, date, and hen week
             var record = await _context.DailyRecording
-                .FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString() && r.RecordDate.Date == recordDate.Date);
+                .FirstOrDefaultAsync(r => r.CageNumber == cageNumber && r.RecordDate.Date == recordDate.Date);
 
             if (record == null)
             {
 				record = await _context.DailyRecording
 					.OrderByDescending(r => r.RecordDate)
-					.FirstOrDefaultAsync(r => r.CageNumber == int.Parse(cageNumber).ToString());
+					.FirstOrDefaultAsync(r => r.CageNumber == cageNumber);
 
 				var previousRecordDate = record.RecordDate;
 				var numberOfDays = (recordDate - previousRecordDate).Days;

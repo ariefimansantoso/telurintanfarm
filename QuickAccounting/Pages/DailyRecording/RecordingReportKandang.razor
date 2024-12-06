@@ -134,7 +134,7 @@
                                     <td>@record.TotalNettKG</td>
 
                                     <td>
-                                        @* <a @onclick="( () => { OpenDeleteDialog(record.ID); } )" class="btn btn-danger" style="color:#fff !important;">HAPUS</a> *@
+                                        <a @onclick="( () => { OpenDeleteDialog(record.ID); } )" class="btn btn-danger" style="color:#fff !important;">HAPUS</a>
                                     </td>
 
                                     @{
@@ -204,7 +204,8 @@
 
     private async Task LoadRecording()
     {
-        DailyEggPickups = await _egg.GetByCreatorIdAsync(modelEmployee.EmployeeId);
+        DailyEggPickups = await _db.DailyEggPickup.Where(x => 
+                                                    x.CageNumber == SelectedNoKandang && x.RecordDate >= dtFromDate && x.RecordDate < dtToDate).ToListAsync();
         StateHasChanged();
     }
 
@@ -290,7 +291,7 @@
     {
         if (e.Value.ToString() != "TIDAK")
         {
-            SelectedNoKandang = e.Value.ToString();
+            SelectedNoKandang = Helpers.Helper.ConvertCageNumber(e.Value.ToString());
             StateHasChanged();
         }
     }

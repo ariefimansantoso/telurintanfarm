@@ -248,6 +248,7 @@
     private async Task LoadRecording()
     {
         DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang, dtFromDate, dtToDate);
+        DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
         await GetGraphData();
 
         StateHasChanged();
@@ -286,8 +287,7 @@
             .ToArray();
         yAxisValues = DailyRecordings.Select(record => record.ActualHenDay).ToList();
 
-        Options.YAxisTicks = 20;
-        Options.InterpolationOption = InterpolationOption.NaturalSpline;
+        Options.YAxisTicks = 20;       
 
         if(DailyRecordings.Count > 0)
         {

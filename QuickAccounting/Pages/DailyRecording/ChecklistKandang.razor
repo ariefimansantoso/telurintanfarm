@@ -1,0 +1,285 @@
+﻿@page "/app/checklistegg"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Ambil Telur</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important;
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Ambil Telur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Nomor Kandang</label>
+                        <div class="row">
+                            <div class="col-lg col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnCageChanged">
+                                    <option value="TIDAK">PILIH NO KANDANG</option>
+                                    @foreach (var kandangItem in CageList)
+                                    {
+                                        <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+            
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Jenis Telur</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnJenisTelurChanged">
+                                    <option value="UTUH">UTUH</option>
+                                    <option value="BENTES">BENTES</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => LoadData()" class="btn btn-primary" style="color:#fff !important;">Tampilkan Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (ReportItems != null && ReportItems.Count > 0)
+            {
+            <div class="row">            
+                <div class="table-responsive">
+                    <h3>
+                            Kandang: @SelectedNoKandang<br />
+                            Ditimbang Oleh: @ReportItems[0].Name<br />
+                            Tanggal: @DateTime.Now.ToString("dd/MM/yyyy")
+                    </h3>
+                    <table class="table table-striped">
+                        <thead>                            
+                            <tr>                               
+                                <th style="text-align:center;">Butir</th>
+                                <th style="text-align:center;">Kg</th>
+
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var totalButir = 0;
+                                decimal totalKG = 0;
+                            }
+                            @foreach (var record in ReportItems.ToList())
+                            {
+                                    <tr>
+                                        <td style="text-align:right;">@record.Butir</td>
+                                        <td style="text-align:right;">@record.KG</td>
+
+                                        <td style="text-align:center;">
+                                                <MudCheckBox T="bool" @bind-Checked="record.IsSelected" />
+                                        </td>
+
+                                    @{
+                                            totalButir = totalButir + record.Butir;
+                                            totalKG = totalKG + record.KG;
+                                    }
+                                </tr>
+                            }
+                            <tr>
+                                                               
+                                <td style="font-weight:bold;font-size:16px;">@totalButir</td>
+                                <td style="font-weight:bold;font-size:16px;">@totalKG</td>
+                                    <td style="font-weight:bold;font-size:16px;">
+                                       
+                                    </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                       
+            </div>
+
+            <div class="row">
+                <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <br /><br />
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;">Simpan Data Checklist</button>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Laporan Recording Kandang";
+
+    string SelectedNoKandang = "";
+    DateTime SelectedRecordDate;
+    string StrainName = "";
+    int SelectedItemId = 0;
+    bool TelurUtuhSelected = false;
+    string JenisTelurSelected = "UTUH";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
+    private List<DailyEggPickup> DailyEggPickups = new List<DailyEggPickup>();
+    private List<ReportItem> ReportItems = new List<ReportItem>();
+
+    bool isProcessing;
+
+    private async Task Save()   
+    {
+        try
+        {
+            var selectedIds = ReportItems.Where(x => x.IsSelected).Select(x => x.ID).ToList();
+
+            List<DailyEggPickup> toUpdate = await _db.DailyEggPickup.Where(x => selectedIds.Contains(x.ID)).ToListAsync();
+
+            if (toUpdate.Count > 0)
+            {
+                toUpdate.ForEach(x => x.ReceivedBy = modelEmployee.EmployeeId);
+                toUpdate.ForEach(x => x.ReceivedOn = DateTime.Now);
+
+                _db.DailyEggPickup.UpdateRange(toUpdate);
+                await _db.SaveChangesAsync();
+                Snackbar.Add("Berhasil menyimpan data", Severity.Success);
+                navigation.NavigateTo("/app/checklistegg", true);
+            }
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task LoadData()
+    {
+        SelectedNoKandang = Helpers.Helper.ConvertCageNumber(SelectedNoKandang);
+
+        ReportItems = await _db.DailyEggPickup.Where(x => x.RecordDate == DateTime.Now.Date &&
+                                                         x.CageNumber == SelectedNoKandang &&
+                                                         x.ReceivedBy < 0)
+                                                         .Join(
+                                                                _db.Employee, // The table to join with
+                                                                dailyEggPickup => dailyEggPickup.CreatedBy, // Key selector for DailyEggPickup
+                                                                employee => employee.EmployeeId, // Key selector for Employee
+                                                                (dailyEggPickup, employee) => new // Result of the join
+                                                                {
+                                                                    DailyEggPickup = dailyEggPickup,
+                                                                    Employee = employee
+                                                                }
+                                                            )
+                                                         .Select(x => new ReportItem
+                                                         {
+                                                            ID = x.DailyEggPickup.ID,
+                                                            EggType = JenisTelurSelected,
+                                                            Butir = JenisTelurSelected == "UTUH" ? x.DailyEggPickup.TelurUtuhButir : x.DailyEggPickup.TelurBentesButir,
+                                                            KG = JenisTelurSelected == "UTUH" ? x.DailyEggPickup.TelurUtuhKG : x.DailyEggPickup.TelurBentesKG,
+                                                            IsSelected = false,
+                                                            Name = x.Employee.EmployeeName
+                                                         })
+                                                         .ToListAsync();
+
+        ReportItems = ReportItems.Where(x => x.Butir > 0).ToList();
+
+        if(ReportItems.Count == 0)
+        {
+            Snackbar.Add("Data tidak ada", Severity.Warning);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnJenisTelurChanged(ChangeEventArgs e)
+    {
+        JenisTelurSelected = e.Value.ToString();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        var now = DateTime.Now;
+        
+        // Simulate fetching data from a service
+        CageList = await _kandang.GetAll();
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            StateHasChanged();
+        }
+    }
+
+    public class ReportItem
+    {
+        public int ID { get; set; }
+        public int Butir { get; set; }
+        public decimal KG { get; set; }
+        public string EggType { get; set; }
+        public bool IsSelected { get; set; }
+        public string Name { get; set; }
+    }
+}    
