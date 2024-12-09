@@ -180,7 +180,7 @@
         decimal cicilan = 0;
         decimal potonganNonCicilan = 0;
         decimal tunjangan = modelEmployee.Tunjangan;
-
+        decimal tambahanGaji = 0;
         var perijinanKaryawan = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
         var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
         var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
@@ -191,7 +191,10 @@
         decimal premi = 0;
         decimal gajiBersih = 0;
         var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(modelEmployee.EmployeeId, Cutoff.PayrollDateStart.Month, 2024);
-        var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+        var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);        
+        var listBonus = listPenalty.Where(x => x.IsPenalty == false).ToList();
+        listPenalty = listPenalty.Where(x => x.IsPenalty == true).ToList();
+
         decimal lembur = modelEmployee.Lembur;
 
         if (PeriodDaysCount > (countMasuk + alpha + libur + ijin + sakit))
@@ -215,13 +218,21 @@
             }
         }
 
+        if (listBonus.Count > 0)
+        {
+            foreach (var bonus in listBonus)
+            {
+                tambahanGaji = tambahanGaji + bonus.PenaltyAmount;
+            }
+        }
+
         if (libur <= 3 && ijin == 0 && alpha == 0)
         {
             premi = totalGaji * (decimal)0.15;
             totalGaji = totalGaji + premi;            
         }
 
-        totalGaji = totalGaji + lembur + tunjangan;
+        totalGaji = totalGaji + tambahanGaji + tunjangan;
         var totalPotongan = cicilan + potonganNonCicilan + modelEmployee.BPJS_KES + modelEmployee.BPJS_TK;
 
         gajiBersih = totalGaji - totalPotongan;        
@@ -325,13 +336,13 @@
                                             <td>{8}</td>
                                         </tr>                                        
                                         <tr>
-                                            <td>Lembur</td>
+                                            <td>Tambahan</td>
                                             <td>{11}</td>
                                         </tr>
                                         <tr>
                                             <td>Tunjangan</td>
                                             <td>{12}</td>
-                                        </tr>
+                                        </tr>                                       
                                         <tr class='total'>
                                             <td>Total Pendapatan</td>
                                             <td>{13}</td>
@@ -385,7 +396,7 @@
                         </body>
                         </html>", periode, namaKaryawan, idKaryawan, UserRoleName, "none", tanggalJoin, modelEmployee.BankAccount,
                                 string.Format("{0:n0}", gajiDasar), string.Format("{0:n0}", premi), string.Format("{0:n0}", modelEmployee.BPJS_KES), string.Format("{0:n0}", modelEmployee.BPJS_TK),
-                                string.Format("{0:n0}", modelEmployee.Lembur), string.Format("{0:n0}", modelEmployee.Tunjangan), string.Format("{0:n0}", totalGaji),
+                                string.Format("{0:n0}", tambahanGaji), string.Format("{0:n0}", modelEmployee.Tunjangan), string.Format("{0:n0}", totalGaji),
 
                                 "Jenis Potongan", string.Format("{0:n0}", cicilan), string.Format("{0:n0}", potonganNonCicilan), string.Format("{0:n0}", totalPotongan),
                                 string.Format("{0:n0}", gajiBersih), "none",

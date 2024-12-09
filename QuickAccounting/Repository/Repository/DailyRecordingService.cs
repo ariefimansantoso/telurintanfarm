@@ -20,11 +20,22 @@ namespace QuickAccounting.Repository.Repository
 
         public async Task<List<DailyRecording>> GetRecordingsByKandang(string cageNumber, DateTime from, DateTime to)
         {
-			cageNumber = Helper.ConvertCageNumber(cageNumber);
+			List<DailyRecording> results = new List<DailyRecording>();
 
-            var results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber &&
-                                    x.RecordDate >= from && x.RecordDate <= to)
-                                    .OrderByDescending(x => x.RecordDate).ToListAsync();
+			if (cageNumber != "ALL")
+			{
+				cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+				results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber &&
+										x.RecordDate >= from && x.RecordDate <= to)
+										.OrderByDescending(x => x.RecordDate).ToListAsync();
+			}
+			else
+			{
+				results = await _context.DailyRecording.Where(x => 
+										x.RecordDate >= from && x.RecordDate <= to)
+										.OrderByDescending(x => x.RecordDate).ToListAsync();
+			}
 
             return results;
         }
@@ -129,7 +140,7 @@ namespace QuickAccounting.Repository.Repository
 
 				if (record.TotalEggKg > 0 && record.FoodNeededTodayKg > 0)
 				{
-					record.FeedConversionRatio = record.TotalEggKg / record.FoodNeededTodayKg;
+					record.FeedConversionRatio = record.FoodNeededTodayKg / record.TotalEggKg;
 				}
 
                 record.ModifiedBy = modifiedBy;

@@ -1,0 +1,235 @@
+﻿@page "/app/addsalesstock"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Tambah Stok Penjualan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important;
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Tambah Stok Penjualan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Jenis Telur</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnJenisTelurChanged">
+                                    <option value="UTUH">UTUH</option>
+                                    <option value="PUTIH">PUTIH</option>
+                                    <option value="BENTES">BENTES</option>
+                                    <option value="PECAH">PECAH</option>
+                                    <option value="PECAH SEKALI">PECAH SEKALI</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@Kilogram" @onchange="OnKilogramChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Butir (boleh kosong)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@Butir" @onchange="OnButirChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;" disabled="@( !IsValid )">Simpan</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        @if (StockPenjualan != null && StockPenjualan.Count > 0)
+                        {
+                            <div class="table-responsive">                                
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>                                                                                        
+                                            <th style="text-align:center;">Jenis</th>
+                                            <th style="text-align:center;">Berat</th>
+                                        </tr>                                        
+                                    </thead>
+                                    <tbody>                                        
+                                        @foreach (var record in StockPenjualan.ToList())
+                                        {
+                                            <tr>                                                
+                                                <td style="text-align:center;">@record.EggType</td>
+                                                <td style="text-align:right;">@record.StockKg</td>                                               
+                                            </tr>
+                                        }                                       
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p>No data available.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Atur Stok Penjualan";
+
+
+    string JenisTelurSelected = "UTUH";
+    decimal Kilogram = 0;    
+    int Butir = 0;
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+
+    private List<StockPenjualan> StockPenjualan = new List<StockPenjualan>();
+
+    bool isProcessing;
+    bool IsValid = true;
+
+    private async Task OnKilogramChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            Kilogram = v;            
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input tidak benar.", Severity.Warning);
+        }
+    }
+    private async Task OnButirChanged(ChangeEventArgs e)
+    {
+        int c;
+        if (int.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out c))
+        {
+            IsValid = true;
+            Butir = c;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task Save()   
+    {
+        try
+        {
+            var stockJualan = new StockPenjualan();
+            stockJualan.StockButir = Butir;
+            stockJualan.StockKg = Kilogram;
+            stockJualan.EggType = JenisTelurSelected;
+            stockJualan.CreatedBy = modelEmployee.EmployeeId;
+            stockJualan.DateCreated = DateTime.Now;
+            stockJualan.VerifiedBy = -99;
+            _db.StockPenjualan.Add(stockJualan);
+            await _db.SaveChangesAsync();
+
+            await LoadStockGudang();
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task LoadStockGudang()
+    {
+        StockPenjualan = await _db.StockPenjualan.Where(x => x.DateCreated.Date == DateTime.Now.Date).ToListAsync();
+    }
+
+    private async Task OnJenisTelurChanged(ChangeEventArgs e)
+    {
+        JenisTelurSelected = e.Value.ToString();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+    }
+}    

@@ -458,7 +458,7 @@ namespace QuickAccounting.Repository.Repository
                         stockposting.StockCalculate = "Sales";
                         stockposting.CompanyId = model.CompanyId;
                         stockposting.FinancialYearId = model.FinancialYearId;
-                        stockposting.ModifyDate = DateTime.UtcNow;
+                        stockposting.ModifyDate = DateTime.Now;
                         _context.StockPosting.Update(stockposting);
                         await _context.SaveChangesAsync();
                     }

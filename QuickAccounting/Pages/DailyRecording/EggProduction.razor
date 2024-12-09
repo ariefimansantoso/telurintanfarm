@@ -29,7 +29,7 @@
             @if (FormSubmitted == false)
             {
                 <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Pilih Nomor Kandang</label>
                             <div class="row">
@@ -48,7 +48,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Strain</label>
                             <div class="row">
@@ -61,7 +61,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Tanggal Recording</label>
                             <div class="row">
@@ -74,7 +74,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Pilih Jenis Telur</label>
                             <div class="row">
@@ -90,7 +90,7 @@
                 </div>                
 
                 <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Ukuran Tray</label>
                             <div class="row">
@@ -108,7 +108,7 @@
                 @if (UtuhVisible)
                 {
                     <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="col-lg-12 col-sm-12 col-12">
                             <div class="form-group" style="text-align: center !important;">
                                 <label>Telur Utuh Butir (mohon diisi dulu)</label>
                                 <div class="row">
@@ -121,7 +121,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="col-lg-12 col-sm-12 col-12">
                             <div class="form-group" style="text-align: center !important;">
                                 <label>Telur Utuh KG (timbangan)</label>
                                 <div class="row">
@@ -134,7 +134,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="col-lg-12 col-sm-12 col-12">
                             <div class="form-group" style="text-align: center !important;">
                                 <label>Telur Utuh Netto KG</label>
                                 <div class="row">
@@ -150,12 +150,12 @@
                 @if (BentesVisible)
                 {
                     <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="col-lg-12 col-sm-12 col-12">
                             <div class="form-group" style="text-align: center !important;">
                                 <label>Telur Bentes Butir (mohon diisi dulu)</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
-                                        <input type="number" class="form-control" @bind="TelurBentesButir" />
+                                        <input type="number" class="form-control" value="@TelurBentesButir" @onchange="OnTelurBentesButirChanged" />
                                     </div>
                                 </div>
                             </div>
@@ -163,12 +163,12 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="col-lg-12 col-sm-12 col-12">
                             <div class="form-group" style="text-align: center !important;">
                                 <label>Telur Bentes KG</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
-                                        <input type="text" class="form-control" @bind="TelurBentesKG" />
+                                        <input type="text" class="form-control" value="@TelurBentesKG" @onchange="OnTelurBentesKGChanged" />
                                     </div>
                                 </div>
                             </div>
@@ -176,7 +176,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Telur Bentes Netto KG</label>
                             <div class="row">
@@ -199,7 +199,7 @@
             else
             {
                 <div class="row">
-                    <div class="col-lg-4 col-sm-6 col-12">
+                    <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label style="font-size:24px; font-weight:bold;">Data Produksi Telur telah tersimpan.</label>
                         </div>
@@ -350,6 +350,51 @@
         }      
     }
 
+    private void OnTelurBentesButirChanged(ChangeEventArgs e)
+    {
+        int c;
+        if (int.TryParse(e.Value.ToString(), out c))
+        {
+            IsValid = true;            
+            TelurBentesButir = c;
+            Calculate();
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Bentes Butir tidak benar. Masukkan angka bulat.", Severity.Warning);
+        }
+    }
+
+    private void OnTelurBentesKGChanged(ChangeEventArgs e)
+    {
+        // if (e.Value.ToString().Contains(","))
+        // {
+        //     Snackbar.Add("Input Telur Bentes KG tidak benar. Mohon pakai TITIK.", Severity.Warning);
+        //     IsValid = false;
+        //     return;
+        // }
+
+        decimal d;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out d))
+        {
+            TelurBentesKG = d;
+            if (TelurBentesKG > 20)
+            {
+                IsValid = false;
+                Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);
+                return;
+            }
+            IsValid = true;
+            Calculate();
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Bentes KG tidak benar.", Severity.Warning);
+        }
+    }
+
     private void OnUkuranTrayChanged(ChangeEventArgs e)
     {
         SelectedTray = e.Value.ToString();
@@ -368,10 +413,23 @@
         bool result = false;
         IsValid = false;
 
+
         try
         {            
             var totalEgg = TelurBentesButir + TelurUtuhButir;
             var totalEggKG = TelurUtuhActualKG + TelurBentesActualKG;
+
+            if (totalEgg == 0 || totalEgg > 300)
+            {
+                Snackbar.Add("Jumlah butir tidak boleh 0 atau lebih dari 300.", Severity.Error);
+                return;
+            }
+
+            if (totalEggKG > 30)
+            {
+                Snackbar.Add("Timbangan tray terlalu banyak, mohon dikurangi.", Severity.Error);
+                return;
+            }
 
             // insert to egg stock report;
             DailyEggPickup dailyEggPickup = new DailyEggPickup();

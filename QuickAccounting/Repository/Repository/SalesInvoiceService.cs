@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using QuickAccounting.Data;
 using QuickAccounting.Data.Inventory;
+using QuickAccounting.Data.Recording;
 using QuickAccounting.Data.Setting;
 using QuickAccounting.Repository.Interface;
 using System.Data;
@@ -276,9 +277,12 @@ namespace QuickAccounting.Repository.Repository
                 foreach (var item in model.listOrder)
                 {
                     //AddSalesDetails
-                        //AddStockPosting
+                    //AddStockPosting
 
-                        StockPosting stockposting = new StockPosting();
+                    // kalau ini adalah telur utuh, tambahin dulu StockPostingnya dari stock gudang
+                    AddInwardQtyToTelurUtuh(item.ProductId, item.Qty);
+
+						StockPosting stockposting = new StockPosting();
                         stockposting.Date = model.Date;
                         stockposting.ProductId = item.ProductId;
                     stockposting.InwardQty = 0;
@@ -736,5 +740,46 @@ namespace QuickAccounting.Repository.Repository
 									where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TE")
 									select sd.Qty).Sum();
 		}
+
+        private void AddInwardQtyToTelurUtuh(int productId, decimal stockToAdd)
+        {
+            var product = _context.Product.FirstOrDefault(p => p.ProductId == productId);
+            if(product != null)
+            {
+                if(product.ProductCode.StartsWith("TA-"))
+                {
+					StockTelurUtuh stockTelurUtuh = _context.StockTelurUtuh.FirstOrDefault(x => x.ID == 1);
+                    // kurangi stock telur utuh dari gudang
+                    stockTelurUtuh.StockKG = stockTelurUtuh.StockKG - stockToAdd;
+
+					if (stockTelurUtuh != null)
+                    {
+						StockPosting stockposting = new StockPosting();
+						stockposting.Date = DateTime.Now;
+						stockposting.ProductId = productId;
+						stockposting.InwardQty = stockToAdd;
+						stockposting.OutwardQty = 0;
+						stockposting.UnitId = 0;
+						stockposting.BatchId = 0;
+						stockposting.Rate = 0;
+						stockposting.DetailsId = 0;
+						stockposting.InvoiceNo = productId.ToString();
+						stockposting.VoucherNo = productId.ToString();
+						stockposting.VoucherTypeId = 0;
+						stockposting.AgainstInvoiceNo = String.Empty;
+						stockposting.AgainstVoucherNo = String.Empty;
+						stockposting.AgainstVoucherTypeId = 0;
+						stockposting.WarehouseId = 1;
+						stockposting.StockCalculate = "SalesRestock";
+						stockposting.CompanyId = 1;
+						stockposting.FinancialYearId = 1;
+						stockposting.AddedDate = DateTime.Now;
+						_context.StockPosting.Add(stockposting);
+					}
+
+                    _context.SaveChanges();
+				}
+            }
+        }
 	}
 }

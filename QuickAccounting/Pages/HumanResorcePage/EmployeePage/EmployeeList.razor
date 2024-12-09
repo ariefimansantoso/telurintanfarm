@@ -3,8 +3,11 @@
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @using System.Security.Claims
+@using OfficeOpenXml;
+@using OfficeOpenXml.Style;
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
+@inject ApplicationDbContext _db
 @attribute [Authorize]
 <PageTitle>Employee</PageTitle>
 <div class="content">
@@ -14,7 +17,7 @@
             <h6>Manage Employee</h6>
         </div>
         <div class="page-btn">
-            <a class="btn btn-added" style="float:left;" href="/app/employeeadd"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Add New</a>
+            <a class="btn btn-primary" style="float:left;" @onclick="DownloadExcel">Download Excel</a>&nbsp;&nbsp;&nbsp;<a class="btn btn-added" style="float:left;margin-left:20px !important;" href="/app/employeeadd"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Add New</a>
         </div>
     </div>
     <!-- /product list -->
@@ -73,7 +76,7 @@
 
 
 
-@code {
+    @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
     IList<Employee> listModel;
@@ -101,11 +104,13 @@
             Snackbar.Add("You dont have to privilege..", Severity.Error);
         }
     }
+
     private async Task LoadData()
     {
         listModel = await _employee.GetAllEmployees();
         StateHasChanged();
     }
+
     private bool FilterFunc1(Employee element) => FilterFunc(element, searchString1);
 
     private bool FilterFunc(Employee element, string searchString)
@@ -116,6 +121,7 @@
             return true;        
         return false;
     }
+
     private async Task Delete(int id)
     {
         bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure?");
@@ -127,12 +133,74 @@
                 await LoadData();
                 StateHasChanged();
                 Snackbar.Add("Delete Successfully.", Severity.Success);
-			}
-			else
-			{
+            }
+            else
+            {
                 Snackbar.Add("Cannot be delete. already in used.", Severity.Info);
                 StateHasChanged();
-			}
+            }
         }
+    }
+
+    private async Task DownloadExcel()
+    {
+        byte[] excelBytes = null;
+
+        using (var package = new ExcelPackage())
+        {
+            // Create a new worksheet
+            var worksheet = package.Workbook.Worksheets.Add("Employees");
+
+            // Add header row
+            var headers = new[]
+            {
+                "Nama Karyawan", "Tgl Lahir", "Status Pernikahan", "Jenis Kelamin",
+                "Alamat", "No Telepon", "No HP", "Email", "Tanggal Masuk", "Aktif", "Gaji Harian", "Tempat Lahir", "NIK",
+                "ID BPJS KES", "ID BPJS TK", "No Rekening", "RP BPJS KES", "RP BPJS TK", "Tunjangan"
+        };
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                worksheet.Cells[1, i + 1].Value = headers[i];
+                worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+                worksheet.Cells[1, i + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                worksheet.Cells[1, i + 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+            }
+
+            // Add data rows
+            for (int i = 0; i < listModel.Count; i++)
+            {
+                var employee = listModel[i];
+                var row = i + 2;
+
+                worksheet.Cells[row, 1].Value = employee.EmployeeName;
+                worksheet.Cells[row, 2].Value = employee.Dob.ToString("dd/MM/yyyy");
+                worksheet.Cells[row, 3].Value = employee.MaritalStatus;
+                worksheet.Cells[row, 4].Value = employee.Gender;
+                worksheet.Cells[row, 5].Value = employee.Address;
+                worksheet.Cells[row, 6].Value = employee.PhoneNumber;
+                worksheet.Cells[row, 7].Value = employee.MobileNumber;
+                worksheet.Cells[row, 8].Value = employee.Email;
+                worksheet.Cells[row, 9].Value = employee.JoiningDate.ToString("dd/MM/yyyy");
+                worksheet.Cells[row, 10].Value = employee.isActive ? "Ya" : "Tidak";
+                worksheet.Cells[row, 11].Value = employee.DailyWage;
+                worksheet.Cells[row, 12].Value = employee.BirthPlace;
+                worksheet.Cells[row, 13].Value = employee.NIK;
+                worksheet.Cells[row, 14].Value = employee.ID_BPJS_KES;
+                worksheet.Cells[row, 15].Value = employee.ID_BPJS_TK;
+                worksheet.Cells[row, 16].Value = employee.BankAccount;
+                worksheet.Cells[row, 17].Value = employee.BPJS_KES;
+                worksheet.Cells[row, 18].Value = employee.BPJS_TK;
+                worksheet.Cells[row, 19].Value = employee.Tunjangan;
+            }
+
+            // Auto-fit columns
+            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+            excelBytes = package.GetAsByteArray();
+        }
+
+        await JSRuntime.InvokeVoidAsync("saveAsFile", $"data-karyawan.xlsx", Convert.ToBase64String(excelBytes));
     }
 }

@@ -1,0 +1,519 @@
+﻿@page "/app/recordingreportsallkandang"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Laporan Recording</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+<style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-size: 14px !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        border: 1px solid #979797;
+    }
+
+    .table thead th {
+        color: #637381;
+        padding: 2px !important;
+        font-size: 14px !important;
+        white-space: nowrap;
+        border: 1px solid #979797 !important;
+    }
+</style>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Laporan Recording</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Nomor Kandang</label>
+                        <div class="row">
+                            <div class="col-lg col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnCageChanged">
+                                    <option value="TIDAK">PILIH NO KANDANG</option>
+                                    <option value="ALL">SEMUA KANDANG</option>
+                                    @foreach (var kandangItem in CageList)
+                                    {
+                                        <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                   
+            <div class="row">
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Dari Tanggal
+					<input type="date" @bind="@dtFromDate" class="form-control" />
+				</div>
+			</div>
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Ke Tanggal
+					<input type="date" @bind="@dtToDate" class="form-control" />
+				</div>
+			</div>				
+			<div class="col-lg-1 col-sm-6 col-12">
+				<div class="form-group" style="margin-top:20px;">
+                        <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+				</div>
+			</div>
+		</div>
+        </div>
+    </div>
+
+    
+    @if (SelectedNoKandang != "ALL") 
+    {
+        <div class="card">
+            <div class="card-body">
+                @if(ChartDataLoaded) 
+	            {
+                    <MudChart ChartType="ChartType.Line" ChartOptions="@Options" Style="width: 100%;" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
+                }
+            </div>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            @if (DailyRecordings != null && DailyRecordings.Count > 0)
+            {
+                if (SelectedNoKandang != "ALL") 
+                {                                                               
+                    <div class="table-responsive">
+                        <h3>
+                            Kandang: @DailyRecordings[0].CageNumber<br />
+                            Strain: @DailyRecordings[0].StrainName
+                        </h3>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th colspan="2" style="text-align:center;">UMUR</th>
+                                    <th colspan="7" style="text-align:center;">POPULASI</th>
+                                    <th colspan="3" style="text-align:center;">PAKAN</th>
+
+                                    <th colspan="2" style="text-align:center;">PROD UTUH</th>
+                                    <th colspan="2" style="text-align:center;">PROD BENTES</th>
+                                    <th colspan="2" style="text-align:center;">PROD TOTAL</th>
+
+                                    <th colspan="2" style="text-align:center;">%HD</th>
+                                    <th colspan="2" style="text-align:center;">EM(Kg)</th>
+                                    <th colspan="2" style="text-align:center;">EW(Gr)</th>
+
+                                    <th></th>
+
+                                </tr>
+                                <tr>
+                                    @* <th>KDG</th> *@
+                                    <th>TGL</th>
+                                    @* <th>Strain</th> *@
+                                    <th>MGG</th>
+                                    <th>HARI</th>
+
+                                    <th>Awal</th>
+                                    <th>Mati</th>
+                                    <th>Afkir/Jual</th>
+                                    <th>Sakit</th>
+                                    <th>P+</th>
+                                    <th>P-</th>
+                                    <th>Akhir</th>
+
+                                    <th>Konsentrat</th>
+                                    @* <th>KRM</th>
+                                <th>SLD</th>
+                                <th>PAKAI</th>
+                                <th>SISA</th> *@
+                                    <th>FI</th>
+                                    <th>DEV</th>
+
+                                    <th>Butir</th>
+                                    <th>Kg</th>
+                                    <th>Butir</th>
+                                    <th>Kg</th>
+                                    <th>Butir</th>
+                                    <th>Kg</th>
+
+                                    <th>HD</th>
+                                    @* <th>STD</th> *@
+                                    <th>DEV</th>
+                                    <th>EM</th>
+                                    @*  <th>STD</th> *@
+                                    <th>DEV</th>
+                                    <th>EW</th>
+                                    @* <th>STD</th> *@
+                                    <th>DEV</th>
+
+                                    <th>FCR</th>
+                                    @* <th>Modified By</th>
+                                <th>Modified Date</th> *@
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var record in DailyRecordings)
+                                {
+                                    <tr>
+                                        @* <td>@record.CageNumber</td> *@
+                                        <td>@record.RecordDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</td>
+                                        @* <td>@record.StrainName</td> *@
+                                        <td>@record.HenAgeWeeks</td>
+                                        <td>@record.HenAgeDays</td>
+
+                                        <td>@record.PopulationStart</td>
+                                        <td>@record.DeadHenCount</td>
+                                        <td>@record.UnproductiveHenCount</td>
+                                        <td>@record.SickHenCount</td>
+                                        <td>@record.MoveInHenCount</td>
+                                        <td>@record.MoveOutHenCount</td>
+                                        <td>@record.PopulationEnd</td>
+
+                                        <td>@record.ConcentrateType</td>
+                                        @* <td>@record.ActualFoodNeededKG</td>
+                                <td>@record.SaldoFoodKG</td>
+                                <td>@record.FoodNeededTodayKg</td>
+                                <td>@record.RemainingFoodKg</td> *@
+                                        <td>@record.FoodIntakePerHen</td>
+                                        <td>@record.FoodIntakeDeviation</td>
+
+                                        <td>@record.PerfectEggCount</td>
+                                        <td>@record.PerfectEggKg</td>
+                                        <td>@record.BrokenEggCount</td>
+                                        <td>@record.BrokenEggKg</td>
+                                        <td>@record.TotalEggCount</td>
+                                        <td>@record.TotalEggKg</td>
+
+                                        <td>@record.ActualHenDay</td>
+                                        @* <td>@record.StandardHenDay</td> *@
+                                        @if (record.DailyHenDayDifference < 0)
+                                        {
+                                            <td style="color:#ff0000 !important;">@record.DailyHenDayDifference</td>
+                                        }
+                                        else
+                                        {
+                                            <td>@record.DailyHenDayDifference</td>
+                                        }
+
+                                        <td>@record.ActualEggMassKg</td>
+                                        @* <td>@record.StandardEggMassKg</td> *@
+                                        <td>@record.EggMassDeviation</td>
+                                        <td>@record.ActualEggWeightG</td>
+                                        @* <td>@record.StandardEggWeightG</td> *@
+                                        <td>@record.EggWeightDeviation</td>
+                                        <td>@record.FeedConversionRatio</td>
+                                        @* <td>@record.ModifiedBy</td>
+                                <td>@record.ModifiedDate.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture)</td> *@
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">                        
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th></th>                                    
+                                    <th colspan="7" style="text-align:center;">POPULASI</th>
+                                    <th colspan="5" style="text-align:center;">PAKAN</th>
+
+                                    <th colspan="2" style="text-align:center;">PROD UTUH</th>
+                                    <th colspan="2" style="text-align:center;">PROD BENTES</th>
+                                    <th colspan="2" style="text-align:center;">PROD TOTAL</th>
+
+                                    <th style="text-align:center;">%HD</th>
+                                    <th style="text-align:center;">EM(Kg)</th>
+                                    <th style="text-align:center;">EW(Gr)</th>
+
+                                    <th></th>
+
+                                </tr>
+                                <tr>
+                                    <th>KDG</th>
+                                    <th>Strain</th>
+
+                                    <th>Awal</th>
+                                    <th>Mati</th>
+                                    <th>Afkir/Jual</th>
+                                    <th>Sakit</th>
+                                    <th>P+</th>
+                                    <th>P-</th>
+                                    <th>Akhir</th>
+
+                                    <th>KRM</th>
+                                    <th>SLD</th>
+                                    <th>PAKAI</th>
+                                    <th>SISA</th>
+                                    <th>FI</th>
+                                    @* <th>DEV</th> *@
+
+                                    <th>Butir</th>
+                                    <th>Kg</th>
+                                    <th>Butir</th>
+                                    <th>Kg</th>
+                                    <th>Butir</th>
+                                    <th>Kg</th>
+
+                                    <th>HD</th>
+                                    <th>EM</th>
+                                    <th>EW</th>
+                                    <th>FCR</th>                                  
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var grouped = DailyRecordings.GroupBy(x => x.CageNumber).ToList();
+                                }
+
+                                @foreach (var group in grouped)
+                                {
+                                    var strain = group.First().StrainName;
+
+                                    <tr>
+                                        <td>@group.Key</td>
+                                        <td>@strain</td>                                       
+
+                                        <td>@group.Sum(x => x.PopulationStart)</td>
+                                        <td>@group.Sum(x => x.DeadHenCount)</td>
+                                        <td>@group.Sum(x => x.UnproductiveHenCount)</td>
+                                        <td>@group.Sum(x => x.SickHenCount)</td>
+                                        <td>@group.Sum(x => x.MoveInHenCount)</td>
+                                        <td>@group.Sum(x => x.MoveOutHenCount)</td>
+                                        <td>@group.Sum(x => x.PopulationEnd)</td>
+                                      
+                                        <td>@group.Sum(x => x.ActualFoodNeededKG)</td>
+                                        <td>@group.Sum(x => x.SaldoFoodKG)</td>
+                                        <td>@group.Sum(x => x.FoodNeededTodayKg)</td>
+                                        <td>@group.Sum(x => x.RemainingFoodKg)</td>
+                                        <td>
+                                            @{
+                                                decimal fi = 0;
+                                                try
+                                                {
+                                                    fi = (group.Sum(x => x.FoodNeededTodayKg) / group.Sum(x => x.PopulationEnd)) * 1000;
+                                                }
+                                                catch(Exception ex)
+                                                {
+                                                    fi = (group.Sum(x => x.FoodIntakePerHen) / (decimal)group.Count());
+                                                }
+                                            }
+                                            @fi.ToString("N2")
+                                        </td>
+
+                                        <td>@group.Sum(x => x.PerfectEggCount)</td>
+                                        <td>@group.Sum(x => x.PerfectEggKg)</td>
+                                        <td>@group.Sum(x => x.BrokenEggCount)</td>
+                                        <td>@group.Sum(x => x.BrokenEggKg)</td>
+                                        <td>@group.Sum(x => x.TotalEggCount)</td>
+                                        <td>@group.Sum(x => x.TotalEggKg)</td>
+
+                                        <td>
+                                            @{
+                                                decimal hd = 0;
+                                                try
+                                                {
+                                                    hd = (group.Sum(x => x.TotalEggCount) / group.Sum(x => x.PopulationStart)) * 100;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    hd = (group.Sum(x => x.ActualHenDay) / (decimal)group.Count());
+                                                }
+                                            }
+                                            @hd.ToString("N2")
+                                        </td>
+                                        <td>
+                                            @{
+                                                decimal em = 0;
+                                                try
+                                                {
+                                                    em = (group.Sum(x => x.TotalEggKg) / group.Sum(x => x.PopulationEnd)) * 1000;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    em = (group.Sum(x => x.ActualEggMassKg) / (decimal)group.Count());
+                                                }
+                                            }
+                                            @em.ToString("N2")
+                                        </td>
+                                        <td>
+                                            @{
+                                                decimal ew = 0;
+                                                try
+                                                {
+                                                    ew = (group.Sum(x => x.TotalEggKg) / group.Sum(x => x.TotalEggCount)) * 1000;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    ew = (group.Sum(x => x.ActualEggWeightG) / (decimal)group.Count());
+                                                }
+                                            }
+                                            @ew.ToString("N2")
+                                        </td>
+                                        <td>
+                                            @{
+                                                decimal fcr = 0;
+                                                try
+                                                {
+                                                    fcr = group.Sum(x => x.FoodNeededTodayKg) / group.Sum(x => x.TotalEggKg);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    fcr = (group.Sum(x => x.FeedConversionRatio) / (decimal)group.Count());
+                                                }
+                                            }
+                                            @fcr.ToString("N2")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>Data belum ada.</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Laporan Recording";
+
+    string SelectedNoKandang = "";
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
+    private List<DailyRecording> PagedData = new List<DailyRecording>();
+
+    private int CurrentPage = 1;
+    private int PageSize = 10;
+    private int TotalItems => DailyRecordings.Count; 
+    DateTime dtFromDate;
+    DateTime dtToDate;
+    private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
+    private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
+    public ChartOptions Options = new ChartOptions();
+    public List<ChartSeries> Series = new List<ChartSeries>();
+    private int SeriesIndex = -1;
+    bool ChartDataLoaded = false;
+
+    bool isProcessing;
+
+    private async Task LoadRecording()
+    {
+        isProcessing = true;
+        DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang, dtFromDate, dtToDate);        
+
+        if (SelectedNoKandang != "ALL")
+        {
+            DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
+            await GetGraphData();
+        }
+        else
+        {
+            DailyRecordings = DailyRecordings.OrderBy(x => Convert.ToInt32(x.CageNumber)).ToList();
+        }
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        dtFromDate = new DateTime(now.Year, now.Month, 1);
+        int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
+        dtToDate = new DateTime(now.Year, now.Month, lastDay);
+
+        // Simulate fetching data from a service
+        CageList = await _kandang.GetAll();
+
+        UpdatePagedData();
+    }
+
+    private async Task GetGraphData()
+    {               
+        Series = new List<ChartSeries>();
+        ChartSeries series = new ChartSeries();
+        series.Name = "+/- HD";
+        series.Data = DailyRecordings.Select(record => Convert.ToDouble(record.ActualHenDay)).ToArray();
+        Series.Add(series);
+
+        series = new ChartSeries();
+        series.Name = "EW(gr)";
+        series.Data = DailyRecordings.Select(record => Convert.ToDouble(record.ActualEggWeightG)).ToArray();
+        Series.Add(series);
+
+        // Map strainData to chart data
+        XAxisLabels = DailyRecordings
+            // Select every 4th record
+            .Select(record => record.HenAgeWeeks.ToString())
+            .ToArray();
+        yAxisValues = DailyRecordings.Select(record => record.ActualHenDay).ToList();
+
+        Options.YAxisTicks = 20;       
+
+        if(DailyRecordings.Count > 0)
+        {
+            ChartDataLoaded = true;
+        }
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {        
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            StateHasChanged();
+        }
+    }
+
+    private void HandlePageChange(int pageNumber)
+    {
+        CurrentPage = pageNumber;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        PagedData = DailyRecordings
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+    }
+}

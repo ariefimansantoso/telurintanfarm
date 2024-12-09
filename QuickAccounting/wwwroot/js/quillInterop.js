@@ -19,7 +19,7 @@
 
         // Event listener to update the Blazor component when content changes
         quill.on('text-change', () => {
-            DotNet.invokeMethodAsync("QuickAccounting.Pages.HumanResorcePage.EmployeePage", "UpdateQuillContent", elementId, quill.root.innerHTML);
+            DotNet.invokeMethodAsync("QuickAccounting", "UpdateQuillContent", elementId, quill.root.innerHTML);
         });
     },
 

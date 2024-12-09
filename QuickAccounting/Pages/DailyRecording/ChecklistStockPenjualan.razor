@@ -1,0 +1,273 @@
+﻿@page "/app/checkliststocksales"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Terima Stock Telur Jualan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important;
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Terima Stock Telur Jualan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+            
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group">
+                        Dari Tanggal
+                        <input type="date" @bind="@dtFromDate" class="form-control" />
+                    </div>
+                </div>
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group">
+                        Ke Tanggal
+                        <input type="date" @bind="@dtToDate" class="form-control" />
+                    </div>
+                </div>                
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => LoadData()" class="btn btn-primary" style="color:#fff !important;">Tampilkan Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (StockPenjualans != null && StockPenjualans.Count > 0)
+            {
+            <div class="row">            
+                <div class="table-responsive">                    
+                    <table class="table table-striped">
+                        <thead>                            
+                            <tr>                               
+                                <th style="text-align:center;">Tgl</th>
+                                <th style="text-align:center;">Butir</th>                                
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                           
+                            @foreach (var record in StockPenjualans.ToList())
+                            {
+                                <tr>
+                                    <td colspan="3" style="text-align:left !important; font-weight:bold !important; font-size:16px !important;">
+                                        <b>@record.Key</b>
+                                    </td>
+                                </tr>
+                                    @foreach(var item in record)
+                                    {
+                                        <tr>
+                                            <td style="text-align:left !important;">@item.DateCreated.ToString("dd-MM")</td>
+                                            <td style="text-align:right !important;">@item.StockKg</td>
+                                            <td style="text-align:center !important;">
+                                                <input type="checkbox" @bind="@item.IsVerified" disabled="@item.IsVerified" />
+                                            </td>
+                                        </tr>
+                                    }
+                                    
+                            }                           
+                        </tbody>
+                    </table>
+                </div>
+                       
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <br /><br />
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;">Simpan Data Checklist</button>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Terima Stock Telur Jualan";
+    DateTime dtFromDate;
+    DateTime dtToDate;
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+
+    private List<IGrouping<string, StockPenjualan>> StockPenjualans = new List<IGrouping<string, StockPenjualan>>();
+
+    bool isProcessing;
+
+    private async Task Save()   
+    {
+        try
+        {
+            bool newStock = false;
+
+            var updatedRecords = StockPenjualans
+            .SelectMany(group => group)
+            .ToList();
+
+            foreach (var record in updatedRecords)
+            {
+                // Update VerifiedBy based on the checkbox state
+                var dbRecord = await _db.StockPenjualan.FindAsync(record.ID);
+                if (dbRecord != null)
+                {
+                    if(dbRecord.VerifiedBy > 0 && dbRecord.IsVerified)
+                    {
+                        continue;
+                    }
+
+                    dbRecord.VerifiedBy = record.IsVerified ? modelEmployee.EmployeeId : -99; // Update VerifiedBy
+                    dbRecord.IsVerified = record.IsVerified;
+                    if (record.IsVerified)
+                    {
+                        dbRecord.VerifiedOn = DateTime.Now;
+                        if (record.EggType == "UTUH")
+                        {
+                            StockTelurUtuh stockTelurUtuh = await _db.StockTelurUtuh.FirstOrDefaultAsync(x => x.ID == 1);
+                            if (stockTelurUtuh == null)
+                            {
+                                newStock = true;
+                                stockTelurUtuh = new StockTelurUtuh();
+                                stockTelurUtuh.StockKG = 0;
+                            }
+                            stockTelurUtuh.StockKG = stockTelurUtuh.StockKG + dbRecord.StockKg;
+                            stockTelurUtuh.ModifiedBy = modelEmployee.EmployeeId;
+                            stockTelurUtuh.ModifiedOn = DateTime.Now;
+                            if (newStock)
+                            {
+                                _db.StockTelurUtuh.Add(stockTelurUtuh);
+                            }
+                        }
+                        else
+                        {
+                            // kalau tipe telur tidak UTUH, maka langsung masukkan ke Stock Posting.
+                            int productId = 0;
+                            switch(record.EggType)
+                            {
+                                case "BENTES":
+                                    productId = 16;
+                                    break;
+                                case "PUTIH":
+                                    productId = 7;
+                                    break;
+                                case "PECAH":
+                                    productId = 17;
+                                    break;
+                                case "PECAH SEKALI":
+                                    productId = 19;
+                                    break;
+                            }
+                            StockPosting stockposting = new StockPosting();
+                            stockposting.Date = DateTime.Now;
+                            stockposting.ProductId = productId;
+                            stockposting.InwardQty = dbRecord.StockKg;
+                            stockposting.OutwardQty = 0;
+                            stockposting.UnitId = 0;
+                            stockposting.BatchId = 0;
+                            stockposting.Rate = 0;
+                            stockposting.DetailsId = 0;
+                            stockposting.InvoiceNo = productId.ToString();
+                            stockposting.VoucherNo = productId.ToString();
+                            stockposting.VoucherTypeId = 0;
+                            stockposting.AgainstInvoiceNo = String.Empty;
+                            stockposting.AgainstVoucherNo = String.Empty;
+                            stockposting.AgainstVoucherTypeId = 0;
+                            stockposting.WarehouseId = 1;
+                            stockposting.StockCalculate = "Restock";
+                            stockposting.CompanyId = 1;
+                            stockposting.FinancialYearId = 1;
+                            stockposting.AddedDate = DateTime.Now;
+                            _db.StockPosting.Add(stockposting);
+                        }
+                    }
+                }
+            }
+
+            // Save changes to the database
+            await _db.SaveChangesAsync();
+
+            navigation.NavigateTo("/app/checkliststocksales", true);
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task LoadData()
+    {                
+        var data = await _db.StockPenjualan.Where(x => x.DateCreated.Date >= dtFromDate.Date &&
+                                            x.DateCreated.Date <= dtToDate.Date)
+                                            .OrderByDescending(x => x.DateCreated).ToListAsync();
+
+        StockPenjualans = data.GroupBy(x => x.EggType).ToList();
+
+        if (StockPenjualans.Count == 0)
+        {
+            Snackbar.Add("Data tidak ada", Severity.Warning);
+        }
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        var now = DateTime.Now;
+        dtFromDate = new DateTime(now.Year, now.Month, 1);
+        int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
+        dtToDate = new DateTime(now.Year, now.Month, lastDay);
+    }
+}    

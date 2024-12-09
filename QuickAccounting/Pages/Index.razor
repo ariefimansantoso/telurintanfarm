@@ -17,6 +17,7 @@
 @inject NavigationManager navigation
 @inject IAttendance _attendance
 @inject IDailyRecordingService _recording
+@inject ApplicationDbContext _db
 
 @using QuickAccounting.Components
 @using QuickAccounting.Data.Recording
@@ -41,6 +42,7 @@
 				<img src="@CurrentPhotoUrl" alt="Profile Image" class="profile-img">
 				<div class="profile-name">
 					@modelEmployee.EmployeeName
+					<h2>@currentUserRole</h2>
 				</div>
 			</div>
 		</div>
@@ -276,6 +278,68 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- STOCK -->
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Stock Telur Hari Ini</h3>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@StockTelurUtuh KG</span></h5>
+						<h6>Utuh</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@StockTelurPutih KG</span></h5>
+						<h6>Putih</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@StockTelurBentes KG</span></h5>
+						<h6>Bentes</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@(StockTelurParah + StockTelurParahSekali) KG</span></h5>
+						<h6>Parah dan Parah Sekali</h6>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- STOCK-->
+
 
 		<div class="row">	
 			<div class="col-lg col-sm-12 col-12">
@@ -880,6 +944,12 @@
 	decimal TotalTelurParah;
 	decimal TotalTelurParahSekali;
 
+	decimal StockTelurUtuh;
+	decimal StockTelurBentes;
+	decimal StockTelurPutih;
+	decimal StockTelurParah;
+	decimal StockTelurParahSekali;
+
 	DateTime dtFromDate;
 	DateTime dtToDate;
 
@@ -1018,6 +1088,46 @@
 		await GetStrainGraphData();
 	}
 
+	private void LoadDataStock()
+	{
+		var stockTelurUtuh = _db.StockTelurUtuh.FirstOrDefault();
+		if(stockTelurUtuh != null)
+		{
+			StockTelurUtuh = stockTelurUtuh.StockKG;
+		}
+
+		var startingStockDate = new DateTime(2024, 12, 8, 0, 0, 0);
+
+		// bentes
+		var stockBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefault();
+
+		// putih
+		var stockPutih = _db.StockPosting.Where(x => x.ProductId == 7 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefault();
+
+		// pecah
+		var stockPecah = _db.StockPosting.Where(x => x.ProductId == 17 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefault();
+
+		// pecah sekali
+		var stockPecahSekali = _db.StockPosting.Where(x => x.ProductId == 19 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefault();
+
+		StockTelurBentes = stockBentes;
+		StockTelurPutih = stockPutih;
+		StockTelurParah = stockPecah;
+		StockTelurParahSekali = stockPecahSekali;
+	}
+
 	protected async override void OnInitialized()
 	{
 		AdaPerijinan = true;
@@ -1089,6 +1199,8 @@
 		TotalTelurBentes = _sales.GetPenjualanTelurBentes(fromBeginning, dtToDate);
 		TotalTelurParah = _sales.GetPenjualanTelurParah(fromBeginning, dtToDate);
 		TotalTelurParahSekali = _sales.GetPenjualanTelurParahSekali(fromBeginning, dtToDate);
+
+		LoadDataStock();
 
 		DaySeven();
 
@@ -1171,6 +1283,7 @@
 		//Cash/Bank
 		listCashBank = await report.CashBankBalance(dtFromDate, dtToDate);
 	}
+
 	private async void DaySeven()
 	{
 		string strDay1 = "DeActive";
@@ -1206,6 +1319,7 @@
 		//Cash/Bank
 		listCashBank = await report.CashBankBalance(dtFromDate, dtToDate);
 	}
+
 	private async void DayMonth()
 	{
 		string strDay1 = "DeActive";
@@ -1237,6 +1351,7 @@
 		//Cash/Bank
 		listCashBank = await report.CashBankBalance(dtFromDate, dtToDate);
 	}
+
 	private async void DayYear()
 	{
 		string strDay1 = "DeActive";
@@ -1268,10 +1383,12 @@
 		//Cash/Bank
 		listCashBank = await report.CashBankBalance(dtFromDate, dtToDate);
 	}
+
 	void OnChange(int index)
 	{
 
 	}
+
 	void OnChange(bool? value, string name)
 	{
 		value = true;

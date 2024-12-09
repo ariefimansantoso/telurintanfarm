@@ -23,5 +23,6 @@ namespace QuickAccounting.Repository.Interface
 		Task<List<DailyAttendanceMaster>> GetAttendanceCurrentPeriodeByEmployeeId(int employeeID, DateTime startingPeriode, DateTime endingPeriode);
 		Task<List<DailyAttendanceMaster>> GetAttendanceCurrentPeriodeAllEmployee(DateTime startingPeriode, DateTime endingPeriode);
 		List<DailyAttendanceMaster> GetAttendanceListByDateAndEmployeeId(int employeeID, DateTime date);
+		List<DailyAttendanceMaster> GetAttendanceCurrentPeriodeByEmployeeIdSync(int employeeID, DateTime startingPeriode, DateTime endingPeriode);
     }
 }

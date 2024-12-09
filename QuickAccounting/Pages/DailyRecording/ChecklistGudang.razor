@@ -44,8 +44,11 @@
     <div class="card">
         <div class="card-body">
             <div class="row">
-                <div class="col-lg-4 col-sm-6 col-12">
+                <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: left !important;">
+                        <h1>
+                            Di Kandang: @TotalSisa
+                        </h1>
                         <h1>
                             Total Diambil: @TotalDiambil
                         </h1>    
@@ -53,14 +56,15 @@
                             Total Ditimbang: @TotalDitimbang
                         </h1>
                         <h1>
-                            Sisa: @TotalSisa
+                            Sisa Belum Ditimbang: @TotalSisaBelumDitimbang
                         </h1>
+                        
                     </div>
                 </div>
             </div> 
             
             <div class="row">
-                <div class="col-lg-4 col-sm-6 col-12">
+                <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
                         <label>Pilih Jenis Telur</label>
                         <div class="row">
@@ -76,7 +80,7 @@
             </div>
 
             <div class="row">
-                <div class="col-lg-4 col-sm-6 col-12">
+                <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
                         <label>Jumlah Timbangan</label>
                         <div class="row">
@@ -89,7 +93,7 @@
             </div>
 
             <div class="row">
-                <div class="col-lg-4 col-sm-6 col-12">
+                <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
                         <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;" disabled="@( !IsValid )">Timbang</button>
                     </div>
@@ -97,11 +101,60 @@
             </div>
 
             <div class="row">
-                <div class="col-lg-4 col-sm-6 col-12">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        @if (StockGudangs != null && StockGudangs.Count > 0)
+                        {
+                            <div class="table-responsive">                                
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>                                            
+                                            
+                                            <th style="text-align:center;">Jenis</th>
+                                            <th style="text-align:center;">Berat</th>
+                                        </tr>                                        
+                                    </thead>
+                                    <tbody>
+                                        @{                                            
+                                            decimal totalKG = 0;
+                                        }
+                                        @foreach (var record in StockGudangs.ToList())
+                                        {
+                                            <tr>
+                                                
+                                                <td style="text-align:center;">@record.EggType</td>
+                                                <td style="text-align:right;">@record.TotalDitimbang</td>
+                                                @{
+                                                    totalKG = totalKG + record.TotalDitimbang;
+                                                }
+                                            </tr>
+                                        }
+                                        <tr>
+                                            <td style="font-weight:bold;font-size:16px;">
+                                                <b>TOTAL</b>
+                                            </td>
+                                            <td style="font-weight:bold;font-size:16px;">@totalKG</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p>No data available.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
                         <br /><br />
                         <h4>Hanya dipencet kalau sudah selesai timbang semua</h4>
-                        <button @onclick="() => Finalize()" class="btn btn-primary" style="color:#fff !important;">Simpan</button>
+                        <button @onclick="() => SiapSimpan()" class="btn btn-primary" disabled="@( TimbangDone )" style="color:#fff !important;">Siap Simpan?</button>
+
+                        <button @onclick="() => Finalize()" class="btn btn-primary" disabled="@( !TimbangDone )" style="color:#fff !important;">Simpan</button>
                     </div>
                 </div>
             </div>
@@ -119,10 +172,14 @@
     string JenisTelurSelected = "UTUH";
     decimal Timbangan = 0;
     bool TimbangDone = false;
+    decimal TotalDibawaKeGudang = 0;
+    decimal TotalSisaBelumDitimbang = 0;
 
     private UserMaster modelUser;
     private Employee modelEmployee;
     string currentUserRole = "User";
+
+    private List<StockGudang> StockGudangs = new List<StockGudang>();
 
     bool isProcessing;
     bool IsValid = true;
@@ -141,12 +198,24 @@
         {
             IsValid = true;
             Timbangan = v;
+            if(Timbangan > 25)
+            {
+                IsValid = false;
+                Snackbar.Add("Nimbangnya dikit aja, 10 tray maksimal", Severity.Warning);
+            }
         }
         else
         {
             IsValid = false;
             Snackbar.Add("Input tidak benar.", Severity.Warning);
         }
+    }
+
+    private async Task SiapSimpan()
+    {
+        TimbangDone = true;
+
+        StateHasChanged();
     }
 
     private async Task Finalize()   
@@ -182,9 +251,12 @@
             timbangan.EggType = JenisTelurSelected;
             _db.StockGudang.Add(timbangan);
             await _db.SaveChangesAsync();
+            TotalSisaBelumDitimbang = TotalDibawaKeGudang - Timbangan;
             Snackbar.Add("Data produksi telur telah tersimpan.", Severity.Success);
             Timbangan = 0;
+            
             await LoadData();
+            await LoadStockGudang();
         }
         catch (DbUpdateException dex)
         {
@@ -202,14 +274,16 @@
         {
             TotalDiambil = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);
             TotalSisa = _db.DailyEggPickup.Where(x => x.ReceivedBy < 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);
-            TotalDitimbang = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy > 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);// _db.StockGudang.Where(x => x.EggType == "UTUH" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
+            TotalDitimbang = _db.StockGudang.Where(x => x.EggType == "UTUH" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
         }
         else
         {
             TotalDiambil = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurBentesKG);
             TotalSisa = _db.DailyEggPickup.Where(x => x.ReceivedBy < 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurBentesKG);
-            TotalDitimbang = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy > 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurBentesKG); //_db.StockGudang.Where(x => x.EggType == "BENTES" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
+            TotalDitimbang = _db.StockGudang.Where(x => x.EggType == "BENTES" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
         }
+
+        TotalDibawaKeGudang = TotalDiambil;
 
         if (TotalDiambil == 0)
         {
@@ -219,6 +293,11 @@
         }
 
         StateHasChanged();
+    }
+
+    private async Task LoadStockGudang()
+    {
+        StockGudangs = await _db.StockGudang.Where(x => x.DateDitimbang.Date == DateTime.Now.Date).ToListAsync();
     }
 
     private async Task OnJenisTelurChanged(ChangeEventArgs e)

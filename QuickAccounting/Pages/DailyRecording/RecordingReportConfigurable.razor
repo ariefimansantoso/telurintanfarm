@@ -1,4 +1,4 @@
-﻿@page "/app/recordingreports"
+﻿@page "/app/recordingreportsall"
 @using System.Security.Claims;
 @using Microsoft.EntityFrameworkCore;
 @using QuickAccounting.Data.Recording;
@@ -35,7 +35,7 @@
                         <div class="row">
                             <div class="col-lg col-sm-12 col-12">
                                 <select class="form-control" @onchange="OnCageChanged">
-                                    <option value="TIDAK">PILIH NO KANDANG</option>
+                                    <option value="SEMUA">SEMUA KANDANG</option>
                                     @foreach (var kandangItem in CageList)
                                     {
                                         <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
@@ -44,6 +44,18 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    @foreach (var column in AvailableColumnNames)
+                    {
+                        <div>
+                            <input type="checkbox" @bind="@SelectedColumns[column.Value]" id="@column.Value" />
+                            <label for="@column.Key">@column.Key</label>
+                        </div>
+                    }
                 </div>
             </div>
                    
@@ -244,6 +256,86 @@
     bool ChartDataLoaded = false;
 
     bool isProcessing;
+
+    private Dictionary<string, bool> SelectedColumns = new();
+
+    private List<string> ColumnNames = new List<string>
+    {
+        "CageNumber",
+        "RecordDate",
+        "StrainName",
+        "HenAgeWeeks",
+        "HenAgeDays",
+        "PopulationStart",
+        "PopulationEnd",
+        "DeadHenCount",
+        "UnproductiveHenCount",
+        "SickHenCount",
+        "MoveInHenCount",
+        "MoveOutHenCount",
+        "ConcentrateType",
+        "FoodIntakePerHen",
+        "RemainingFoodKg",
+        "FoodNeededTodayKg",
+        "ActualFoodNeededKG",
+        "SaldoFoodKG",
+        "FoodIntakeDeviation",
+        "PerfectEggCount",
+        "PerfectEggKg",
+        "BrokenEggCount",
+        "BrokenEggKg",
+        "TotalEggCount",
+        "TotalEggKg",
+        "ActualHenDay",
+        "StandardHenDay",
+        "DailyHenDayDifference",
+        "ActualEggMassKg",
+        "StandardEggMassKg",
+        "EggMassDeviation",
+        "ActualEggWeightG",
+        "StandardEggWeightG",
+        "EggWeightDeviation",
+        "FeedConversionRatio"
+    };
+
+    private Dictionary<string, string> AvailableColumnNames = new Dictionary<string, string>
+    {
+        { "KDG", "CageNumber" },
+        { "TGL", "RecordDate" },
+        { "Strain", "StrainName" },
+        { "MGG", "HenAgeWeeks" },
+        { "HARI", "HenAgeDays" },
+        { "Awal", "PopulationStart" },
+        { "Akhir", "PopulationEnd" },
+        { "Mati", "DeadHenCount" },
+        { "Afkir", "UnproductiveHenCount" },
+        { "Sakit", "SickHenCount" },
+        { "P+", "MoveInHenCount" },
+        { "P-", "MoveOutHenCount" },
+        { "Pakan", "ConcentrateType" },
+        { "FI", "FoodIntakePerHen" },
+        { "Sisa", "RemainingFoodKg" },
+        { "Pakai", "FoodNeededTodayKg" },
+        { "Kirim", "ActualFoodNeededKG" },
+        { "Saldo", "SaldoFoodKG" },
+        { "FI +/-", "FoodIntakeDeviation" },
+        { "Utuh", "PerfectEggCount" },
+        { "Utuh KG", "PerfectEggKg" },
+        { "Bentes", "BrokenEggCount" },
+        { "Bentes KG", "BrokenEggKg" },
+        { "Total", "TotalEggCount" },
+        { "Total KG", "TotalEggKg" },
+        { "HD", "ActualHenDay" },
+        //{ "STD", "StandardHenDay" },
+        { "HD +/-", "DailyHenDayDifference" },
+        { "EM", "ActualEggMassKg" },
+        //{ "STD EM", "StandardEggMassKg" },
+        { "EM +/-", "EggMassDeviation" },
+        { "EW", "ActualEggWeightG" },
+        //{ "", "StandardEggWeightG" },
+        { "EW +/-", "EggWeightDeviation" },
+        { "FCR", "FeedConversionRatio" }
+    };
 
     private async Task LoadRecording()
     {

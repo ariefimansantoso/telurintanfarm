@@ -1,4 +1,4 @@
-﻿@page "/app/recordpenalty"
+﻿@page "/app/recordbonus"
 @inject IHRServices _hr
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
@@ -12,11 +12,11 @@
 @inject NavigationManager navigation
 @attribute [Authorize]
 
-<PageTitle>Form Sangsi / Pengurangan Gaji</PageTitle>
+<PageTitle>Form Bonus / Penambahan Gaji</PageTitle>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h4>Form Sangsi / Pengurangan Gaji</h4>
+            <h4>Form Bonus / Penambahan Gaji</h4>
         </div>
     </div>
 
@@ -27,7 +27,7 @@
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
-                                <label>Tanggal Sangsi</label>
+                                <label>Tanggal Bonus/Tambahan Gaji</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
                                         <RadzenDatePicker @bind-Value=@TanggalSangsi DateFormat="d" Change="()=>ChangeDate()" Class="w-100" />
@@ -55,7 +55,7 @@
                         </div>
                     </div>
 
-                    <div class="row">
+                    @* <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
                                 <label>Foto Bukti</label>
@@ -75,7 +75,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> *@
 
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
@@ -93,7 +93,7 @@
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
-                                <label>Nominal Pengurangan</label>
+                                <label>Nominal Penambahan</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
                                         <input type="text" style="width:100%;" @bind="Nominal" />
@@ -115,7 +115,7 @@
                 <div class="row">
                     <div class="col-lg-4 col-sm-6 col-12">
                         <div class="form-group" style="text-align: center !important;">
-                            <label style="font-size:24px; font-weight:bold;">Form Sangsi / Pengurangan Gaji berhasil disimpan.</label>
+                            <label style="font-size:24px; font-weight:bold;">Form Bonus / Penambahan Gaji berhasil disimpan.</label>
                         </div>
                     </div>
                 </div>
@@ -144,7 +144,7 @@
     MemoryStream uploadedFileStream;
     string uploadedFileExtension;
 
-    string strMenu = "Admin - Form Sangsi";
+    string strMenu = "Admin - Form Bonus";
 
     private bool FormSubmitted;
 
@@ -241,29 +241,29 @@
         StateHasChanged();
     }
 
-    public async Task<string> UploadFile(string userFolder)
-    {
-        if(PhotoViewer == "")
-        {
-            return "";
-        }
+    // public async Task<string> UploadFile(string userFolder)
+    // {
+    //     if(PhotoViewer == "")
+    //     {
+    //         return "";
+    //     }
 
-        var uploadDirectory = Path.Combine(_hostingEnvironment.WebRootPath, "uploads/sangsi/" + userFolder);
-        if (!Directory.Exists(uploadDirectory))
-        {
-            Directory.CreateDirectory(uploadDirectory);
-        }
+    //     var uploadDirectory = Path.Combine(_hostingEnvironment.WebRootPath, "uploads/bonus/" + userFolder);
+    //     if (!Directory.Exists(uploadDirectory))
+    //     {
+    //         Directory.CreateDirectory(uploadDirectory);
+    //     }
 
-        var fileExtension = uploadedFileExtension;
-        var fileName = $"{Guid.NewGuid()}{fileExtension}";
-        var path = Path.Combine(uploadDirectory, fileName);
-        await using var fs = new FileStream(path, FileMode.Create);
-        //await file.OpenReadStream(file.Size).CopyToAsync(fs);
-        uploadedFileStream.Position = 0;
-        await uploadedFileStream.CopyToAsync(fs);
-        PhotoBukti = fileName;
-        return fileName;
-    }
+    //     var fileExtension = uploadedFileExtension;
+    //     var fileName = $"{Guid.NewGuid()}{fileExtension}";
+    //     var path = Path.Combine(uploadDirectory, fileName);
+    //     await using var fs = new FileStream(path, FileMode.Create);
+    //     //await file.OpenReadStream(file.Size).CopyToAsync(fs);
+    //     uploadedFileStream.Position = 0;
+    //     await uploadedFileStream.CopyToAsync(fs);
+    //     PhotoBukti = fileName;
+    //     return fileName;
+    // }
 
     private async Task LoadData()
     {                
@@ -284,14 +284,14 @@
             return;
         }
 
-        string userFolder = SelectedEmployee.EmployeeId + "_" + SelectedEmployee.EmployeeName.Replace(" ", "_");
-        string fileName = await UploadFile(userFolder);
+        // string userFolder = SelectedEmployee.EmployeeId + "_" + SelectedEmployee.EmployeeName.Replace(" ", "_");
+        // string fileName = await UploadFile(userFolder);
 
-        if (PhotoBukti == "")
-        {
-            Snackbar.Add("Anda belum mengambil foto bukti.", Severity.Error);
-            return;
-        }
+        // if (PhotoBukti == "")
+        // {
+        //     Snackbar.Add("Anda belum mengambil foto bukti.", Severity.Error);
+        //     return;
+        // }
 
         DateTime now = DateTime.Now;
         master.ForDate = TanggalSangsi.Value;
@@ -300,8 +300,8 @@
         master.DateSubmitted = now;
         master.EmployeeID = SelectedEmployee.EmployeeId;
         master.AdminUserID = modelEmployee.EmployeeId;
-        master.PenaltyPhoto = PhotoBukti;
-        master.IsPenalty = true;
+        master.PenaltyPhoto = "nophoto.png";
+        master.IsPenalty = false;
 
         var result = await _hr.InsertPenalty(master);
 
