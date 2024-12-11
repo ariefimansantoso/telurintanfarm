@@ -1,0 +1,337 @@
+﻿@page "/app/reportkematianayam"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Laporan Kematian Ayam</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+@* <style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-size: 14px !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        border: 1px solid #979797;
+    }
+
+    .table thead th {
+        color: #637381;
+        padding: 2px !important;
+        font-size: 14px !important;
+        white-space: nowrap;
+        border: 1px solid #979797 !important;
+    }
+</style> *@
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Laporan Kematian Ayam</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Nomor Kandang</label>
+                        <div class="row">
+                            <div class="col-lg col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnCageChanged">
+                                    <option value="TIDAK">PILIH NO KANDANG</option>
+                                    <option value="ALL">SEMUA KANDANG</option>
+                                    @foreach (var kandangItem in CageList)
+                                    {
+                                        <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                   
+            <div class="row">
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Dari Tanggal
+					<input type="date" @bind="@dtFromDate" class="form-control" />
+				</div>
+			</div>
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Ke Tanggal
+					<input type="date" @bind="@dtToDate" class="form-control" />
+				</div>
+			</div>				
+			<div class="col-lg-1 col-sm-6 col-12">
+				<div class="form-group" style="margin-top:20px;">
+                        <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+				</div>
+			</div>
+		</div>
+        </div>
+    </div>
+
+    
+    <div class="card">
+        <div class="card-body">
+            @if (ChartDataLoaded)
+            {
+                <MudChart ChartType="ChartType.Bar" ChartOptions="@Options" Style="width: 100%;" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (DailyRecordings != null && DailyRecordings.Count > 0)
+            {
+                if (SelectedNoKandang != "ALL") 
+                {                                                               
+                    <div class="table-responsive">
+                        <h3>
+                            Kandang: @DailyRecordings[0].CageNumber<br />
+                            Strain: @DailyRecordings[0].StrainName
+                        </h3>
+                        <table class="table table-striped">
+                            <thead>                                
+                                <tr>
+                                    <th>Bulan</th>
+                                    <th>Mati</th>
+                                    <th>Populasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var totalKematian = 0;
+                                    var totalPopulasi = 0;
+                                }
+                                @foreach (var record in ReportItems)
+                                {
+                                    <tr>
+                                        <td>@record.MonthLabel</td>
+                                        <td>@record.TotalDeadHenCount</td>
+                                        <td>@record.TotalPopulasi</td>
+                                    </tr>
+                                    totalKematian = totalKematian + record.TotalDeadHenCount;
+                                    totalPopulasi = totalPopulasi + record.TotalPopulasi;
+                                }
+                                @{
+                                    decimal ratarataKematian = 0;
+                                    if (totalPopulasi > 0)
+                                    {
+                                        ratarataKematian = (((decimal)totalKematian / (decimal)totalPopulasi) * (decimal)100);
+                                    }
+                                }
+                                <tr>
+                                    <td><b>TOTAL</b></td>
+                                    <td>@totalKematian</td>
+                                    <td>@ratarataKematian.ToString("N2") %</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">                        
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Bulan</th>
+                                    <th>Mati</th>
+                                    <th>Populasi</th>
+                                </tr>                               
+                            </thead>
+                            <tbody>
+                                @{
+                                    var totalKematianAll = 0;
+                                    var totalPopulasiAll = 0;
+                                }
+                                @foreach (var record in ReportItems)
+                                {
+                                    <tr>
+                                        <td>@record.MonthLabel</td>
+                                        <td>@record.TotalDeadHenCount</td>
+                                        <td>@record.TotalPopulasi</td>
+                                    </tr>
+                                    totalKematianAll = totalKematianAll + record.TotalDeadHenCount;
+                                    totalPopulasiAll = totalPopulasiAll + record.TotalPopulasi;
+                                }
+                                @{
+                                    decimal ratarataKematianAll = 0;
+                                    if (totalPopulasiAll > 0)
+                                    {
+                                        ratarataKematianAll = (((decimal)totalKematianAll / (decimal)totalPopulasiAll) * (decimal)100);
+                                    }
+                                }
+                                <tr>
+                                    <td><b>TOTAL</b></td>
+                                    <td>@totalKematianAll</td>
+                                    <td>@ratarataKematianAll.ToString("N2") %</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>Data belum ada.</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Laporan Kematian Ayam";
+
+    string SelectedNoKandang = "";
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
+    private List<ReportItem> ReportItems = new List<ReportItem>();
+    DateTime dtFromDate;
+    DateTime dtToDate;
+    private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
+    private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
+    public ChartOptions Options = new ChartOptions();
+    public List<ChartSeries> Series = new List<ChartSeries>();
+    private int SeriesIndex = -1;
+    bool ChartDataLoaded = false;
+    int RataRataMati = 1000;
+    bool isProcessing;
+
+    private async Task LoadRecording()
+    {
+        isProcessing = true;
+        
+        DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang, dtFromDate, dtToDate);        
+
+        if (SelectedNoKandang != "ALL")
+        {
+            DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
+            ReportItems = DailyRecordings
+                            .GroupBy(record => new { record.RecordDate.Year, record.RecordDate.Month })
+                            .Select(group => new ReportItem
+                                {
+                                    MonthLabel = new DateTime(group.Key.Year, group.Key.Month, 1).ToString("MMM yyyy"),
+                                    TotalDeadHenCount = group.Sum(record => record.DeadHenCount),
+                                    TotalPopulasi = group.Where(record => record.RecordDate == new DateTime(group.Key.Year, group.Key.Month, 1)).Sum(record => record.PopulationEnd)
+                                })
+                            .ToList();
+            RataRataMati = ReportItems.Sum(x => x.TotalDeadHenCount) / ReportItems.Count;
+            await GetGraphData();
+        }
+        else
+        {
+            DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
+            ReportItems = DailyRecordings
+                            .GroupBy(record => new { record.RecordDate.Year, record.RecordDate.Month })
+                            .Select(group => new ReportItem
+                                {
+                                    MonthLabel = new DateTime(group.Key.Year, group.Key.Month, 1).ToString("MMM yyyy"),
+                                    TotalDeadHenCount = group.Sum(record => record.DeadHenCount),
+                                    TotalPopulasi = group.Where(record => record.RecordDate == new DateTime(group.Key.Year, group.Key.Month, 1)).Sum(record => record.PopulationEnd)
+                                })
+                            .ToList();
+            RataRataMati = ReportItems.Sum(x => x.TotalDeadHenCount) / ReportItems.Count;
+            await GetGraphDataAll();
+        }
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        dtFromDate = new DateTime(now.Year, now.Month, 1);
+        int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
+        dtToDate = new DateTime(now.Year, now.Month, lastDay);
+
+        // Simulate fetching data from a service
+        CageList = await _kandang.GetAll();
+
+    }
+
+    private async Task GetGraphData()
+    {               
+        Series = new List<ChartSeries>();
+        ChartSeries series = new ChartSeries();
+        series.Name = "Mati";
+        series.Data = ReportItems.Select(record => Convert.ToDouble(record.TotalDeadHenCount)).ToArray();
+        Series.Add(series);
+
+        // Map strainData to chart data
+        XAxisLabels = ReportItems
+            .Select(record => record.MonthLabel) // Monthly format
+            .ToArray();
+        yAxisValues = ReportItems.Select(record => (decimal)record.TotalDeadHenCount).ToList();
+
+        Options.YAxisTicks = RataRataMati;
+
+        if(DailyRecordings.Count > 0)
+        {
+            ChartDataLoaded = true;
+        }
+    }
+
+    private async Task GetGraphDataAll()
+    {
+        Series = new List<ChartSeries>();
+        ChartSeries series = new ChartSeries();
+        series.Name = "Mati";
+        series.Data = ReportItems.Select(record => Convert.ToDouble(record.TotalDeadHenCount)).ToArray();
+        Series.Add(series);
+
+        // Map strainData to chart data
+        XAxisLabels = ReportItems
+            .Select(record => record.MonthLabel) // Monthly format
+            .ToArray();
+        yAxisValues = ReportItems.Select(record => (decimal)record.TotalDeadHenCount).ToList();
+
+        Options.YAxisTicks = RataRataMati;
+
+        if (DailyRecordings.Count > 0)
+        {
+            ChartDataLoaded = true;
+        }
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {        
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            StateHasChanged();
+        }
+    }
+
+    public class ReportItem
+    {
+        public string MonthLabel { get; set; }
+        public int TotalDeadHenCount { get; set; }
+        public int TotalPopulasi { get; set; }
+    }
+}

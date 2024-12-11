@@ -370,6 +370,26 @@ namespace QuickAccounting.Repository.Repository
 			return ledgerPostings;
 		}
 
+		public async Task<dynamic> GetSalesPartaiKG(DateTime dtFrom, DateTime dtTo, int ledgerId)
+		{
+			var ledgerPostings = await (from rm in _context.SalesMaster
+                                        join sd in _context.SalesDetails on rm.SalesMasterId equals sd.SalesMasterId
+										join rem in _context.ReceiptMaster on rm.SalesMasterId equals rem.SalesMasterId
+										join lp in _context.ReceiptDetails on rem.ReceiptMasterId equals lp.ReceiptMasterId
+										join al in _context.AccountLedger on rm.LedgerId equals al.LedgerId
+										where
+												rm.LedgerId >= 19 &&
+											  rem.Date >= dtFrom && rem.Date <= dtTo &&
+											  lp.LedgerId == ledgerId
+										select new
+										{
+											LedgerName = al.LedgerName,
+											TotalKG = sd.Qty
+										}).ToListAsync<dynamic>();
+
+			return ledgerPostings;
+		}
+
 		public async Task<bool> Update(ReceiptMaster model)
         {
             try

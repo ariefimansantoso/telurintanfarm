@@ -705,6 +705,24 @@ namespace QuickAccounting.Repository.Repository
                     select sd.Qty).Sum();
         }
 
+		public decimal GetPenjualanTelurUtuhEcer(DateTime dateFrom, DateTime to)
+		{
+			return (from s in _context.SalesMaster
+					join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+					join p in _context.Product on sd.ProductId equals p.ProductId
+					where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA") && s.LedgerId == 19
+					select sd.Qty).Sum();
+		}
+
+		public decimal GetPenjualanTelurUtuhPartai(DateTime dateFrom, DateTime to)
+		{
+			return (from s in _context.SalesMaster
+					join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+					join p in _context.Product on sd.ProductId equals p.ProductId
+					where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA") && s.LedgerId > 19
+					select sd.Qty).Sum();
+		}
+
 		public decimal GetPenjualanTelurPutih(DateTime dateFrom, DateTime to)
 		{
 			return (from s in _context.SalesMaster
@@ -740,6 +758,19 @@ namespace QuickAccounting.Repository.Repository
 									where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TE")
 									select sd.Qty).Sum();
 		}
+
+        public List<dynamic> GetPenjualanTelurUtuhGraph(DateTime dateFrom, DateTime to)
+        {
+            return (from s in _context.SalesMaster
+                    join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+                    join p in _context.Product on sd.ProductId equals p.ProductId
+                    where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA")
+                    select new
+                    {
+                        Date = s.Date,
+                        Amount = s.NetAmounts
+                    }).ToList<dynamic>();
+        }
 
         private void AddInwardQtyToTelurUtuh(int productId, decimal stockToAdd)
         {

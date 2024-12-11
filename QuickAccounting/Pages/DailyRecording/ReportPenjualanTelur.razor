@@ -1,0 +1,172 @@
+﻿@page "/app/reportsalesegg"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Laporan Grafik Penjualan Telur</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+@* <style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-size: 14px !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        border: 1px solid #979797;
+    }
+
+    .table thead th {
+        color: #637381;
+        padding: 2px !important;
+        font-size: 14px !important;
+        white-space: nowrap;
+        border: 1px solid #979797 !important;
+    }
+</style> *@
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Laporan Grafik Penjualan Telur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+           
+            <div class="row">
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Dari Tanggal
+					<input type="date" @bind="@dtFromDate" class="form-control" />
+				</div>
+			</div>
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Ke Tanggal
+					<input type="date" @bind="@dtToDate" class="form-control" />
+				</div>
+			</div>				
+			<div class="col-lg-1 col-sm-6 col-12">
+				<div class="form-group" style="margin-top:20px;">
+                        <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+				</div>
+			</div>
+		</div>
+        </div>
+    </div>
+
+
+    <div class="card">
+        <div class="card-body">
+            @if (ChartDataLoaded)
+            {
+                <MudChart ChartType="ChartType.Line" ChartOptions="@Options" Style="width: 100%;" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
+            }
+        </div>
+    </div>
+
+    
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Laporan Grafik Penjualan Telur";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    private List<ReportItem> ReportItemsUtuh = new List<ReportItem>();
+    DateTime dtFromDate;
+    DateTime dtToDate;
+
+    private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
+    private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data    
+    public ChartOptions Options = new ChartOptions();
+    public List<ChartSeries> Series = new List<ChartSeries>();
+    private int SeriesIndex = -1;
+    bool ChartDataLoaded = false;
+
+    bool isProcessing;
+
+    private async Task LoadRecording()
+    {
+        isProcessing = true;
+        var firstQuery = (from s in _db.SalesMaster
+                          join sd in _db.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
+                          join p in _db.Product on sd.ProductId equals p.ProductId
+                          where s.Date >= dtFromDate && s.Date <= dtToDate && p.ProductCode.StartsWith("TA")
+                          select s).ToList();
+        ReportItemsUtuh = firstQuery
+                            .GroupBy(record => record.Date.AddDays(-(int)record.Date.DayOfWeek))
+                           .Select(x => new ReportItem
+                               {
+                                   Date = x.Key, // Start date of the week
+                                   Amount = x.Sum(x => x.NetAmounts) // Sum the amounts for the week
+                               }).ToList<ReportItem>();
+
+        ReportItemsUtuh = ReportItemsUtuh.OrderBy(x => x.Date).ToList();
+
+        await GetGraphDataUtuh();
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        dtFromDate = new DateTime(now.Year, now.Month, 1);
+        int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
+        dtToDate = new DateTime(now.Year, now.Month, lastDay);        
+
+        await LoadRecording();
+    }
+
+    private async Task GetGraphDataUtuh()
+    {               
+        Series = new List<ChartSeries>();
+        ChartSeries series = new ChartSeries();
+        series.Name = "Utuh";
+        series.Data = ReportItemsUtuh.Select(record => Convert.ToDouble(record.Amount)).ToArray();
+        Series.Add(series);
+
+        // Map strainData to chart data
+        XAxisLabels = ReportItemsUtuh
+            .Select(record => record.Date.ToString("MMM/yyyy")) // Monthly format
+            .ToArray();
+        yAxisValues = ReportItemsUtuh.Select(record => (decimal)record.Amount).ToList();
+
+        var ratarata = 100;
+        if(ReportItemsUtuh.Count > 0) {
+            ratarata = (int)ReportItemsUtuh.Sum(x => x.Amount) / ReportItemsUtuh.Count;
+        }
+        Options.YAxisTicks = (int)ratarata;
+        Options.YAxisFormat = "c2";
+
+        if (ReportItemsUtuh.Count > 0)
+        {
+            ChartDataLoaded = true;
+        }
+    }
+  
+    public class ReportItem
+    {
+        public DateTime Date { get; set; }
+        public decimal Amount { get; set; }
+    }
+}

@@ -120,3 +120,16 @@ function checkReason() {
 function showAlert(message) {
     alert(message);
 }
+
+function printPartOfPage(elementId) {
+    const printContent = document.getElementById(elementId);
+    if (printContent) {
+        const originalContent = document.body.innerHTML;
+        document.body.innerHTML = printContent.innerHTML;
+        window.print();
+        document.body.innerHTML = originalContent;
+        location.reload(); // Reload to restore the page
+    } else {
+        console.error("Element not found: " + elementId);
+    }
+}

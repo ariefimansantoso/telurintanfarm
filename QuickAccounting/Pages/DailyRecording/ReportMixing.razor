@@ -1,0 +1,238 @@
+﻿@page "/app/mixingpakan"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Laporan Mixing Pakan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Laporan Mixing Pakan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+
+            <div class="row">
+			<div class="col-lg-12 col-sm-12 col-12">
+				<div class="form-group">
+					Mixing untuk Tanggal
+					<input type="date" @bind="@dtFromDate" class="form-control" />
+				</div>
+			</div>
+						
+			<div class="col-lg-1 col-sm-6 col-12">
+				<div class="form-group" style="margin-top:20px;">
+                        <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+                    </div>
+			</div>
+                <div class="col-lg-1 col-sm-6 col-12">
+                    <div class="form-group" style="margin-top:20px;">
+                        <button class="btn btn-primary" @onclick="PrintContent">Print</button>
+                    </div>
+                </div>
+		</div>
+        </div>
+    </div>
+
+    <div class="card" id="print-section">
+        <div class="card-body">
+            <h3>Daftar Kebutuhan Pakan Per Kandang</h3>
+            @if(GroupByConcentrate != null && GroupByConcentrate.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped" style="width: 700px !important; margin: 0px auto;">
+                        <tbody>                            
+                            @foreach (var record in GroupByConcentrate)
+                            {
+                                <tr>
+                                    <td colspan="2">@record.Key</td>
+                                </tr>
+                                
+                                decimal totalPakan = 0;
+                                
+                                @foreach(var item in record)
+                                {
+                                    <tr>
+                                        <td>@item.CageNumber</td>
+                                        <td>@item.FoodNeededTodayKg</td>                                                                               
+                                    </tr>
+                                    totalPakan = totalPakan + item.FoodNeededTodayKg;
+                                }
+                                <tr>
+                                    <td></td>
+                                    <td>@totalPakan</td>
+                                </tr>                         
+                            }                            
+                        </tbody>
+                    </table>
+                </div>
+            }
+            
+            @if (MixingPakan.Count > 0)
+            {
+                <div class="table-responsive" style="margin-top:30px !important;">
+                    <table class="table table-striped" style="width: 700px !important; margin: 0px auto;">
+                        <tbody>
+                            @foreach (var record in MixingPakan)
+                            {
+                                <tr>
+                                    <td colspan="5">@record.Key</td>
+                                </tr>
+                                <tr>
+                                    <td>No.</td>
+                                    <td>Total</td>
+                                    <td>Jagung</td>
+                                    <td>Katul</td>
+                                    <td>Centrat</td>
+                                </tr>
+                                
+                                @foreach (var item in record.Value)
+                                {
+                                    <tr>
+                                        <td>@item.MixingNo</td>
+                                        <td>@item.TotalMixing</td>
+                                        <td>@item.Jagung</td>
+                                        <td>@item.Katul</td>
+                                        <td>@item.Centrat</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td></td>
+                                    <td>@record.Value.Sum(x => x.TotalMixing)</td>
+                                    <td>@record.Value.Sum(x => x.Jagung)</td>
+                                    <td>@record.Value.Sum(x => x.Katul)</td>
+                                    <td>@record.Value.Sum(x => x.Centrat)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Laporan Mixing Pakan";
+
+    string SelectedNoKandang = "";
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
+    DateTime dtFromDate;
+    bool isProcessing;
+
+    List<IGrouping<string, DailyRecording>> GroupByConcentrate;
+    Dictionary<string, decimal> CentratTotalPakan = new Dictionary<string, decimal>();
+    Dictionary<string, List<Mixing>> MixingPakan = new Dictionary<string, List<Mixing>>();
+
+    private async Task PrintContent()
+    {
+        await JSRuntime.InvokeVoidAsync("printPartOfPage", "print-section");
+    }
+
+    private async Task LoadRecording()
+    {
+        isProcessing = true;
+
+        var recording = await _db.DailyRecording.OrderBy(x => Convert.ToInt32(x.CageNumber)).Where(x => x.RecordDate == new DateTime(2024, 10, 5)).ToListAsync();
+        if(recording.Count > 0)
+        {
+            GroupByConcentrate = recording.GroupBy(x => x.ConcentrateType).ToList();
+
+            foreach(var group in GroupByConcentrate)
+            {
+                int totalPakan = Convert.ToInt32(group.Sum(x => x.FoodNeededTodayKg));
+                CentratTotalPakan.Add(group.Key, totalPakan);
+
+                int number = totalPakan;
+                int divisor = 1000;
+
+                // Quotient
+                int quotient = number / divisor;
+
+                // Remainder
+                int remainder = number % divisor;
+
+                List<Mixing> mixings = new List<Mixing>();
+                for(int i = 1; i <= quotient; i++)
+                {
+                    decimal dJagung = (decimal)((decimal)50 / (decimal)100) * (decimal)divisor;
+                    decimal dKatul = (decimal)((decimal)15 / (decimal)100) * (decimal)divisor;
+                    decimal dCentrat = (decimal)((decimal)35 / (decimal)100) * (decimal)divisor;
+
+                    int jagung = Convert.ToInt32(dJagung);
+                    int katul = Convert.ToInt32(dKatul);
+                    int centrat = Convert.ToInt32(dCentrat);
+
+                    var newMixing = new Mixing();
+                    newMixing.TotalMixing = divisor;
+                    newMixing.MixingNo = i;
+                    newMixing.Centrat = centrat;
+                    newMixing.Jagung = jagung;
+                    newMixing.Katul = katul;
+                    mixings.Add(newMixing);
+                }
+
+                if(remainder > 0)
+                {
+                    decimal dJagung = (decimal)((decimal)50 / (decimal)100) * (decimal)remainder;
+                    decimal dKatul = (decimal)((decimal)15 / (decimal)100) * (decimal)remainder;
+                    decimal dCentrat = (decimal)((decimal)35 / (decimal)100) * (decimal)remainder;
+
+                    int jagung = Convert.ToInt32(dJagung);
+                    int katul = Convert.ToInt32(dKatul);
+                    int centrat = Convert.ToInt32(dCentrat);
+
+                    var newMixing = new Mixing();
+                    newMixing.TotalMixing = remainder;
+                    newMixing.MixingNo = quotient + 1;
+                    newMixing.Centrat = centrat;
+                    newMixing.Jagung = jagung;
+                    newMixing.Katul = katul;
+                    mixings.Add(newMixing);
+                }
+
+                MixingPakan.Add(group.Key, mixings);
+            }
+        }
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRecording();
+    }
+
+    public class Mixing
+    {
+        public int MixingNo { get; set; }
+        public int TotalMixing { get; set; }
+        public int Jagung { get; set; }
+        public int Katul { get; set; }
+        public int Centrat { get; set; }
+    }
+}

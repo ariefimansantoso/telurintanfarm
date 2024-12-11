@@ -298,6 +298,7 @@
                                 @foreach (var group in grouped)
                                 {
                                     var strain = group.First().StrainName;
+                                    var jumlahRecord = group.Count();
 
                                     <tr>
                                         <td>@group.Key</td>
@@ -316,7 +317,8 @@
                                         <td>@group.Sum(x => x.FoodNeededTodayKg)</td>
                                         <td>@group.Sum(x => x.RemainingFoodKg)</td>
                                         <td>
-                                            @{
+                                            @((group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2"))
+                                            @* @{
                                                 decimal fi = 0;
                                                 try
                                                 {
@@ -327,7 +329,7 @@
                                                     fi = (group.Sum(x => x.FoodIntakePerHen) / (decimal)group.Count());
                                                 }
                                             }
-                                            @fi.ToString("N2")
+                                            @fi.ToString("N2") *@
                                         </td>
 
                                         <td>@group.Sum(x => x.PerfectEggCount)</td>

@@ -18,6 +18,6 @@ namespace QuickAccounting.Repository.Interface
         Task<bool> Delete(ReceiptMaster model);
         Task<List<SalesMaster>> GetLedgerPostingsRetail(DateTime from, DateTime to, string transactionType);
         Task<dynamic> GetSalesPartai(DateTime dtFrom, DateTime dtTo, int ledgerId);
-
+        Task<dynamic> GetSalesPartaiKG(DateTime dtFrom, DateTime dtTo, int ledgerId);
 	}
 }

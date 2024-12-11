@@ -1,7 +1,10 @@
-﻿namespace QuickAccounting.Data.Recording
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace QuickAccounting.Data.Recording
 {
     public class StockPenjualan
     {
+        [Key]
         public int ID { get; set; }
         public string EggType { get; set; } = string.Empty;
         public decimal StockKg { get; set; }

@@ -122,6 +122,7 @@
 												<ul>
 													<li><a href="/app/pickingscan">Scan Picking</a></li>
 													<li><a href="/app/returscan">Scan Retur</a></li>
+													<li><a href="/app/addsalesstock">Atur Stok Jualan</a></li>
 													<li><a href="/app/checkliststocksales">Terima Stock Jualan</a></li>
 												</ul>
 											</li>
@@ -200,7 +201,7 @@
 													<li><a href="/app/attendancelist">Laporan Absensi dan Gaji</a></li>
 													<li><a href="/app/penalties">Data Sanksi dan Hukuman</a></li>
 												</ul>
-											</li>
+											</li>										
 										}
 										@if(currentUserRole == "Kandang")
 										{
@@ -255,6 +256,9 @@
 												<li><a href="/app/budgetvariance">Budget Variance</a></li>
 											</ul>
 										</li>
+											<li class="">
+												<a href="/app/mixingpakan"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Mixing Pakan</span></a>
+											</li>
 										}
 										@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
 										{

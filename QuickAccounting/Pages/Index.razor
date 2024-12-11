@@ -49,16 +49,7 @@
 	</div>
 	@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
 	{
-		<div class="row">
-			<div class="container-fluid">
-				<div class="col-md-12">
-					<div class="brand-text float-left mt-4">
-						<h3>Laporan Penjualan Hari Ini (Dalam Rupiah)<span></span> </h3>
-					</div>				
-				</div>
-			</div>
-		</div>
-
+		
 		<!-- /Filter -->
 		<div class="row">
 			<div class="col-lg col-sm-6 col-12">
@@ -82,6 +73,78 @@
 			</div>
 		</div>
 		<!-- /Filter -->
+
+		<!-- STOCK -->
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Stock Telur Hari Ini</h3>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@StockTelurUtuh KG</span></h5>
+						<h6>Utuh</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@StockTelurPutih KG</span></h5>
+						<h6>Putih</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@StockTelurBentes KG</span></h5>
+						<h6>Bentes</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@(StockTelurParah + StockTelurParahSekali) KG</span></h5>
+						<h6>Parah dan Parah Sekali</h6>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- STOCK-->
+
+		<!-- Sales RP -->
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Laporan Penjualan Hari Ini (Dalam Rupiah)<span></span> </h3>
+					</div>				
+				</div>
+			</div>
+		</div>
 
 		<div class="row">
 
@@ -162,7 +225,27 @@
 				</div>
 			</div>
 		</div>
+		<!-- Sales RP -->
+		
+		<!-- RP TOtal -->
+		<div class="row">
 
+			<div class="col-lg-3 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", (EcerTunai + PartaiTunai))</span></h5>
+						<h6>Total Penjualan Tunai</h6>
+					</div>
+				</div>
+			</div>
+			
+		</div>
+		<!-- RP Total -->
+
+		<!-- Sales Butir -->
 		<div class="row">
 			<div class="container-fluid">
 				<div class="col-md-12">
@@ -183,6 +266,32 @@
 					<div class="dash-widgetcontent">
 						<h5><span class="counters">@string.Format("{0:n0}",TelurUtuh) KG</span></h5>
 						<h6>Utuh</h6>
+						<table style="margin-top:10px;">
+							<tr>
+								<td style="padding:3px 3px; font-weight:bold;"><b>Ecer</b></td>
+								<td style="padding:3px 3px; font-weight:bold;"><b>Partai</b></td>
+							</tr>
+							<tr>
+								<td style="padding:3px 3px; font-weight:bold;"><b>@string.Format("{0:n0}",TelurUtuhEcer) KG</b></td>
+								<td style="padding:3px 3px; font-weight:bold;"><b>@string.Format("{0:n0}",TelurUtuhPartai) KG</b></td>
+							</tr>							
+						</table>
+						@if (PartaiKGList != null && PartaiKGList.Count > 0)
+						{
+							<table style="margin-top:10px;">
+								<tr>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Pelanggan</b></td>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Jumlah</b></td>
+								</tr>
+								@foreach (var partaiTransferTrx in PartaiKGList)
+								{
+									<tr>
+										<td style="padding:3px 3px;">@partaiTransferTrx.LedgerName</td>
+										<td style="padding:3px 3px; text-align:right;">@string.Format("{0:n0}", partaiTransferTrx.TotalKG)</td>
+									</tr>
+								}
+							</table>
+						}
 					</div>
 				</div>
 			</div>
@@ -219,7 +328,8 @@
 					</div>
 				</div>
 			</div>
-		</div>
+		</div>				
+		<!-- Sales Butir -->
 
 		<div class="row">
 			<div class="container-fluid">
@@ -278,68 +388,6 @@
 				</div>
 			</div>
 		</div>
-
-		<!-- STOCK -->
-		<div class="row">
-			<div class="container-fluid">
-				<div class="col-md-12">
-					<div class="brand-text float-left mt-4">
-						<h3>Stock Telur Hari Ini</h3>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="row">
-
-			<div class="col-lg-3 col-sm-6 col-12">
-				<div class="dash-widget">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockTelurUtuh KG</span></h5>
-						<h6>Utuh</h6>
-					</div>
-				</div>
-			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
-				<div class="dash-widget dash1">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockTelurPutih KG</span></h5>
-						<h6>Putih</h6>
-					</div>
-				</div>
-			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
-				<div class="dash-widget dash2">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockTelurBentes KG</span></h5>
-						<h6>Bentes</h6>
-					</div>
-				</div>
-			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
-				<div class="dash-widget dash3">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@(StockTelurParah + StockTelurParahSekali) KG</span></h5>
-						<h6>Parah dan Parah Sekali</h6>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- STOCK-->
-
 
 		<div class="row">	
 			<div class="col-lg col-sm-12 col-12">
@@ -907,6 +955,7 @@
 	bool SOPAvailable;
 	List<dynamic> PartaiCashList;
 	List<dynamic> PartaiTransferList;
+	List<dynamic> PartaiKGList;
 	private List<QuickAccounting.Data.Recording.DailyRecording> StrainData;
 	List<string> DaftarStrain;
 	string SelectedStrain;
@@ -933,10 +982,18 @@
 	decimal PartaiBank;
 
 	decimal TelurUtuh;
+	decimal TelurUtuhEcer;
+	decimal TelurUtuhPartai;
 	decimal TelurPutih;
 	decimal TelurBentes;
 	decimal TelurParah;
 	decimal TelurParahSekali;
+
+	decimal RpTelurUtuh;
+	decimal RpTelurPutih;
+	decimal RpTelurBentes;
+	decimal RpTelurParah;
+	decimal RpTelurParahSekali;
 
 	decimal TotalTelurUtuh;
 	decimal TotalTelurPutih;
@@ -1162,6 +1219,9 @@
 
 		PartaiCashList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
 		PartaiTransferList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+		PartaiKGList = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 10);
+		var partaiKGCash = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 1);
+		PartaiKGList.AddRange(partaiKGCash);
 
 		PartaiTunai = Convert.ToDecimal(PartaiCashList.Sum(x => (decimal)x.Amount));
 		PartaiBank = Convert.ToDecimal(PartaiTransferList.Sum(x => (decimal)x.Amount));
@@ -1187,10 +1247,18 @@
 		}
 
 		TelurUtuh = _sales.GetPenjualanTelurUtuh(dtFromDate, dtToDate);
+		TelurUtuhEcer = _sales.GetPenjualanTelurUtuhEcer(dtFromDate, dtToDate);
+		TelurUtuhPartai = _sales.GetPenjualanTelurUtuhPartai(dtFromDate, dtToDate);
 		TelurPutih = _sales.GetPenjualanTelurPutih(dtFromDate, dtToDate);
 		TelurBentes = _sales.GetPenjualanTelurBentes(dtFromDate, dtToDate);
 		TelurParah = _sales.GetPenjualanTelurParah(dtFromDate, dtToDate);
 		TelurParahSekali = _sales.GetPenjualanTelurParahSekali(dtFromDate, dtToDate);
+
+		RpTelurUtuh = _sales.GetPenjualanTelurUtuh(dtFromDate, dtToDate);
+		RpTelurPutih = _sales.GetPenjualanTelurPutih(dtFromDate, dtToDate);
+		RpTelurBentes = _sales.GetPenjualanTelurBentes(dtFromDate, dtToDate);
+		RpTelurParah = _sales.GetPenjualanTelurParah(dtFromDate, dtToDate);
+		RpTelurParahSekali = _sales.GetPenjualanTelurParahSekali(dtFromDate, dtToDate);
 
 		DateTime fromBeginning = new DateTime(2018, 1, 1, 0, 0, 0);
 
@@ -1237,6 +1305,9 @@
 
 		PartaiCashList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
 		PartaiTransferList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+		PartaiKGList = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 10);
+		var partaiKGCash = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 1);
+		PartaiKGList.AddRange(partaiKGCash);
 
 		PartaiTunai = Convert.ToDecimal(PartaiCashList.Sum(x => (decimal)x.Amount));
 		PartaiBank = Convert.ToDecimal(PartaiTransferList.Sum(x => (decimal)x.Amount));

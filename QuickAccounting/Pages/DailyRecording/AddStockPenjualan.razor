@@ -53,8 +53,9 @@
                                     <option value="UTUH">UTUH</option>
                                     <option value="PUTIH">PUTIH</option>
                                     <option value="BENTES">BENTES</option>
-                                    <option value="PECAH">PECAH</option>
-                                    <option value="PECAH SEKALI">PECAH SEKALI</option>
+                                    <option value="PARAH">PARAH</option>
+                                    <option value="PS">PARAH SEKALI</option>
+                                    <option value="RUSAK">RUSAK</option>
                                 </select>
                             </div>
                         </div>
@@ -107,6 +108,7 @@
                                         <tr>                                                                                        
                                             <th style="text-align:center;">Jenis</th>
                                             <th style="text-align:center;">Berat</th>
+                                            <th></th>
                                         </tr>                                        
                                     </thead>
                                     <tbody>                                        
@@ -114,7 +116,10 @@
                                         {
                                             <tr>                                                
                                                 <td style="text-align:center;">@record.EggType</td>
-                                                <td style="text-align:right;">@record.StockKg</td>                                               
+                                                <td style="text-align:right;">@record.StockKg</td>             
+                                                <td>
+                                                    <a @onclick="( () => { OpenDeleteDialog(record.ID); } )" class="btn btn-danger" style="color:#fff !important; font-size:12px !important;">HAPUS</a>
+                                                </td>
                                             </tr>
                                         }                                       
                                     </tbody>
@@ -132,6 +137,14 @@
         </div>
     </div>    
 </div>
+@if (DeleteDialogOpen)
+{
+    <ModalDialog Title="Hapus Stok"
+                 Text="Apakah anda yakin anda ingin menghapus stok ini?"
+                 OnClose="@OnDeleteDialogClose"
+                 DialogType="ModalDialog.ModalDialogType.Delete">
+    </ModalDialog>
+}
 @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
@@ -147,7 +160,8 @@
     string currentUserRole = "User";
 
     private List<StockPenjualan> StockPenjualan = new List<StockPenjualan>();
-
+    int SelectedItemId;
+    public bool DeleteDialogOpen { get; set; }
     bool isProcessing;
     bool IsValid = true;
 
@@ -215,12 +229,55 @@
 
     private async Task LoadStockGudang()
     {
-        StockPenjualan = await _db.StockPenjualan.Where(x => x.DateCreated.Date == DateTime.Now.Date).ToListAsync();
+        StockPenjualan = await _db.StockPenjualan.Where(x => x.DateCreated.Date == DateTime.Now.Date && x.IsVerified == false).ToListAsync();
     }
 
     private async Task OnJenisTelurChanged(ChangeEventArgs e)
     {
         JenisTelurSelected = e.Value.ToString();
+    }
+
+    private void OpenDeleteDialog(int id)
+    {
+        SelectedItemId = id;
+
+        DeleteDialogOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task OnDeleteDialogClose(bool accepted)
+    {
+        if (accepted)
+        {
+            await DeleteStock();
+            await LoadStockGudang();
+        }
+
+        DeleteDialogOpen = false;
+        StateHasChanged();
+
+        Snackbar.Add("Berhasil menghapus stock", Severity.Success);
+    }
+
+    private async Task DeleteStock()
+    {
+        try
+        {
+            var stock = await _db.StockPenjualan.FirstOrDefaultAsync(x => x.ID == SelectedItemId);
+            if (stock != null)
+            {
+                _db.StockPenjualan.Remove(stock);
+                await _db.SaveChangesAsync();
+            }
+        }
+        catch (DbUpdateException ex)
+        {
+            Console.WriteLine($"Database Update Exception: {ex.InnerException?.Message}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Terjadi kesalahan pada system. Tolong di screenshot: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
     }
 
     protected override async Task OnInitializedAsync()
@@ -231,5 +288,7 @@
         currentUserRole = await _user.GetUserRole(userName);
         modelUser = await _user.UserProfile(userName);
         modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        await LoadStockGudang();
     }
 }    
