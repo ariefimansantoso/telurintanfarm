@@ -1,0 +1,200 @@
+﻿@page "/app/reportstockfood"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Laporan Stok Pakan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h2>Laporan Stok Pakan Harian</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">           
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDateFrom" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDateTo" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        <input type="button" class="btn btn-success" @onclick="(e => ShowData())" value="Tampilkan Data" />
+                    </div>
+                </div>
+            </div>
+
+            @if (ProductStocks.Count > 0)
+            {
+                foreach (var ps in ProductStocks)
+                {                   
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-12">
+                            <h3>@ps.Key.ProductName</h3>
+                            <div class="form-group" style="text-align: left !important;">                            
+                                <div class="table-responsive table-scrollable">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th style="text-align:left;">Tanggal</th>
+                                                <th style="text-align:left;">Stok Awal</th>
+                                                <th style="text-align:left;">Masuk</th>
+                                                <th style="text-align:left;">Keluar</th>
+                                                <th style="text-align:left;">Susut</th>
+                                                <th style="text-align:left;">Stok Akhir</th>                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{
+                                                var groupByDate = ps.Value.GroupBy(x => x.Date).ToList();                                                
+                                            }
+                                            @foreach(var g in groupByDate)
+                                            {
+                                                DateTime currentDate = DateTime.Now;
+                                                List<StockPosting> stockPosting = new List<StockPosting>();
+                                                string currentDateString = "";
+                                                var sp = g.ToList();
+
+                                                if (sp.Count > 0)
+                                                {
+                                                    currentDate = g.Key.Date;
+                                                    currentDateString = currentDate.ToString("dd/MM/yyyy");
+                                                    stockPosting = _db.StockPosting.Where(x => x.ProductId == ps.Key.ProductId && x.Date.Date == currentDate.Date).ToList();
+                                                }
+
+                                                var stockAwal = stockPosting.Sum(x => x.OutwardQty) - stockPosting.Sum(x => x.InwardQty);
+                                                var stockIn = ps.Value.Sum(x => x.InwardQty);
+                                                var stockOut = ps.Value.Sum(x => x.OutwardQty);
+                                                var stockAkhir = (stockAwal + stockIn) - stockOut;
+                                                <tr>
+                                                    <td style="text-align:left !important;">@currentDateString</td>
+                                                    <td style="text-align:left !important;">@stockAwal</td>
+                                                    <td style="text-align:left !important;">@stockIn</td>
+                                                    <td style="text-align:left !important;">@stockOut</td>
+                                                    <td style="text-align:left !important;">0</td>
+                                                    <td style="text-align:left !important;">@stockAkhir</td>
+                                                </tr>
+                                            }
+                                                                                  
+                                        </tbody>
+                                </table>
+                            </div>
+                            
+                    </div>
+                </div>
+            </div>
+                }
+            }
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Report Stock VOV";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+    DateTime SelectedDateFrom;
+    DateTime SelectedDateTo;
+
+    bool isProcessing;
+    bool IsValid = true;
+    List<DateTime> dates = new List<DateTime>();
+    List<Product> Products = new List<Product>();
+    Dictionary<Product, List<StockPosting>> ProductStocks = new Dictionary<Product, List<StockPosting>>();
+
+    private async Task ShowData()
+    {        
+        ProductStocks = new Dictionary<Product, List<StockPosting>>();
+
+        for (DateTime date = SelectedDateFrom; date <= SelectedDateTo; date = date.AddDays(1))
+        {
+            dates.Add(date);
+            await LoadReport(date);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {        
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Laporan Stok VOV.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Laporan Stok VOV", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        SelectedDateFrom = SelectedDateTo = DateTime.Now;
+
+        Products = await _db.Product.Where(x => x.GroupId == 3).ToListAsync();
+
+        await LoadReport(DateTime.Now);
+    }
+
+    private async Task LoadReport(DateTime SelectedDate)
+    {
+        foreach (Product p in Products)
+        {
+            var stockPosting = await _db.StockPosting.Where(x => x.ProductId == p.ProductId && x.Date.Date == SelectedDate.Date).ToListAsync();
+            if (ProductStocks.ContainsKey(p))
+            {
+                ProductStocks[p].AddRange(stockPosting); 
+            }
+            else
+            {
+                ProductStocks.Add(p, stockPosting);
+            }            
+        }
+    }
+}    

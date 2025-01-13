@@ -196,38 +196,14 @@
 					</div>					
 								<div class="col-lg-12">
 									<button type="submit" class="btn btn-submit me-2">Submit</button>
-									<a href="/app/customer" class="btn btn-cancel">Cancel</a>
+						<a href="/app/employee" class="btn btn-cancel">Cancel</a>
 								</div>
 								
 							</div>
 							</EditForm>
 						</div>
 					</div>
-					<!-- /add -->
-
-					<div class="card">
-						<div class="card-body">
-							<div class="row">
-								<div class="col-lg-4 col-sm-6 col-12">
-									<div class="form-group">
-										<label>Job Desc</label>
-										<div id="quill-editor-jobdesc" style="height: 200px;"></div>
-										@*<textarea cols="6" style="width:100%;" @bind="model.JobDesc"></textarea>
-										<ValidationMessage For="@(() => model.JobDesc)" /> *@
-									</div>
-								</div>
-								<div class="col-lg-4 col-sm-6 col-12">
-									<div class="form-group">
-										<label>SOP</label>
-										<div id="quill-editor-sop" style="height: 200px;"></div>
-										@*<textarea cols="6" style="width:100%;" @bind="model.SOP"></textarea>
-										<ValidationMessage For="@(() => model.SOP)" /> *@
-									</div>
-								</div>
-							</div>
-							
-						</div>
-					</div>
+					<!-- /add -->				
 				</div>
 @code {
 	[Parameter]
@@ -238,7 +214,6 @@
 	IList<DesignationView> listDesignation;
 	IList<SalaryPackage> listPackage;
 	string strMenu = "Human Resources";	
-	bool quillRendered = false;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -262,10 +237,7 @@
 	{
 		model = await _employee.GetbyId(Convert.ToInt32(id));
 		listDesignation = await _designation.GetAll();
-		listPackage = await _salaryPackage.GetAll();
-
-		await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-jobdesc", model.JobDesc);
-		await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-sop", model.SOP);
+		listPackage = await _salaryPackage.GetAll();		
 
 		StateHasChanged();
 	}
@@ -295,20 +267,5 @@
 		{
 			Snackbar.Add("Employee name already exists.", Severity.Info);
 		}
-	}
-
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		
-	}
-
-	[JSInvokable]
-	public static async Task UpdateQuillContent(string elementId, string content)
-	{		
-		if (elementId == "quill-editor-jobdesc")
-			model.JobDesc = content;
-
-		if (elementId == "quill-editor-sop")
-			model.SOP = content;
 	}
 }

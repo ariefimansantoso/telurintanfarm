@@ -1,0 +1,263 @@
+﻿@page "/app/stockcheck"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Check Stock</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Check Stock</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">           
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDate" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: left !important;">
+                        <h4>Stok dari Kandang</h4>
+                        <div class="table-responsive table-scrollable">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;">Keterangan</th>
+                                        <th style="text-align:center;">Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="text-align:left !important;">Nett Kandang</td>
+                                        <td style="text-align:right;">@NettKandang</td>                                        
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align:left !important;">Bruto Kandang</td>
+                                        <td style="text-align:right;">@BrutoKandang</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <br />
+                        <h4>Stok Ditimbang Gudang Picking</h4>
+                        <div class="table-responsive table-scrollable">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;">Keterangan</th>
+                                        <th style="text-align:center;">Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="text-align:left !important;">Total Ditimbang</td>
+                                        <td style="text-align:right;">@TotalStockGudang</td>
+                                    </tr>                                    
+                                </tbody>
+                            </table>
+                        </div>
+                        <br />
+                        <h4>Stok Penjualan</h4>
+                        <div class="table-responsive table-scrollable">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left !important;">Keterangan</th>
+                                        <th style="text-align:center;">Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="text-align:left !important;">Utuh</td>
+                                        <td style="text-align:right;">@Utuh</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align:left !important;">Putih</td>
+                                        <td style="text-align:right;">@Putih</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align:left !important;">Bentes</td>
+                                        <td style="text-align:right;">@Bentes</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align:left !important;">Rusak</td>
+                                        <td style="text-align:right;">@Rusak</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align:left !important;">Parah</td>
+                                        <td style="text-align:right;">@Parah</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align:left !important;">Parah Sekali</td>
+                                        <td style="text-align:right;">@ParahSekali</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td style="text-align:left !important; font-weight:bold; font-size:16px;">
+                                            <b>Total</b>
+                                        </td>
+                                        <td style="text-align:right; font-weight:bold; font-size:16px;">
+                                            <b>
+                                                @TotalStockPenjualan
+                                            </b>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <br />
+                        <h4>Selisih/Kelebihan</h4>
+                        <div class="table-responsive table-scrollable">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;">Keterangan</th>
+                                        <th style="text-align:center;">KG</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        @{
+                                            var selisih = TotalStockPenjualan - NettKandang;
+                                            var selisihText = selisih < 0 ? "Selisih" : "Kelebihan";
+                                        }
+                                        <td style="text-align:left !important;">@selisihText</td>
+                                        <td style="text-align:right;">
+                                            <b>@selisih</b>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Check Stock Produksi";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+    DateTime SelectedDate;
+
+    decimal NettKandang = 0;
+    decimal BrutoKandang = 0;
+
+    // gudang penjualan
+    decimal TotalStockPenjualan = 0;
+    decimal Utuh = 0;
+    decimal Putih = 0;
+    decimal Bentes = 0;
+    decimal Rusak = 0;
+    decimal Parah = 0;
+    decimal ParahSekali = 0;
+
+    //ditimbang gudang dari kandang
+    decimal TotalStockGudang = 0;
+
+    bool isProcessing;
+    bool IsValid = true;
+
+    private async Task LoadData()
+    {
+        var result = _db.DailyEggPickup
+                .Where(d => d.RecordDate.Date == SelectedDate.Date && d.VerifiedBy > 0)
+                .GroupBy(d => 1) // Dummy grouping to calculate aggregates
+                .Select(g => new
+                {
+                    NettKandang = g.Sum(d => d.TotalNettKG),
+                    BrutoKandang = g.Sum(d => d.TelurUtuhKG + d.TelurBentesKG)
+                })
+                .FirstOrDefault();
+
+        if(result != null) {
+            NettKandang = result.NettKandang;
+            BrutoKandang = result.BrutoKandang;
+        }
+
+        var results = _db.StockPenjualan
+                .Where(s => s.DateCreated.Date == SelectedDate.Date && s.IsVerified == true)
+                .ToList();
+
+        if(results.Count > 0)
+        {
+            TotalStockPenjualan = results.Sum(x => x.StockKg);
+            Utuh = results.Where(x => x.EggType == "UTUH").Sum(x => x.StockKg);
+            Putih = results.Where(x => x.EggType == "PUTIH").Sum(x => x.StockKg);
+            Bentes = results.Where(x => x.EggType == "BENTES").Sum(x => x.StockKg);
+            Rusak = results.Where(x => x.EggType == "RUSAK").Sum(x => x.StockKg);
+            Parah = results.Where(x => x.EggType == "PARAH").Sum(x => x.StockKg);
+            ParahSekali = results.Where(x => x.EggType == "PS").Sum(x => x.StockKg);
+        }
+
+        TotalStockGudang = _db.StockGudang
+            .Where(sg => sg.DateDitimbang.Date == SelectedDate.Date)
+            .Sum(sg => sg.TotalDitimbang);
+
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SelectedDate = DateTime.Now;
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Check Stock Produksi.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Check Stock Produksi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+
+        await LoadData();
+    }
+}    

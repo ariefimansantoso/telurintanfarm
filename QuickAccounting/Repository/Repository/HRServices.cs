@@ -248,5 +248,30 @@ namespace QuickAccounting.Repository.Repository
             await _context.SaveChangesAsync();
             return true;
         }
+
+		public decimal GetProsentasePremi(int masaKerjaDalamTahun)
+		{
+            double O2 = Convert.ToDouble(masaKerjaDalamTahun); // Replace with the value of O2 (in years)
+
+            double result = Math.Max(15, Math.Min((O2 / 11) * 25, 25));
+
+			return Convert.ToDecimal(result);
+        }
+
+		public int GetMasaKerja(DateTime tanggalMasukKerja)
+		{            
+            DateTime today = DateTime.Today;
+
+            // Calculate the difference in years
+            int differenceInYears = today.Year - tanggalMasukKerja.Year;
+
+            // Adjust if the current date hasn't reached the anniversary of L2 this year
+            if (tanggalMasukKerja.Date > today.AddYears(-differenceInYears))
+            {
+                differenceInYears--;
+            }
+
+			return differenceInYears;
+        }
     }
 }

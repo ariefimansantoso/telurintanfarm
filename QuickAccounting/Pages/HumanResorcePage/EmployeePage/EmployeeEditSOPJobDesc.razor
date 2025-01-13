@@ -1,0 +1,121 @@
+﻿@page "/app/employeeeditsop/{id}"
+@inject IEmployee _employee
+@inject IDesignation _designation
+@inject ISalaryPackage _salaryPackage
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@using System.Security.Claims
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@attribute [Authorize]
+<PageTitle>Edit Data Karyawan</PageTitle>
+<div class="content">
+					<div class="page-header">
+						<div class="page-title">
+							<h4>Edit Data Karyawan</h4>
+							<h6>@model.EmployeeName</h6>
+						</div>
+					</div>					
+					<div class="card">
+						<div class="card-body">
+							<div class="row">
+								<div class="col-lg-4 col-sm-6 col-12">
+									<div class="form-group">
+										<label>Job Desc</label>
+										<div id="quill-editor-jobdesc" style="height: 500px; width: 100%;"></div>
+										@*<textarea cols="6" style="width:100%;" @bind="model.JobDesc"></textarea>
+										<ValidationMessage For="@(() => model.JobDesc)" /> *@
+									</div>
+								</div>
+								<div class="col-lg-4 col-sm-6 col-12">
+									<div class="form-group">
+										<label>SOP</label>
+										<div id="quill-editor-sop" style="height: 500px; width: 100%;"></div>
+										@*<textarea cols="6" style="width:100%;" @bind="model.SOP"></textarea>
+										<ValidationMessage For="@(() => model.SOP)" /> *@
+									</div>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col-lg-12">
+									<button type="submit" class="btn btn-submit me-2" @onclick="Save">Submit</button>
+									<a href="/app/employee" class="btn btn-cancel">Cancel</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+@code {
+	[Parameter]
+	public string id { get; set; }
+	[CascadingParameter]
+	public Task<AuthenticationState> authenticationState { get; set; }
+	static Employee model = new Employee();
+	IList<DesignationView> listDesignation;
+	IList<SalaryPackage> listPackage;
+	string strMenu = "Human Resources";	
+	bool quillRendered = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		//CheckPriviliagee
+		var authState = await authenticationState;
+		var strRole = authState.User;
+		string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+		var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+		if (strShow.ShowAction == true)
+		{
+			await LoadData();
+		}
+		else
+		{
+			navigation.NavigateTo("/app/dashboard");
+			Snackbar.Add("Anda tidak memiliki akses", Severity.Error);
+		}
+	}
+
+	private async Task LoadData()
+	{
+		model = await _employee.GetbyId(Convert.ToInt32(id));
+		await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-jobdesc", model.JobDesc);
+		await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-sop", model.SOP);
+		StateHasChanged();
+	}
+
+	private async Task Save()
+	{
+		var isCheck = await _employee.CheckNameId(model.EmployeeName);
+		if (isCheck == model.EmployeeId || isCheck == 0)
+		{
+			model.Narration = string.Empty;
+			model.isActive = true;
+
+			bool result = await _employee.Update(model);
+			if (result == true)
+			{
+				Snackbar.Add("Updated Successfully.", Severity.Success);
+				StateHasChanged();
+				navigation.NavigateTo("/app/employee");
+			}
+			else
+			{
+				Snackbar.Add("Invalid.", Severity.Error);
+				StateHasChanged();
+			}
+		}
+		else
+		{
+			Snackbar.Add("Nama karyawan sudah terdaftar.", Severity.Info);
+		}
+	}
+
+	[JSInvokable]
+	public static async Task UpdateQuillContentApart(string elementId, string content)
+	{		
+		if (elementId == "quill-editor-jobdesc")
+			model.JobDesc = content;
+
+		if (elementId == "quill-editor-sop")
+			model.SOP = content;
+	}
+}

@@ -96,6 +96,8 @@ namespace QuickAccounting.Data
         public DbSet<StockGudang> StockGudang { get; set; }
         public DbSet<StockPenjualan> StockPenjualan { get; set; }
         public DbSet<StockTelurUtuh> StockTelurUtuh { get; set; }
-        
-    }
+        public DbSet<AuditLog> AuditLog { get; set; }
+		
+		public DbSet<DailyRecordingVOV> DailyRecordingVOV { get; set; }
+	}
 }

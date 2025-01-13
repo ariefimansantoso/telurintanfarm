@@ -313,7 +313,7 @@ namespace QuickAccounting.Repository.Repository
         //            rm.PaymentType = "Draft";
         //            rm.Type = "CustomerPayment";
         //            rm.UserId = userName;
-        //            rm.FinancialYearId = 1;
+        //            rm.FinancialYearId = 2;
         //            rm.CompanyId = 1;
         //            rm.SalesMasterId = sales.SalesMasterId;
         //            rm.Narration = string.Empty;
@@ -357,10 +357,13 @@ namespace QuickAccounting.Repository.Repository
                                         join rem in _context.ReceiptMaster on rm.SalesMasterId equals rem.SalesMasterId
                                         join lp in _context.ReceiptDetails on rem.ReceiptMasterId equals lp.ReceiptMasterId
                                         join al in _context.AccountLedger on rm.LedgerId equals al.LedgerId
+                                        join sd in _context.SalesDetails on rm.SalesMasterId equals sd.SalesMasterId
+                                        join p in _context.Product on sd.ProductId equals p.ProductId
                                         where  
                                                 rm.LedgerId >= 19 &&
 											  rem.Date >= dtFrom && rem.Date <= dtTo &&
-                                              lp.LedgerId == ledgerId
+                                              lp.LedgerId == ledgerId &&
+                                              p.ProductCode.StartsWith("TA-")
 										select new
                                         {
                                             LedgerName = al.LedgerName,
@@ -377,11 +380,13 @@ namespace QuickAccounting.Repository.Repository
 										join rem in _context.ReceiptMaster on rm.SalesMasterId equals rem.SalesMasterId
 										join lp in _context.ReceiptDetails on rem.ReceiptMasterId equals lp.ReceiptMasterId
 										join al in _context.AccountLedger on rm.LedgerId equals al.LedgerId
-										where
+                                        join p in _context.Product on sd.ProductId equals p.ProductId
+                                        where
 												rm.LedgerId >= 19 &&
 											  rem.Date >= dtFrom && rem.Date <= dtTo &&
-											  lp.LedgerId == ledgerId
-										select new
+											  lp.LedgerId == ledgerId &&
+                                              p.ProductCode.StartsWith("TA-")
+                                        select new
 										{
 											LedgerName = al.LedgerName,
 											TotalKG = sd.Qty

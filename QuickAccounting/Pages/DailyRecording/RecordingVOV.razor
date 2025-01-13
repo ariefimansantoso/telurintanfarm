@@ -1,0 +1,255 @@
+﻿@page "/app/recordingvov"
+@using System.Security.Claims;
+@using QuickAccounting.Data.Recording;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Form Recording VOV</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Recording VOV</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (FormSubmitted == false)
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pilih Nomor Kandang</label>
+                            <div class="row">
+                                <div class="col-lg col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnCageChanged">
+                                        <option value="TIDAK">PILIH NO KANDANG</option>
+                                        @foreach (var kandangItem in CageList)
+                                        {
+                                            <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                        }
+
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Strain</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="StrainName" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Record Date</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" value="@RecordDate.ToString("dd/MM/yyyy")" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <div class="table-responsive table-scrollable">                
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Produk</th>
+                                            <th>Pemakaian</th>
+                                            <th>Hari Ke-</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var product in VOVItems)
+                                    {
+                                        <tr>
+                                                <td style="text-align:left !important;">@product.Name</td>
+                                                <td><input type="text" @bind="@product.Usage" class="form-control" /></td>
+                                                <td><input type="text" @bind="@product.Day" class="form-control" /></td>
+                                        </tr>                                                                 
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <br /> <br />
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <input type="button" @onclick="@(e => SaveVOVAsync())" class="btn btn-submit me-2" value="Simpan VOV Data" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Data VOV telah tersimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+    private DateTime RecordDate { get; set; }
+    private decimal HenAgeWeek { get; set; }
+    private decimal HenAgeDays { get; set; }
+    private string StrainName { get; set; }
+    private bool FormSubmitted { get; set; }
+    string SelectedNoKandang = "";
+    DateTime TodaysDate;
+    private List<Kandang> CageList = new List<Kandang>(); // Placeholder for cage numbers.
+    private DailyRecording CurrentRecording;
+    string strMenu = "Form Recording VOV";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+
+    List<Product> ProductObat = new List<Product>();
+    List<VOVItem> VOVItems = new List<VOVItem>();
+
+    private void SetTodaysDate()
+    {
+        var today = DateTime.Now;
+        TodaysDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string strName = currentUser.FindFirst(ClaimTypes.Role).Value;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        if (strShow.ShowAction == true)
+        {           
+            SetTodaysDate();           
+
+            // Fetch cage numbers, can be populated dynamically from a service or DB
+            CageList = await _kandang.GetAll();
+
+            ProductObat = _db.Product.Where(x => x.GroupId == 7).ToList();   
+            foreach(Product p in ProductObat)
+            {
+                VOVItems.Add(new VOVItem
+                {
+                    ID = p.ProductId,
+                    Name = p.ProductName,
+                    Usage = 0,
+                    Day = 0
+                });
+            }
+        }
+        else
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
+            RecordDate = CurrentRecording.RecordDate;
+            StrainName = CurrentRecording.StrainName;
+            HenAgeDays = CurrentRecording.HenAgeDays;
+            HenAgeWeek = CurrentRecording.HenAgeWeeks;
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveVOVAsync()
+    {
+        if (SelectedNoKandang == "")
+        {
+            Snackbar.Add("Mohon pilih No Kandang terlebih dahulu.", Severity.Error);
+            return;
+        }
+
+        List<DailyRecordingVOV> dailyRecordingVOVs = new List<DailyRecordingVOV>();
+        foreach (var item in VOVItems)
+        {
+            if (item.Usage > 0)
+            {
+                DailyRecordingVOV newRecording = new DailyRecordingVOV();
+                newRecording.VOVProductID = item.ID;
+                newRecording.VOVProductName = item.Name;
+                newRecording.RecordDate = RecordDate;
+                newRecording.CageNumber = SelectedNoKandang;
+                newRecording.DateCreated = DateTime.Now;
+                newRecording.CreatedBy = modelEmployee.EmployeeId;
+                newRecording.Day = item.Day;
+                newRecording.StrainName = StrainName;
+                newRecording.HenAgeDays = HenAgeDays;
+                newRecording.HenAgeWeeks = HenAgeWeek;
+
+                dailyRecordingVOVs.Add(newRecording);
+            }
+        }
+
+        if (dailyRecordingVOVs.Count > 0)
+        {
+            await _db.AddRangeAsync(dailyRecordingVOVs);
+            await _db.SaveChangesAsync();
+
+            Snackbar.Add("VOV data telah tersimpan.", Severity.Success);
+            FormSubmitted = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Recording tidak ditemukan untuk kandang yang dipilih.", Severity.Error);
+        }
+    }
+
+    public class VOVItem
+    {
+        public int ID { get; set; }
+        public string Name { get; set; }
+        public decimal Usage { get; set; }
+        public int Day { get; set; }
+    }
+}

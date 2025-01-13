@@ -278,9 +278,9 @@ namespace QuickAccounting.Repository.Repository
                 {
                     //AddSalesDetails
                     //AddStockPosting
-
+                    
                     // kalau ini adalah telur utuh, tambahin dulu StockPostingnya dari stock gudang
-                    AddInwardQtyToTelurUtuh(item.ProductId, item.Qty);
+                    AddInwardQtyToTelurUtuh(item.ProductId, item.Qty, model.UserId);
 
 						StockPosting stockposting = new StockPosting();
                         stockposting.Date = model.Date;
@@ -434,6 +434,18 @@ namespace QuickAccounting.Repository.Repository
                         await _context.SaveChangesAsync();
                         int intPurchaseDId = details.SalesDetailsId;
 
+                        var productItem = await _context.Product.FirstOrDefaultAsync(x => x.ProductId == item.ProductId);
+                        var userItem = await _context.UserMaster.FirstOrDefaultAsync(x => x.UserName == model.UserId);
+                        var employeeItem = await _context.Employee.FirstOrDefaultAsync(x => x.UserID == userItem.UserId);
+                        if (productItem.ProductCode.StartsWith("TA-"))
+                        {
+                            StockTelurUtuh stockTelurUtuh = _context.StockTelurUtuh.FirstOrDefault(x => x.ID == 1);
+                            // kurangi stock telur utuh dari gudang
+                            stockTelurUtuh.StockKG = stockTelurUtuh.StockKG - item.Qty;
+                            stockTelurUtuh.ModifiedBy = employeeItem.EmployeeId;
+                            stockTelurUtuh.ModifiedOn = DateTime.Now;
+                        }
+                        
                         StockPosting stockposting = new StockPosting();
                         stockposting.Date = model.Date;
                         stockposting.ProductId = item.ProductId;
@@ -480,6 +492,11 @@ namespace QuickAccounting.Repository.Repository
                         _context.SalesDetails.Update(details);
                         await _context.SaveChangesAsync();
                         //UpdateStockPosting
+
+                        var productItem = await _context.Product.FirstOrDefaultAsync(x => x.ProductId == item.ProductId);
+                        var userItem = await _context.UserMaster.FirstOrDefaultAsync(x => x.UserName == model.UserId);
+                        var employeeItem = await _context.Employee.FirstOrDefaultAsync(x => x.UserID == userItem.UserId);                        
+
                         //GetStockkPostingId
                         var returnstockpostingG = (from progm in _context.StockPosting
                                                    where progm.VoucherTypeId == model.VoucherTypeId && progm.VoucherNo == model.VoucherNo && progm.DetailsId == item.SalesDetailsId
@@ -490,7 +507,15 @@ namespace QuickAccounting.Repository.Repository
                         stockposting.Date = model.Date;
                         stockposting.ProductId = item.ProductId;
                         stockposting.InwardQty = 0;
-                        stockposting.OutwardQty = item.Qty;
+						if (productItem.ProductCode.StartsWith("TA-"))
+						{
+							StockTelurUtuh stockTelurUtuh = _context.StockTelurUtuh.FirstOrDefault(x => x.ID == 1);
+							// kurangi stock telur utuh dari gudang
+							stockTelurUtuh.StockKG = stockTelurUtuh.StockKG + (stockposting.OutwardQty - item.Qty);
+							stockTelurUtuh.ModifiedBy = employeeItem.EmployeeId;
+							stockTelurUtuh.ModifiedOn = DateTime.Now;
+						}
+						stockposting.OutwardQty = item.Qty;
 						stockposting.UnitId = item.UnitId;
                         stockposting.BatchId = item.BatchId;
                         stockposting.Rate = item.Rate;
@@ -701,7 +726,7 @@ namespace QuickAccounting.Repository.Repository
             return (from s in _context.SalesMaster
                     join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
                     join p in _context.Product on sd.ProductId equals p.ProductId
-                    where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA")
+                    where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA-")
                     select sd.Qty).Sum();
         }
 
@@ -710,7 +735,7 @@ namespace QuickAccounting.Repository.Repository
 			return (from s in _context.SalesMaster
 					join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
 					join p in _context.Product on sd.ProductId equals p.ProductId
-					where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA") && s.LedgerId == 19
+					where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA-") && s.LedgerId == 19
 					select sd.Qty).Sum();
 		}
 
@@ -719,7 +744,7 @@ namespace QuickAccounting.Repository.Repository
 			return (from s in _context.SalesMaster
 					join sd in _context.SalesDetails on s.SalesMasterId equals sd.SalesMasterId
 					join p in _context.Product on sd.ProductId equals p.ProductId
-					where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA") && s.LedgerId > 19
+					where s.Date >= dateFrom && s.Date <= to && p.ProductCode.StartsWith("TA-") && s.LedgerId > 19
 					select sd.Qty).Sum();
 		}
 
@@ -772,18 +797,23 @@ namespace QuickAccounting.Repository.Repository
                     }).ToList<dynamic>();
         }
 
-        private void AddInwardQtyToTelurUtuh(int productId, decimal stockToAdd)
+        private void AddInwardQtyToTelurUtuh(int productId, decimal stockToAdd, string userName)
         {
             var product = _context.Product.FirstOrDefault(p => p.ProductId == productId);
             if(product != null)
             {
                 if(product.ProductCode.StartsWith("TA-"))
-                {
-					StockTelurUtuh stockTelurUtuh = _context.StockTelurUtuh.FirstOrDefault(x => x.ID == 1);
+                {                    
+                    var userItem = _context.UserMaster.FirstOrDefault(x => x.UserName == userName);
+                    var employeeItem = _context.Employee.FirstOrDefault(x => x.UserID == userItem.UserId);
+                    
+                    StockTelurUtuh stockTelurUtuh = _context.StockTelurUtuh.FirstOrDefault(x => x.ID == 1);
                     // kurangi stock telur utuh dari gudang
                     stockTelurUtuh.StockKG = stockTelurUtuh.StockKG - stockToAdd;
+                    stockTelurUtuh.ModifiedBy = employeeItem.EmployeeId;
+                    stockTelurUtuh.ModifiedOn = DateTime.Now;
 
-					if (stockTelurUtuh != null)
+                    if (stockTelurUtuh != null)
                     {
 						StockPosting stockposting = new StockPosting();
 						stockposting.Date = DateTime.Now;
@@ -803,7 +833,7 @@ namespace QuickAccounting.Repository.Repository
 						stockposting.WarehouseId = 1;
 						stockposting.StockCalculate = "SalesRestock";
 						stockposting.CompanyId = 1;
-						stockposting.FinancialYearId = 1;
+						stockposting.FinancialYearId = 2;
 						stockposting.AddedDate = DateTime.Now;
 						_context.StockPosting.Add(stockposting);
 					}

@@ -24,13 +24,14 @@
 
 <style type="text/css">
     .table tbody tr td {
-        padding: 2px !important;
-        color: #637381;
-        font-weight: 200 !important;
-        border-bottom: 1px solid #E9ECEF;
-        vertical-align: middle;
-        white-space: nowrap;
-        text-align: right !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+            font-weight: 200 !important;
+            border-bottom: 1px solid #E9ECEF;
+            vertical-align: middle;
+            white-space: nowrap;
+            text-align: right !important; */
     }
 </style>
 
@@ -74,13 +75,15 @@
             @if (StockPenjualans != null && StockPenjualans.Count > 0)
             {
             <div class="row">            
-                <div class="table-responsive">                    
+                <div class="table-responsive table-scrollable">                    
                     <table class="table table-striped">
                         <thead>                            
                             <tr>                               
-                                <th style="text-align:center;">Tgl</th>
-                                <th style="text-align:center;">Butir</th>                                
-                                <th></th>
+                                    <th style="text-align:left !important;">Tgl</th>
+                                    <th style="text-align:left !important;">KG</th>
+                                    <th></th>
+                                    <th style="text-align:left !important;">Penyetor</th>
+                                    <th style="text-align:left !important;">Penerima</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -88,7 +91,7 @@
                             @foreach (var record in StockPenjualans.ToList())
                             {
                                 <tr>
-                                    <td colspan="3" style="text-align:left !important; font-weight:bold !important; font-size:16px !important;">
+                                    <td colspan="5" style="text-align:left !important; font-weight:bold !important; font-size:16px !important;">
                                         <b>@record.Key</b>
                                     </td>
                                 </tr>
@@ -96,10 +99,16 @@
                                     {
                                         <tr>
                                             <td style="text-align:left !important;">@item.DateCreated.ToString("dd-MM")</td>
-                                            <td style="text-align:right !important;">@item.StockKg</td>
+                                            <td style="text-align:left !important;">@item.StockKg</td>
                                             <td style="text-align:center !important;">
                                                 <input type="checkbox" @bind="@item.IsVerified" disabled="@item.IsVerified" />
                                             </td>
+                                            @{
+                                                var penyetor = _db.Employee.FirstOrDefault(x => x.EmployeeId == item.CreatedBy);
+                                                var penerima = _db.Employee.FirstOrDefault(x => x.EmployeeId == item.VerifiedBy);
+                                            }
+                                            <td style="text-align:left !important;">@(penyetor != null ? penyetor.EmployeeName : "")</td>
+                                            <td style="text-align:left !important;">@(penerima != null ? penerima.EmployeeName : "")</td>
                                         </tr>
                                     }
                                     
@@ -220,7 +229,7 @@
                             stockposting.WarehouseId = 1;
                             stockposting.StockCalculate = "Restock";
                             stockposting.CompanyId = 1;
-                            stockposting.FinancialYearId = 1;
+                            stockposting.FinancialYearId = 2;
                             stockposting.AddedDate = DateTime.Now;
                             _db.StockPosting.Add(stockposting);
                         }

@@ -271,7 +271,7 @@
 	}
 	private async Task Save()
 	{
-		model.FinancialYearId = 1;
+		model.FinancialYearId = 2;
 		model.WarehouseId = 1;
 		model.AddedDate = DateTime.UtcNow;
 		var result = await _company.Update(model);

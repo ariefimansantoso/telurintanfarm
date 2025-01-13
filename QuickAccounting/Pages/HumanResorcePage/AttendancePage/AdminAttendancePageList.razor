@@ -7,7 +7,8 @@
 @inject NavigationManager navigation
 @inject IUser _user
 @inject IEmployee _employee
-@inject IHRServices _hr;
+@inject IHRServices _hr
+@inject ApplicationDbContext _context
 @attribute [Authorize]
 <PageTitle>Admin - Laporan Absensi Karyawan</PageTitle>
 <div class="content">
@@ -22,7 +23,7 @@
     <!-- /product list -->
     <div class="card">
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive table-scrollable">
                 <div class="row">
 			        <div class="col-lg col-sm-6 col-12">
 				        <div class="form-group">
@@ -71,7 +72,410 @@
 
     <div class="card">
         <div class="card-body">
-            <div class="table-responsive">
+            @{
+                if (SelectedEmployee != null)
+                {
+                    var countMasuk = 0;
+                    var alpha = 0;
+                    foreach (var item in detailAttendances)
+                    {
+                        var groupByDate = item.GroupBy(x => x.Date.Date).ToList();
+                        foreach (var gbd in groupByDate)
+                        {
+                            if (gbd.Count() >= 2)
+                            {
+                                countMasuk++;
+                            }
+
+                            var masukPerHari = _attendance.GetAttendanceListByDateAndEmployeeId(SelectedEmployee.EmployeeId, gbd.Key).Count;
+                            if (masukPerHari < 2)
+                            {
+                                //check table libur
+                                var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(SelectedEmployee.EmployeeId, gbd.Key);
+                                if (adaIjin.Count == 0)
+                                {
+                                    alpha++;
+                                }
+                            }
+                        }
+                    }
+                    decimal totalGaji = SelectedEmployee.DailyWage * (decimal)countMasuk;
+                    decimal cicilan = 0;
+                    decimal potonganNonCicilan = 0;
+                    decimal tambahanGaji = 0;
+                    decimal tunjanganTetap = SelectedEmployee.Tunjangan;
+                    int hariTerlambat = 0;
+                    DateTime tanggalMulaiKerja = SelectedEmployee.JoiningDate;
+
+                    //calculate tunjangan hari kerja
+                    decimal dailyTunjangan = SelectedEmployee.Tunjangan / 365; //rata2 hari dalam sebulan 30                                
+                    DateTime endDate = DateTime.Now;
+                    // Calculate the difference
+                    TimeSpan difference = endDate - tanggalMulaiKerja;
+                    // Get the total number of days
+                    int daysBetween = difference.Days;
+                    tunjanganTetap = (decimal)daysBetween * dailyTunjangan;
+
+                    // hitung hari terlambat
+                    var listAttendances = _attendance.GetAttendanceCurrentPeriodeByEmployeeIdSync(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+                    TimeSpan timeToCompare = new TimeSpan(6, 30, 59);
+                    var jumlahTerlambat = listAttendances.OrderBy(x => x.Date)
+                        .GroupBy(dt => dt.Date.Date)
+                        .Select(g => g.Min(dt => dt.Date))
+                        .ToList();
+                    var jumlahTerlambatCount = 0;
+                    foreach (DateTime kedatangan in jumlahTerlambat)
+                    {
+                        if (kedatangan.Hour == 6)
+                        {
+                            if (kedatangan.Minute > 30)
+                            {
+                                jumlahTerlambatCount++;
+                            }
+                        }
+                        else if (kedatangan.Hour > 6)
+                        {
+                            jumlahTerlambatCount++;
+                        }
+                    }
+
+                    var perijinanKaryawan = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+                    var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
+                    var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
+                    var sakit = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SAKIT")).Count();
+                    var setengahHari = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SETENGAH HARI")).Count();
+                    var ijinLembur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LEMBUR")).Count();
+                    decimal premi = 0;
+                    decimal gajiBersih = 0;
+                    var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(SelectedEmployee.EmployeeId, SelectedCutoffTo.Month, 2024);
+                    var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+                    var listBonus = listPenalty.Where(x => x.IsPenalty == false).ToList();
+                    listPenalty = listPenalty.Where(x => x.IsPenalty == true).ToList();
+
+                    if (PeriodDaysCount > (countMasuk + alpha + libur + ijin + sakit))
+                    {
+                        alpha = PeriodDaysCount - (countMasuk + alpha + libur + ijin + sakit);
+                    }
+
+                    decimal potonganSetengahHari = 0;
+                    if (setengahHari > 0)
+                    {
+                        potonganSetengahHari = potonganSetengahHari + (SelectedEmployee.DailyWage / 2);
+                    }
+
+                    if (listPotongan.Count > 0)
+                    {
+                        foreach (var pt in listPotongan)
+                        {
+                            cicilan = cicilan + pt.RP_POTONGAN;
+                        }
+                    }
+
+                    if (listPenalty.Count > 0)
+                    {
+                        foreach (var penalty in listPenalty)
+                        {
+                            potonganNonCicilan = potonganNonCicilan + penalty.PenaltyAmount;
+                        }
+                    }
+
+                    if (listBonus.Count > 0)
+                    {
+                        foreach (var bonus in listBonus)
+                        {
+                            tambahanGaji = tambahanGaji + bonus.PenaltyAmount;
+                        }
+                    }
+
+                    if (libur <= 3 && ijin == 0 && alpha == 0)
+                    {
+                        premi = totalGaji * (decimal)0.15;
+                        gajiBersih = totalGaji + premi;
+                    }
+                    else
+                    {
+                        gajiBersih = totalGaji;
+                    }
+
+                    gajiBersih = gajiBersih - SelectedEmployee.BPJS_KES - SelectedEmployee.BPJS_TK - cicilan - potonganNonCicilan - potonganSetengahHari + tambahanGaji + tunjanganTetap;
+                    gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
+
+
+
+                    <div class="table-responsive table-scrollable">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Karyawan</th>
+                                    <th>Harian</th>
+                                    <th>BPJS Kes</th>
+                                    <th>BPJS TK</th>
+                                    <th>Premi</th>
+                                    <th>Tambahan</th>
+                                    <th>Tunjangan</th>
+                                    <th>M</th>
+                                    <th>A</th>
+                                    <th>I</th>
+                                    <th>S</th>
+                                    <th>1/2</th>
+                                    <th>Lembur</th>
+                                    <th>L</th>
+                                    <th>Telat</th>
+                                    <th>Cicilan</th>
+                                    <th>Potongan</th>
+                                    <th>No. Rek</th>
+                                    <th>Total Gaji</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>@(SelectedEmployee != null ? SelectedEmployee.EmployeeName : "")</td>
+                                    <td>@string.Format("{0:n0}", SelectedEmployee.DailyWage)</td>
+                                    <td>@string.Format("{0:n0}", SelectedEmployee.BPJS_KES)</td>
+                                    <td>@string.Format("{0:n0}", SelectedEmployee.BPJS_TK)</td>
+                                    <td>@string.Format("{0:n0}", premi)</td>
+                                    <td>@string.Format("{0:n0}", tambahanGaji)</td>
+                                    <td>@string.Format("{0:n0}", tunjanganTetap)</td>
+
+                                    <td>@countMasuk</td>
+                                    <td>@alpha</td>
+                                    <td>@ijin</td>
+                                    <td>@sakit</td>
+                                    <td>@setengahHari</td>
+                                    <td>@ijinLembur</td>
+                                    <td>@libur</td>
+                                    <td>@jumlahTerlambatCount</td>
+                                    <td>@string.Format("{0:n0}", cicilan)</td>
+                                    <td>@string.Format("{0:n0}", potonganNonCicilan + potonganSetengahHari)</td>
+                                    <td>@SelectedEmployee.BankAccount</td>
+                                    <td>@string.Format("{0:n0}", gajiBersih)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @{
+                if (SelectedEmployee != null)
+                {
+                    var countMasuk = 0;
+                    var alpha = 0;
+                    foreach (var item in detailAttendances)
+                    {
+                        var groupByDate = item.GroupBy(x => x.Date.Date).ToList();
+                        foreach (var gbd in groupByDate)
+                        {
+                            if (gbd.Count() >= 2)
+                            {
+                                countMasuk++;
+                            }
+
+                            var masukPerHari = _attendance.GetAttendanceListByDateAndEmployeeId(SelectedEmployee.EmployeeId, gbd.Key).Count;
+                            if (masukPerHari < 2)
+                            {
+                                //check table libur
+                                var adaIjin = _hr.GetPerijinanByEmployeeIDAndDate(SelectedEmployee.EmployeeId, gbd.Key);
+                                if (adaIjin.Count == 0)
+                                {
+                                    alpha++;
+                                }
+                            }
+                        }
+                    }
+                    decimal totalGaji = SelectedEmployee.DailyWage * (decimal)countMasuk;
+                    decimal cicilan = 0;
+                    decimal potonganNonCicilan = 0;
+                    decimal tambahanGaji = 0;
+                    decimal tunjanganTetap = SelectedEmployee.Tunjangan;
+                    int hariTerlambat = 0;
+                    int hariDinasLuar = 0;
+                                decimal rpLembur = 0;
+                    DateTime tanggalMulaiKerja = SelectedEmployee.JoiningDate;
+
+                    //calculate tunjangan hari kerja
+                    decimal dailyTunjangan = SelectedEmployee.Tunjangan / 365; //rata2 hari dalam sebulan 30                                
+                    DateTime endDate = DateTime.Now;
+                    // Calculate the difference
+                    TimeSpan difference = endDate - tanggalMulaiKerja;
+                    // Get the total number of days
+                    int daysBetween = difference.Days;
+                    tunjanganTetap = (decimal)daysBetween * dailyTunjangan;
+
+                    // hitung hari terlambat
+                    var listAttendances = _attendance.GetAttendanceCurrentPeriodeByEmployeeIdSync(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+                    TimeSpan timeToCompare = new TimeSpan(6, 30, 59);
+                    var jumlahTerlambat = listAttendances.OrderBy(x => x.Date)
+                        .GroupBy(dt => dt.Date.Date)
+                        .Select(g => g.Min(dt => dt.Date))
+                        .ToList();
+                    var jumlahTerlambatCount = 0;
+                    foreach (DateTime kedatangan in jumlahTerlambat)
+                    {
+                        if (kedatangan.Hour == 6)
+                        {
+                            if (kedatangan.Minute > 30)
+                            {
+                                jumlahTerlambatCount++;
+                            }
+                        }
+                        else if (kedatangan.Hour > 6)
+                        {
+                            jumlahTerlambatCount++;
+                        }
+                    }
+                    var totalHariLembur = listAttendances
+                                        .Where(record => record.Date.TimeOfDay > new TimeSpan(16, 15, 0))
+                                        .ToList();
+
+                    var perijinanKaryawan = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+                    var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
+                    var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
+                    var sakit = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SAKIT")).Count();
+                    var setengahHari = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("SETENGAH HARI")).Count();
+                    var ijinLembur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LEMBUR")).Count();
+                                var matchingRecords = totalHariLembur
+                                    .Where(record => perijinanKaryawan
+                                    .Where(x => x.SubmittedFor.Equals("LEMBUR"))
+                                    .Any(perijinan => perijinan.ForDate.Date == record.Date.Date))
+                                    .ToList();
+                                var totalMenitLembur = matchingRecords
+                                    .Where(record => record.Date.TimeOfDay > new TimeSpan(16, 15, 0)) // Filter records after 16:15
+                                    .Select(record => (int)(new TimeSpan(23, 59, 0) - record.Date.TimeOfDay).TotalMinutes) // Get minutes difference
+                                    .Sum();
+
+                                rpLembur = (SelectedEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur;
+
+                                hariDinasLuar = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("DINAS")).Count();
+                    decimal premi = 0;
+                    decimal gajiBersih = 0;
+                    var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(SelectedEmployee.EmployeeId, SelectedCutoffTo.Month, 2024);
+                    var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+                    var listBonus = listPenalty.Where(x => x.IsPenalty == false).ToList();
+                    listPenalty = listPenalty.Where(x => x.IsPenalty == true).ToList();
+
+                    if (PeriodDaysCount > (countMasuk + alpha + libur + ijin + sakit))
+                    {
+                        alpha = PeriodDaysCount - (countMasuk + alpha + libur + ijin + sakit);
+                    }
+
+                    decimal potonganSetengahHari = 0;
+                    if (setengahHari > 0)
+                    {
+                        potonganSetengahHari = potonganSetengahHari + (SelectedEmployee.DailyWage / 2);
+                    }
+
+                    if (listPotongan.Count > 0)
+                    {
+                        foreach (var pt in listPotongan)
+                        {
+                            cicilan = cicilan + pt.RP_POTONGAN;
+                        }
+                    }
+
+                    if (listPenalty.Count > 0)
+                    {
+                        foreach (var penalty in listPenalty)
+                        {
+                            potonganNonCicilan = potonganNonCicilan + penalty.PenaltyAmount;
+                        }
+                    }
+
+                    if (listBonus.Count > 0)
+                    {
+                        foreach (var bonus in listBonus)
+                        {
+                            tambahanGaji = tambahanGaji + bonus.PenaltyAmount;
+                        }
+                    }
+
+                    // if (libur <= 3 && ijin == 0 && alpha == 0)
+                    // {
+                    //     premi = totalGaji * (decimal)0.15;
+                    //     gajiBersih = totalGaji + premi;
+                    // }
+                    // else
+                    // {
+                    //     gajiBersih = totalGaji;
+                    // }
+                    if(countMasuk <= 27)
+                    {
+                        totalGaji = (SelectedEmployee.DailyWage * ((decimal)1 + (decimal)0.15) * (decimal)countMasuk);
+                    }
+                    else
+                    {
+                        totalGaji = (SelectedEmployee.DailyWage * ((decimal)1 + (decimal)0.15) * (decimal)27) + (SelectedEmployee.DailyWage * ((decimal)countMasuk - (decimal)27));
+                    }
+                    gajiBersih = totalGaji - SelectedEmployee.BPJS_KES - SelectedEmployee.BPJS_TK - cicilan - potonganNonCicilan - potonganSetengahHari + tambahanGaji + tunjanganTetap + rpLembur;
+                    gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
+
+
+
+                    <div class="table-responsive table-scrollable">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Karyawan</th>
+                                    <th>Harian</th>
+                                    <th>BPJS Kes</th>
+                                    <th>BPJS TK</th>
+                                    <th>Tambahan</th>
+                                    <th>Tunjangan</th>
+                                    <th>M</th>
+                                    <th>A</th>
+                                    <th>I</th>
+                                    <th>S</th>
+                                    <th>1/2</th>
+                                    <th>Lembur</th>
+                                    <th>L</th>
+                                    <th>DL</th>
+                                    <th>Telat</th>
+                                    <th>Cicilan</th>
+                                    <th>Potongan</th>
+                                    <th>Rp. Lmbr</th>
+                                    <th>No. Rek</th>
+                                    <th>Total Gaji</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>@(SelectedEmployee != null ? SelectedEmployee.EmployeeName : "")</td>
+                                    <td>@string.Format("{0:n0}", SelectedEmployee.DailyWage)</td>
+                                    <td>@string.Format("{0:n0}", SelectedEmployee.BPJS_KES)</td>
+                                    <td>@string.Format("{0:n0}", SelectedEmployee.BPJS_TK)</td>
+                                    <td>@string.Format("{0:n0}", tambahanGaji)</td>
+                                    <td>@string.Format("{0:n0}", tunjanganTetap)</td>
+
+                                    <td>@countMasuk</td>
+                                    <td>@alpha</td>
+                                    <td>@ijin</td>
+                                    <td>@sakit</td>
+                                    <td>@setengahHari</td>
+                                    <td>@ijinLembur</td>
+                                    <td>@libur</td>
+                                    <td>@hariDinasLuar</td>
+                                    <td>@jumlahTerlambatCount</td>
+                                    <td>@string.Format("{0:n0}", cicilan)</td>
+                                    <td>@string.Format("{0:n0}", potonganNonCicilan + potonganSetengahHari)</td>
+                                    <td>@string.Format("{0:n0}", rpLembur)</td>
+                                    <td>@SelectedEmployee.BankAccount</td>
+                                    <td>@string.Format("{0:n0}", gajiBersih)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive table-scrollable">
                 <table class="table">
                     <thead>
                         <tr>
@@ -95,7 +499,7 @@
 
                                 if (attendanceItem != null)
                                 {
-                                    keterangan = string.Format("{0:n0}", SelectedEmployee.DailyWage);
+                                    keterangan = "Absen Sudah Lengkap";//string.Format("{0:n0}", SelectedEmployee.DailyWage);
 
                                     if (attendanceItem.StartTime.Hour < 12)
                                     {
@@ -197,17 +601,20 @@
     public Task<AuthenticationState> authenticationState { get; set; }
     IList<DailyAttendanceMaster> listModel;
     DateTime SelectedCutoffFrom;
+    DateTime SelectedCutoffTo;
     Employee SelectedEmployee = null;
     UserMaster modelUser = new UserMaster();
     Employee modelEmployee = new Employee();
     DateTime LastPayrollCutoffDate;
     List<DateTime> PeriodeDates = new List<DateTime>();
-
+    decimal gajiKaryawanTotal = 0;
+    int PeriodDaysCount = 0;
     List<PayrollCutoff> PayrollCutoffs = new List<PayrollCutoff>();
     decimal DailyWage;
     List<AbsensiData> groupedResults = new List<AbsensiData>();
     List<Employee> DaftarKaryawan = new List<Employee>();
-
+    List<DailyAttendanceMaster> absensiAllEmployeePerPeriode = new List<DailyAttendanceMaster>();
+    List<IGrouping<int, DailyAttendanceMaster>> detailAttendances = new List<IGrouping<int, DailyAttendanceMaster>>();
     private bool dense = true;
     private bool hover = true;
     private string searchString1 = "";
@@ -252,15 +659,18 @@
         {
             SelectedEmployee = DaftarKaryawan.FirstOrDefault();
         }
-        PayrollCutoffs = await _attendance.GetPayrollCutoffs();
         var lastPayrollCutoff = await _attendance.GetLastPayrollCutoff();
+
+        PayrollCutoffs = await _attendance.GetPayrollCutoffs();        
+        SelectedCutoffFrom = lastPayrollCutoff.PayrollDate.AddDays(1);
+        SelectedCutoffTo = DateTime.Now;
 
         if (DateTime.Today > lastPayrollCutoff.PayrollDate) {
             LastPayrollCutoffDate = DateTime.Today;
-            SelectedCutoffFrom = new DateTime(LastPayrollCutoffDate.Year, LastPayrollCutoffDate.Month, 1);
+            //SelectedCutoffFrom = new DateTime(LastPayrollCutoffDate.Year, LastPayrollCutoffDate.Month, 1);
         }
         else {
-            SelectedCutoffFrom = lastPayrollCutoff.PayrollDateStart;
+            //SelectedCutoffFrom = lastPayrollCutoff.PayrollDateStart;
             LastPayrollCutoffDate = lastPayrollCutoff.PayrollDate;
         }
 
@@ -280,8 +690,10 @@
             PeriodeDates.Add(currentDate);
             currentDate = currentDate.AddDays(1); // Move to the next day
         }
-
-        listModel = await _attendance.GetAttendanceCurrentPeriodeByEmployeeId(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, LastPayrollCutoffDate.Date);
+        listModel = new List<DailyAttendanceMaster>();
+        listModel = _context.DailyAttendanceMaster.Where(x => x.EmployeeID == SelectedEmployee.EmployeeId && x.Date.Date >= SelectedCutoffFrom.Date && x.Date.Date <= LastPayrollCutoffDate.Date).ToList();
+        //await _attendance.GetAttendanceCurrentPeriodeByEmployeeId(SelectedEmployee.EmployeeId, SelectedCutoffFrom.Date, LastPayrollCutoffDate.Date);
+        detailAttendances = listModel.GroupBy(x => x.EmployeeID).OrderBy(x => x.Key).ToList();
         groupedResults = listModel.OrderBy(x => x.Date)
             .GroupBy(dt => dt.Date.Date)
             .Select(g => new AbsensiData
@@ -303,22 +715,29 @@
     }
 
     private async Task SelectedCutoff(ChangeEventArgs e)
-    {        
-        var selectedDate = DateTime.ParseExact(e.Value.ToString(), "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
-        if (selectedDate != DateTime.Today)
+    {
+        if(e.Value.ToString() == "31/12/2024")
         {
-            DateTime firstDayOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
-            DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1);
-            SelectedCutoffFrom = firstDayOfMonth;
-            LastPayrollCutoffDate = lastDayOfMonth.AddSeconds(-1);
-        }
-        else
-        {
-            LastPayrollCutoffDate = DateTime.ParseExact(e.Value.ToString(), "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
-            SelectedCutoffFrom = new DateTime(LastPayrollCutoffDate.Year, LastPayrollCutoffDate.Month, 1);
-        }
-        groupedResults = new List<AbsensiData>();
-        await ReloadData();
+            var selectedDate = DateTime.ParseExact(e.Value.ToString(), "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+            SelectedCutoffFrom = DateTime.ParseExact("29/11/2024", "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+            LastPayrollCutoffDate = DateTime.ParseExact("30/12/2024", "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+            SelectedCutoffTo = LastPayrollCutoffDate; 
+            groupedResults = new List<AbsensiData>();
+            await ReloadData();
+        }        
+        // if (selectedDate != DateTime.Today)
+        // {
+        //     DateTime firstDayOfMonth = new DateTime(selectedDate.Year, selectedDate.Month, 1);
+        //     DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1);
+        //     SelectedCutoffFrom = firstDayOfMonth;
+        //     LastPayrollCutoffDate = lastDayOfMonth.AddSeconds(-1);
+        // }
+        // else
+        // {
+        //     LastPayrollCutoffDate = DateTime.ParseExact(e.Value.ToString(), "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+        //     SelectedCutoffFrom = new DateTime(LastPayrollCutoffDate.Year, LastPayrollCutoffDate.Month, 1);
+        // }
+        
     }
 
     private async Task SelectedKaryawan(ChangeEventArgs e)

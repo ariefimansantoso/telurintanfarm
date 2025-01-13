@@ -5,9 +5,12 @@
 @inject IUser _user
 @inject IEmployee _employee
 @using System.Security.Claims
+@using System.Text;
 @inject IWebHostEnvironment _hostingEnvironment
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
+@inject IAuditLogService _audit
+@inject ApplicationDbContext _db
 @attribute [Authorize]
 
 <PageTitle>Form Absensi Harian</PageTitle>
@@ -138,7 +141,7 @@
     string uploadedFileExtension;
 
     private async Task GetLocation()
-    {
+    {        
         try
         {
             // Call the JavaScript function and get the result as an anonymous object
@@ -153,7 +156,7 @@
                     MaxLongitude = 113.53530775154285
                 };
 
-            WithinBoundaries = true; //boundary.IsPointWithinBoundary(location.Latitude, location.Longitude);
+            WithinBoundaries = boundary.IsPointWithinBoundary(location.Latitude, location.Longitude);
         }
         catch (Exception ex)
         {
@@ -200,8 +203,15 @@
         AttendanceCompletedForToday = false;
         AttendanceFormOpen = false;
 
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Absensi.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
         //CheckPriviliagee
         await GetLocation();
+
+        auditMessage = "Apakah di area kandang? " + (WithinBoundaries ? "Ya" : "Tidak");
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
         await LoadData();
 
         StateHasChanged();
@@ -209,6 +219,8 @@
 
     private async Task LoadData()
     {
+        StringBuilder auditMessage = new StringBuilder();        
+
         PhotoSelfie = string.Empty;
         PhotoViewer = string.Empty;
         DateTime now = DateTime.Now;
@@ -220,16 +232,19 @@
         if (todayAttendances.Count == 1 && todayAttendances[0].Date <= nineAM)
         {
             AttendanceCompletedForMorning = true;
+            auditMessage.AppendLine(modelEmployee.EmployeeName + ": sudah absen pagi.");
         }
         else if (todayAttendances.Count == 1 && todayAttendances[0].Date >= threePM)
         {
             AttendanceCompletedForMorning = true;
             AttendanceCompletedForToday = false;
+            auditMessage.AppendLine(modelEmployee.EmployeeName + ": belum absen sore.");
         }
         else if(todayAttendances.Count == 2)
         {
             AttendanceCompletedForMorning = true;
             AttendanceCompletedForToday = true;
+            auditMessage.AppendLine(modelEmployee.EmployeeName + ": absensi sudah lengkap.");
         }
 
         master.Date = now;
@@ -244,16 +259,20 @@
         master.Lat = location.Latitude.ToString();
         master.Long = location.Longitude.ToString();
 
+        auditMessage.AppendLine(modelEmployee.EmployeeName + ": LAT: " + location.Latitude.ToString() + ", LONG: " + location.Longitude.ToString() + ".");
+
         var hour = now.Hour;
         if(hour >= 5 && hour <= 9)
         {
             if (AttendanceCompletedForMorning)
             {
                 AttendanceFormOpen = false;
+                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen pagi sudah, form tertutup.");
             }
             else
             {
                 AttendanceFormOpen = true;
+                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen pagi belum, form terbuka.");
             }
             WaktuAbsensi = "Absensi Kedatangan";
         }
@@ -262,31 +281,41 @@
             if (AttendanceCompletedForToday)
             {
                 AttendanceFormOpen = false;
+                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen sore sudah, form terturup.");
             }
             else
             {
                 AttendanceFormOpen = true;
+                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen sore belum, form terbuka.");
             }
-            
+
             WaktuAbsensi = "Absensi Pulang";
         }
         else
         {
             AttendanceFormOpen = false;
+            auditMessage.AppendLine("Form tertutup, diluar waktu absen: " + DateTime.Now.ToString("dd/MM/yyyy hh:mm"));
         }
 
         AttendanceSubmitted = false;
+
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
         StateHasChanged();
     }
 
     private async Task Save()
     {        
+        StringBuilder auditMessage = new StringBuilder();  
+
         string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
         string fileName = await UploadFile(userFolder);
 
         if (PhotoSelfie == string.Empty)
         {
+            auditMessage.AppendLine("Error belum upload foto absen.");
+            await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
             Snackbar.Add("Anda belum mengambil foto selfie.", Severity.Error);
             return;
         }
@@ -304,18 +333,37 @@
 
         master.PhotoSelfie = fileName;
 
+        auditMessage.AppendLine("Error belum upload foto absen.");
+
         var result = await _attendance.Save(master);
 
         if (result > 0)
         {
             Snackbar.Add("Absensi telah berhasil disimpan.", Severity.Success);
             AttendanceSubmitted = true;
+            auditMessage.AppendLine(WaktuAbsensi + ": Absensi berhasil disimpan.");
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            var perijinan = _db.Perijinan.FirstOrDefault(x => x.EmployeeID == modelEmployee.EmployeeId && x.IsApproved.HasValue && x.IsApproved.Value == true && x.ForDate.Date == now.Date &&
+                            (x.SubmittedFor == "LIBUR" || x.SubmittedFor == "IJIN" || x.SubmittedFor == "SAKIT"));
+            if(perijinan != null)
+            {
+                perijinan.IsApproved = null;
+                await _db.SaveChangesAsync();
+
+                auditMessage.AppendLine("Perijinan: " + perijinan.SubmittedFor + " berhasil dicancel.");
+                await _audit.LogAsync(LogTypes.LogInfo, "Perijinan", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            }
             StateHasChanged();
         }
         else
         {
+            auditMessage.AppendLine(WaktuAbsensi + ": Absensi GAGAL disimpan.");
+            await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
             Snackbar.Add("Absensi gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
-        }
+        }        
+
     }
 
     public async Task<string> UploadFile(string userFolder)

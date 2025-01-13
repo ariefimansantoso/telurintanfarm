@@ -5,6 +5,7 @@
 @using System.Transactions;
 @using System.Globalization;
 @using QuickAccounting.Components
+@using Newtonsoft.Json
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @inject IUser _user
@@ -17,6 +18,7 @@
 @inject IDailyEggPickupService _egg
 @inject AuthenticationStateProvider authStateProvider
 @inject ApplicationDbContext _db
+@inject IAuditLogService _audit
 @attribute [Authorize]
 
 <PageTitle>Tambah Stok Penjualan</PageTitle>
@@ -102,7 +104,7 @@
                     <div class="form-group" style="text-align: center !important;">
                         @if (StockPenjualan != null && StockPenjualan.Count > 0)
                         {
-                            <div class="table-responsive">                                
+                            <div class="table-responsive table-scrollable">                                
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>                                                                                        
@@ -266,16 +268,32 @@
             var stock = await _db.StockPenjualan.FirstOrDefaultAsync(x => x.ID == SelectedItemId);
             if (stock != null)
             {
+                string serializedStock = _audit.SerializeObjectToString(stock);
+                string auditMessage = "" + modelEmployee.EmployeeName + " mencoba menghapus StockPenjualan: " + Environment.NewLine +
+                    serializedStock;
+                await _audit.LogAsync(LogTypes.LogInfo, "Form Tambah Stok Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
                 _db.StockPenjualan.Remove(stock);
                 await _db.SaveChangesAsync();
+                
+                auditMessage = "" + modelEmployee.EmployeeName + " berhasil menghapus StockPenjualan: " + Environment.NewLine +
+                    serializedStock;
+                await _audit.LogAsync(LogTypes.LogInfo, "Form Tambah Stok Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
             }
         }
         catch (DbUpdateException ex)
         {
+            string auditMessage = "Error DbUpdateException dalam menghapus stock penjualan: " + ex.Message + Environment.NewLine + ex.InnerException?.Message;
+            await _audit.LogAsync(LogTypes.LogError, "Form Tambah Stok Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
             Console.WriteLine($"Database Update Exception: {ex.InnerException?.Message}");
         }
         catch (Exception ex)
         {
+            string auditMessage = "Error Exception dalam menghapus stock penjualan: " + ex.Message + Environment.NewLine + ex.StackTrace;
+            await _audit.LogAsync(LogTypes.LogError, "Form Tambah Stok Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
             Snackbar.Add("Terjadi kesalahan pada system. Tolong di screenshot: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
         }
     }
@@ -288,6 +306,9 @@
         currentUserRole = await _user.GetUserRole(userName);
         modelUser = await _user.UserProfile(userName);
         modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Tambah Stok Penjualan.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Tambah Stok Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
         await LoadStockGudang();
     }

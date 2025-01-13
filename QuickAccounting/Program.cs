@@ -73,6 +73,7 @@ builder.Services.AddTransient<IDailyEggPickupService, DailyEggPickupService>();
 builder.Services.AddTransient<PdfService>();
 builder.Services.AddTransient<DataAccess>();
 builder.Services.AddTransient<DatabaseConnection>();
+builder.Services.AddTransient<IAuditLogService, AuditLogService>();
 
 var app = builder.Build();
 

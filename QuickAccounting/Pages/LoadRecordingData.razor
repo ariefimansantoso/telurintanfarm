@@ -1,0 +1,101 @@
+﻿@page "/app/loaddatadaily"
+@inject ApplicationDbContext _context
+@inject IAuditLogService _audit
+
+@using QuickAccounting.Data.Recording
+<PageTitle>Dashboard</PageTitle>
+<h1>Success</h1>
+@code{
+
+    protected async override void OnInitialized()
+    {
+        var now = DateTime.Now.Date;
+
+        string auditMessage = "Schedule Task LoadRecordingData is running: " + now.ToString("dd/MM/yyyy hh:mm");
+        await _audit.LogAsync(LogTypes.LogInfo, "LoadRecordingData", auditMessage, -99, "System");
+
+        InitiateDailyRecording(now, 5);
+    }
+
+    protected void InitiateDailyRecording(DateTime recordDate, int modifiedBy)
+    {        
+        string auditMessage = "Schedule Task LoadRecordingData is running: " + recordDate.ToString("dd/MM/yyyy hh:mm");
+        _audit.LogAsync(LogTypes.LogInfo, "LoadRecordingData", auditMessage, -99, "System");
+
+        var lastRecordDate = recordDate.AddDays(-1); // Get the previous day's record
+
+        // Get all cage numbers and their population from the previous day
+        var previousDayRecords = _context.DailyRecording
+            .Where(r => r.RecordDate == lastRecordDate)
+            .Select(r => new
+            {
+                r.CageNumber,
+                r.PopulationEnd,
+                r.StrainName,
+                r.FoodIntakePerHen,
+                r.FoodNeededTodayKg
+            })
+            .ToList();
+
+        foreach (var record in previousDayRecords)
+        {
+            var todayRecords = _context.DailyRecording
+                                .Where(r => r.RecordDate == recordDate && r.CageNumber == record.CageNumber).FirstOrDefault();
+
+            if (todayRecords != null)
+            {
+                todayRecords.FoodIntakePerHen = record.FoodIntakePerHen;
+            }
+            else
+            {
+                // Initialize the record for today using the previous day's population
+                var newRecord = new QuickAccounting.Data.Recording.DailyRecording
+                    {
+                        CageNumber = record.CageNumber,
+                        RecordDate = recordDate,
+                        StrainName = record.StrainName,
+                        PopulationStart = record.PopulationEnd,
+                        PopulationEnd = record.PopulationEnd, // Initial population is the same at the start and end of the day
+                        DeadHenCount = 0,
+                        UnproductiveHenCount = 0,
+                        SickHenCount = 0,
+                        MoveInHenCount = 0,
+                        MoveOutHenCount = 0,
+                        FoodIntakePerHen = record.FoodIntakePerHen,
+                        RemainingFoodKg = 0,
+                        FoodNeededTodayKg = record.PopulationEnd * record.FoodIntakePerHen,
+                        ActualFoodNeededKG = record.PopulationEnd * record.FoodIntakePerHen,
+                        PerfectEggCount = 0,
+                        PerfectEggKg = 0,
+                        BrokenEggCount = 0,
+                        BrokenEggKg = 0,
+                        TotalEggCount = 0,
+                        TotalEggKg = 0,
+                        ActualHenDay = 0,
+                        StandardHenDay = 0,
+                        DailyHenDayDifference = 0,
+                        ActualEggMassKg = 0,
+                        StandardEggMassKg = 0,
+                        EggMassDeviation = 0,
+                        ActualEggWeightG = 0,
+                        StandardEggWeightG = 0,
+                        EggWeightDeviation = 0,
+                        FeedConversionRatio = 0,
+                        HenAgeWeeks = 0, // Age should be updated later
+                        ModifiedBy = modifiedBy,
+                        ModifiedDate = DateTime.Now
+                    };
+
+                auditMessage = "Schedule Task LoadRecordingData is adding: " + _audit.SerializeObjectToString(newRecord);
+                _audit.LogAsync(LogTypes.LogInfo, "LoadRecordingData", auditMessage, -99, "System");
+
+                _context.DailyRecording.Add(newRecord);
+            }
+        }
+
+        _context.SaveChanges();
+
+        auditMessage = "Schedule Task LoadRecordingData is DONE";
+        _audit.LogAsync(LogTypes.LogInfo, "LoadRecordingData", auditMessage, -99, "System");
+    }
+}

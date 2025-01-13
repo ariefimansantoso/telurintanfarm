@@ -1,0 +1,223 @@
+﻿@page "/app/concentrateform"
+@using System.Security.Claims;
+@using QuickAccounting.Data.Recording;
+@using QuickAccounting.Helpers;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject ApplicationDbContext _context
+@attribute [Authorize]
+
+<PageTitle>Form Recording Concentrate</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Recording Konsentrat dan Strain</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (FormSubmitted == false)
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pilih Nomor Kandang</label>
+                            <div class="row">
+                                <div class="col-lg col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnCageChanged">
+                                        <option value="TIDAK">PILIH NO KANDANG</option>
+                                        @foreach (var kandangItem in CageList)
+                                        {
+                                            <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                        }
+
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Nama Strain Sebelumnya</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="OldStrainName" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Strain</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="StrainName" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Record Date</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" value="@RecordDate.ToString("dd/MM/yyyy")" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>                
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Konsentrat</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="ConcentrateType" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <br /> <br />
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <input type="button" @onclick="@(e => SaveFoodIntakeAsync())" class="btn btn-submit me-2" value="Simpan Konsentrat Data" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Data Konsentrat telah tersimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+    private DateTime RecordDate { get; set; }
+    private decimal HenAgeWeek { get; set; }
+    private string ConcentrateType { get; set; }
+    private int PopulasiAwal { get; set; }
+    private string StrainName { get; set; }
+    public int HenAgeDays { get; set; }
+    private bool FormSubmitted { get; set; }
+    string SelectedNoKandang = "";
+    string OldStrainName = "";
+    DateTime TodaysDate;
+    private List<Kandang> CageList = new List<Kandang>(); // Placeholder for cage numbers.
+    private DailyRecording CurrentRecording;
+    string strMenu = "Form Recording Food Intake";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+
+    private void SetTodaysDate()
+    {
+        var today = DateTime.Now;
+        TodaysDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string strName = currentUser.FindFirst(ClaimTypes.Role).Value;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        if (strShow.ShowAction == true)
+        {           
+            SetTodaysDate();
+            ConcentrateType = "";
+
+            // Fetch cage numbers, can be populated dynamically from a service or DB
+            CageList = await _kandang.GetAll();
+        }
+        else
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
+            RecordDate = CurrentRecording.RecordDate;
+            StrainName = CurrentRecording.StrainName;
+            OldStrainName = CurrentRecording.StrainName;
+            PopulasiAwal = CurrentRecording.PopulationStart;
+            ConcentrateType = CurrentRecording.ConcentrateType;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveFoodIntakeAsync()
+    {
+        if (SelectedNoKandang == "")
+        {
+            Snackbar.Add("Mohon pilih No Kandang terlebih dahulu.", Severity.Error);
+            return;
+        }
+
+        SelectedNoKandang = Helper.ConvertCageNumber(SelectedNoKandang);
+
+        var record = _context.DailyRecording
+            .FirstOrDefault(r => r.CageNumber == SelectedNoKandang && r.RecordDate == TodaysDate && r.StrainName == OldStrainName);
+
+        if (record != null)
+        {
+            record.ConcentrateType = ConcentrateType;
+            record.StrainName = StrainName;
+            record.ModifiedBy = modelEmployee.EmployeeId;
+            record.ModifiedDate = DateTime.Now;
+
+            _context.DailyRecording.Update(record);
+            await _context.SaveChangesAsync();
+
+            Snackbar.Add("Feed Intake data telah tersimpan.", Severity.Success);
+            FormSubmitted = true;
+            StateHasChanged();
+        }        
+        else
+        {
+            Snackbar.Add("Recording tidak ditemukan untuk kandang yang dipilih.", Severity.Error);
+        }
+    }
+}

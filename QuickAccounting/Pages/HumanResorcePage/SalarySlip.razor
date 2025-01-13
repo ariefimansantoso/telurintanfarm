@@ -196,7 +196,23 @@
         listPenalty = listPenalty.Where(x => x.IsPenalty == true).ToList();
 
         decimal lembur = modelEmployee.Lembur;
+        var totalHariLembur = absensiEmployeePerPeriode
+                                        .Where(record => record.Date.TimeOfDay > new TimeSpan(16, 15, 0))
+                                        .ToList();
+        
+        var matchingRecords = totalHariLembur
+            .Where(record => perijinanKaryawan
+            .Where(x => x.SubmittedFor.Equals("LEMBUR"))
+            .Any(perijinan => perijinan.ForDate.Date == record.Date.Date))
+            .ToList();
+        var totalMenitLembur = matchingRecords
+            .Where(record => record.Date.TimeOfDay > new TimeSpan(16, 15, 0)) // Filter records after 16:15
+            .Select(record => (int)(new TimeSpan(23, 59, 0) - record.Date.TimeOfDay).TotalMinutes) // Get minutes difference
+            .Sum();
 
+        decimal rpLembur = (modelEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur;
+
+        int hariDinasLuar = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("DINAS")).Count();
         if (PeriodDaysCount > (countMasuk + alpha + libur + ijin + sakit))
         {
             alpha = PeriodDaysCount - (countMasuk + alpha + libur + ijin + sakit);
@@ -226,12 +242,20 @@
             }
         }
 
-        if (libur <= 3 && ijin == 0 && alpha == 0)
+        // if (libur <= 3 && ijin == 0 && alpha == 0)
+        // {
+        //     premi = totalGaji * (decimal)0.15;
+        //     totalGaji = totalGaji + premi;            
+        // }
+        if (countMasuk <= 27)
         {
-            premi = totalGaji * (decimal)0.15;
-            totalGaji = totalGaji + premi;            
+            totalGaji = (modelEmployee.DailyWage * ((decimal)1 + (decimal)0.15) * (decimal)countMasuk);
         }
-
+        else
+        {
+            totalGaji = (modelEmployee.DailyWage * ((decimal)1 + (decimal)0.15) * (decimal)27) + (modelEmployee.DailyWage * ((decimal)countMasuk - (decimal)27));
+        }
+        premi = totalGaji - gajiDasar;
         totalGaji = totalGaji + tambahanGaji + tunjangan;
         var totalPotongan = cicilan + potonganNonCicilan + modelEmployee.BPJS_KES + modelEmployee.BPJS_TK;
 
@@ -316,6 +340,12 @@
                                             <th>Gaji Harian:</th>
                                             <td>{25}</td>
                                         </tr>
+                                        <tr>
+                                            <th>Dinas Luar:</th>
+                                            <td>{28}</td>
+                                            <th></th>
+                                            <td></td>
+                                        </tr>
                                     </table>
                                 </div>
 
@@ -342,7 +372,11 @@
                                         <tr>
                                             <td>Tunjangan</td>
                                             <td>{12}</td>
-                                        </tr>                                       
+                                        </tr>    
+                                        <tr>
+                                            <td>Lembur</td>
+                                            <td>{29}</td>
+                                        </tr>
                                         <tr class='total'>
                                             <td>Total Pendapatan</td>
                                             <td>{13}</td>
@@ -400,7 +434,7 @@
 
                                 "Jenis Potongan", string.Format("{0:n0}", cicilan), string.Format("{0:n0}", potonganNonCicilan), string.Format("{0:n0}", totalPotongan),
                                 string.Format("{0:n0}", gajiBersih), "none",
-                                countMasuk, libur, ijin, sakit, alpha, string.Format("{0:n0}", modelEmployee.DailyWage), ijinLembur, setengahHari);
+                                countMasuk, libur, ijin, sakit, alpha, string.Format("{0:n0}", modelEmployee.DailyWage), setengahHari, ijinLembur, hariDinasLuar, string.Format("{0:n0}", rpLembur));
         
         var fileNamePdf = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
         

@@ -23,7 +23,7 @@
     <!-- /product list -->
     <div class="card">
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive table-scrollable">
                 <MudTable Items="@listModel" Dense="@dense" Hover="@hover" Filter="new Func<Employee,bool>(FilterFunc1)">
                     <ToolBarContent>
                         <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
@@ -33,12 +33,12 @@
                         <MudTh>Nama</MudTh>
                         <MudTh>NIK</MudTh>
                         <MudTh>Gaji Harian</MudTh>
-                        <MudTh>Tunjangan</MudTh>                        
+                        @* <MudTh>Tunjangan</MudTh>*@                     
                         <MudTh>Rekening</MudTh>
                         <MudTh>No BPJS Kes</MudTh>
                         <MudTh>No BPJS TK</MudTh>
-                        <MudTh>RP BPJS Kes</MudTh>
-                        <MudTh>RP BPJS Kes</MudTh>
+                        @* <MudTh>RP BPJS Kes</MudTh>
+                        <MudTh>RP BPJS Kes</MudTh> *@
                         <MudTh>Aktif/Masih Kerja</MudTh>
                         <MudTh></MudTh>
                     </HeaderContent>
@@ -47,14 +47,17 @@
                         <MudTd DataLabel="Nama">@context.EmployeeName</MudTd>
                         <MudTd DataLabel="NIK">@context.NIK</MudTd>
                         <MudTd DataLabel="GajiHarian">@string.Format("{0:n0}", context.DailyWage)</MudTd>
-                        <MudTd DataLabel="Tunjangan">@string.Format("{0:n0}", context.Tunjangan)</MudTd>
+                        @* <MudTd DataLabel="Tunjangan">@string.Format("{0:n0}", context.Tunjangan)</MudTd> *@
                         <MudTd DataLabel="Rekening">@context.BankAccount</MudTd>
                         <MudTd DataLabel="BPJSKes">@context.ID_BPJS_KES</MudTd>
                         <MudTd DataLabel="BPJSTK">@context.ID_BPJS_TK</MudTd>
-                        <MudTd DataLabel="RPBPJSKes">@string.Format("{0:n0}", context.BPJS_KES)</MudTd>
-                        <MudTd DataLabel="RPBPJSTK">@string.Format("{0:n0}", context.BPJS_TK)</MudTd>
+                        @* <MudTd DataLabel="RPBPJSKes">@string.Format("{0:n0}", context.BPJS_KES)</MudTd>
+                        <MudTd DataLabel="RPBPJSTK">@string.Format("{0:n0}", context.BPJS_TK)</MudTd> *@
                         <MudTd DataLabel="Active">@(context.isActive ? "Ya" : "Tidak")</MudTd>
                         <MudTd DataLabel="">
+                                <a class="me-3" href="/app/employeeeditsop/@context.EmployeeId">
+                                    SOP dan JobDesc
+                                </a>
                             <a class="me-3" href="/app/employeeedit/@context.EmployeeId">
                                 <img src="assets/img/icons/edit.svg" alt="img">
                             </a>

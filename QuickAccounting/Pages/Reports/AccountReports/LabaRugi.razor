@@ -6,16 +6,20 @@
 @inject IEmployee _employee
 @using System.Security.Claims
 @using QuickAccounting.Constants;
+@using QuickAccounting.Components
 @using System.Globalization;
 @using System.Text;
 @inject IWebHostEnvironment _hostingEnvironment
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @inject IAccountReport _account
-@inject PdfService pdfService;
+@inject PdfService pdfService
+@inject ApplicationDbContext _db
 @attribute [Authorize]
 
 <PageTitle>Admin - Laba Rugi</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
 <link rel='stylesheet' href='https://telurintanfarm.com/css/slipgaji.css' />
 <div class="content">
     <div class="page-header">
@@ -37,6 +41,17 @@
                                     @foreach (var month in months)
                                     {
                                         <option value="@month.Id">@month.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <br />
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnYearChange">                                    
+                                    @foreach (var fy in FinancialYears)
+                                    {
+                                        <option value="@fy.FiscalYear">@fy.FiscalYear</option>
                                     }
                                 </select>
                             </div>
@@ -197,6 +212,8 @@
     string HtmlContentPdf = "";
     private bool Submitted = false;
     private bool NonOwnerData = false;
+    bool isProcessing = false;
+    List<FinancialYear> FinancialYears = new List<FinancialYear>();
 
     private async Task<bool> CheckPermission()
     {
@@ -232,7 +249,10 @@
 
         var currentDate = DateTime.Now;
         SelectedMonth = currentDate.Month;
-        CurrentYear = currentDate.Year;
+
+        FinancialYears = _db.FinancialYear.ToList();
+
+        CurrentYear = Convert.ToInt32(FinancialYears[0].FiscalYear);
 
         InitMonthsDropdown();
 
@@ -242,6 +262,13 @@
     private void OnMonthChange(ChangeEventArgs e)
     {
         SelectedMonth = Convert.ToInt32(e.Value);
+        Submitted = false;
+        NonOwnerData = false;
+    }
+
+    private void OnYearChange(ChangeEventArgs e)
+    {
+        CurrentYear = Convert.ToInt32(e.Value);
         Submitted = false;
         NonOwnerData = false;
     }
@@ -257,6 +284,8 @@
 
     private async Task Submit()
     {
+        isProcessing = true;
+
         ClearData(); 
 
         var dateFrom = new DateTime(CurrentYear, SelectedMonth, 1, 0, 0, 0);
@@ -275,6 +304,8 @@
 
         Submitted = true;
         NonOwnerData = false;
+
+        isProcessing = false;
     }
 
     private void ClearData()

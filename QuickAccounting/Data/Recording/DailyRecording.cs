@@ -44,4 +44,30 @@ namespace QuickAccounting.Data.Recording
 		public DateTime ModifiedDate { get; set; }                    // Date and time of the last modification
 	}
 
+	public class DailyRecordingVOV
+	{
+		public long ID { get; set; }
+
+		public string CageNumber { get; set; } = string.Empty;
+
+		public string StrainName { get; set; } = string.Empty;
+
+		public DateTime RecordDate { get; set; }
+
+		public decimal HenAgeWeeks { get; set; }
+
+		public decimal HenAgeDays { get; set; }
+
+		public int VOVProductID { get; set; }
+
+		public string VOVProductName { get; set; } = string.Empty;
+
+		public decimal Usage { get; set; }
+
+		public int Day { get; set; }
+
+		public DateTime DateCreated { get; set; }
+
+		public int CreatedBy { get; set; }
+	}
 }

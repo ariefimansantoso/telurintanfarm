@@ -18,11 +18,25 @@
 @inject IAttendance _attendance
 @inject IDailyRecordingService _recording
 @inject ApplicationDbContext _db
+@inject IAuditLogService _audit
 
 @using QuickAccounting.Components
 @using QuickAccounting.Data.Recording
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
+<style type="text/css">
+@@media (min-width: 992px) {
+    .cust-col-20 {
+        flex: 0 0 auto;
+        width: 20% !important;
+    }
+
+	.cust-col-14 {
+        flex: 0 0 auto;
+			width: 14.28571428571429% !important;
+    }
+}
+</style>
 <div class="content">
 	<div class="row">
 			<div class="col-12">
@@ -36,17 +50,20 @@
 				</div>
 			</div>
 	</div>
-	<div class="row">
-		<div class="col-12">
-			<div class="profile-container">
-				<img src="@CurrentPhotoUrl" alt="Profile Image" class="profile-img">
-				<div class="profile-name">
-					@modelEmployee.EmployeeName
-					<h2>@currentUserRole</h2>
+	@if (modelEmployee.EmployeeId != 5)
+	{
+		<div class="row">
+			<div class="col-12">
+				<div class="profile-container">
+					<img src="@CurrentPhotoUrl" alt="Profile Image" class="profile-img">
+					<div class="profile-name">
+						@modelEmployee.EmployeeName
+						<h2>@currentUserRole</h2>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	}
 	@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
 	{
 		
@@ -87,52 +104,153 @@
 
 		<div class="row">
 
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="cust-col-20 col-sm-6 col-12">
 				<div class="dash-widget">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockTelurUtuh KG</span></h5>
+						<h5><span class="counters">@string.Format("{0:n0}", StockTelurUtuh) KG</span></h5>
 						<h6>Utuh</h6>
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="cust-col-20 col-sm-6 col-12">
 				<div class="dash-widget dash1">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockTelurPutih KG</span></h5>
+						<h5><span class="counters">@string.Format("{0:n0}", StockTelurPutih) KG</span></h5>
 						<h6>Putih</h6>
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="cust-col-20 col-sm-6 col-12">
 				<div class="dash-widget dash2">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockTelurBentes KG</span></h5>
+						<h5><span class="counters">@string.Format("{0:n0}", StockTelurBentes) KG</span></h5>
 						<h6>Bentes</h6>
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="cust-col-20 col-sm-6 col-12">
 				<div class="dash-widget dash3">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@(StockTelurParah + StockTelurParahSekali) KG</span></h5>
-						<h6>Parah dan Parah Sekali</h6>
+						<h5><span class="counters">@string.Format("{0:n0}", StockTelurParah) KG</span></h5>
+						<h6>Parah</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-20 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", StockTelurParahSekali) KG</span></h5>
+						<h6>Parah Sekali</h6>
 					</div>
 				</div>
 			</div>
 		</div>
 
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Retur Telur Hari Ini</h3>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			
+			<div class="cust-col-14 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", ReturPutih) KG</span></h5>
+						<h6>Putih</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-14 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", ReturBentes) KG</span></h5>
+						<h6>Bentes</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-14 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", ReturRusak) KG</span></h5>
+						<h6>Rusak</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-14 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", ReturParah) KG</span></h5>
+						<h6>Parah</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-14 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", ReturParahSekali) KG</span></h5>
+						<h6>Parah Sekali</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-14 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", Susut) KG</span></h5>
+						<h6>Susut</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-14 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", TotalReturan) KG</span></h5>
+						<h6>Total Retur dan Susut</h6>
+					</div>
+				</div>
+			</div>
+		</div>
 		<!-- STOCK-->
 
 		<!-- Sales RP -->
@@ -258,7 +376,7 @@
 
 		<div class="row">
 
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
@@ -295,7 +413,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget dash1">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
@@ -306,7 +424,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget dash2">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
@@ -317,14 +435,25 @@
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget dash3">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",(TelurParah + TelurParahSekali)) KG</span></h5>
-						<h6>Parah dan Parah Sekali</h6>
+						<h5><span class="counters">@string.Format("{0:n0}", TelurParah) KG</span></h5>
+						<h6>Parah</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", TelurParahSekali) KG</span></h5>
+						<h6>Parah Sekali</h6>
 					</div>
 				</div>
 			</div>
@@ -343,7 +472,7 @@
 
 		<div class="row">
 
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
@@ -354,7 +483,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget dash1">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
@@ -365,7 +494,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget dash2">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
@@ -376,14 +505,25 @@
 					</div>
 				</div>
 			</div>
-			<div class="col-lg-3 col-sm-6 col-12">
+			<div class="col-lg-2 col-sm-6 col-12">
 				<div class="dash-widget dash3">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",(TotalTelurParah + TotalTelurParahSekali)) KG</span></h5>
-						<h6>Parah dan Parah Sekali</h6>
+						<h5><span class="counters">@string.Format("{0:n0}", TotalTelurParah) KG</span></h5>
+						<h6>Parah</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@string.Format("{0:n0}", TotalTelurParahSekali) KG</span></h5>
+						<h6>Parah Sekali</h6>
 					</div>
 				</div>
 			</div>
@@ -441,7 +581,7 @@
 						<h4 class="card-title mb-0">Saldo Kas dan Bank</h4>
 					</div>
 					<div class="card-body">
-						<div class="table-responsive">
+						<div class="table-responsive table-scrollable">
 							<table class="table">
 								<thead>
 									<tr>
@@ -774,6 +914,7 @@
 						<a href="/app/recordattendance" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Absensi Harian</a>
 						<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
 						<a href="/app/attendancelist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Abensi Harian dan Gaji</a>
+						<a href="/app/salaryslip" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Slip Gaji</a>
 						<a href="/app/checklistegg" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Ambil Telur</a>
 						<a href="/app/eggverification" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Timbang Telur</a>
 
@@ -1007,6 +1148,14 @@
 	decimal StockTelurParah;
 	decimal StockTelurParahSekali;
 
+	decimal ReturPutih = 0;
+	decimal ReturBentes = 0;
+	decimal ReturRusak = 0;
+	decimal ReturParah = 0;
+	decimal ReturParahSekali = 0;
+	decimal Susut = 0;
+	decimal TotalReturan = 0;
+
 	DateTime dtFromDate;
 	DateTime dtToDate;
 
@@ -1153,7 +1302,7 @@
 			StockTelurUtuh = stockTelurUtuh.StockKG;
 		}
 
-		var startingStockDate = new DateTime(2024, 12, 8, 0, 0, 0);
+		var startingStockDate = new DateTime(2025, 1, 11, 0, 0, 0);
 
 		// bentes
 		var stockBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
@@ -1183,6 +1332,40 @@
 		StockTelurPutih = stockPutih;
 		StockTelurParah = stockPecah;
 		StockTelurParahSekali = stockPecahSekali;
+
+		ReturBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+		ReturPutih = _db.StockPosting.Where(x => x.ProductId == 7 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+		// pecah
+		ReturParah = _db.StockPosting.Where(x => x.ProductId == 17 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+		// pecah sekali
+		ReturParahSekali = _db.StockPosting.Where(x => x.ProductId == 19 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+		ReturRusak = _db.StockPosting.Where(x => x.ProductId == 106 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();	
+
+		Susut = _db.StockPosting.Where(x => x.ProductId == 124 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+		TotalReturan = ReturBentes + ReturPutih + ReturParah + ReturParahSekali + ReturRusak + Susut;
 	}
 
 	protected async override void OnInitialized()
@@ -1275,6 +1458,9 @@
 		CurrentPhotoUrl = "img/user.png";
 		await LoadProfilePhoto();
 		ChartDataLoaded = true;
+
+		string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Dashboard.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Dashboard", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
 		StateHasChanged();
 	}

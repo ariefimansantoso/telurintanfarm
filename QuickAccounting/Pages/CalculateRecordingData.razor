@@ -1,0 +1,68 @@
+﻿@page "/app/calculatedatadaily"
+@inject ApplicationDbContext _context
+@inject IAuditLogService _audit
+
+@using QuickAccounting.Data.Recording
+<PageTitle>Dashboard</PageTitle>
+<h1>Success</h1>
+@code{
+
+    protected async override void OnInitialized()
+    {
+        var now = DateTime.Now.Date;
+
+        string auditMessage = "Schedule Task CalculateRecordingData is running: " + now.ToString("dd/MM/yyyy hh:mm");
+        await _audit.LogAsync(LogTypes.LogInfo, "CalculateRecordingData", auditMessage, -99, "System");
+
+        CalculateDailyRecording(now, 5);
+    }
+
+    protected void CalculateDailyRecording(DateTime recordDate, int modifiedBy)
+    {                
+        // Get all cage numbers and their population from the previous day
+        var todayRecords = _context.DailyRecording
+            .Where(r => r.RecordDate.Date == recordDate.Date)
+            .ToList();
+
+        string auditMessage = "Schedule Task CalculateRecordingData is running: " + recordDate.ToString("dd/MM/yyyy hh:mm");
+        _audit.LogAsync(LogTypes.LogInfo, "CalculateRecordingData", auditMessage, -99, "System");
+
+        foreach (var record in todayRecords)
+        {
+            record.FoodNeededTodayKg = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
+            record.ActualFoodNeededKG = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
+
+            if (record.PopulationStart > 0 && record.TotalEggCount > 0)
+            {
+                record.ActualHenDay = ((decimal)record.TotalEggCount / (decimal)record.PopulationStart) * (decimal)100;
+            }
+
+            if (record.TotalEggKg > 0 && record.FoodNeededTodayKg > 0)
+            {
+                record.FeedConversionRatio = record.FoodNeededTodayKg / record.TotalEggKg;
+            }
+
+            if (record.PopulationStart > 0)
+            {
+                record.ActualEggMassKg = record.TotalEggKg / (decimal)record.PopulationStart * (decimal)1000;
+            }
+
+            if (record.TotalEggCount > 0) {
+                record.ActualEggWeightG = (record.TotalEggKg / record.TotalEggCount) * 1000;
+            }
+
+            record.ModifiedBy = modifiedBy;
+            record.ModifiedDate = DateTime.Now;
+
+            auditMessage = "Schedule Task CalculateRecordingData is calculating: " + _audit.SerializeObjectToString(record);
+            _audit.LogAsync(LogTypes.LogInfo, "CalculateRecordingData", auditMessage, -99, "System");
+
+            _context.DailyRecording.Update(record);
+
+            auditMessage = "Schedule Task CalculateRecordingData is DONE: " + _audit.SerializeObjectToString(record);
+            _audit.LogAsync(LogTypes.LogInfo, "CalculateRecordingData", auditMessage, -99, "System");
+        }
+
+        _context.SaveChanges();
+    }
+}

@@ -172,7 +172,7 @@ namespace QuickAccounting.Repository.Repository
                 stockposting.WarehouseId = 1;
                 stockposting.StockCalculate = "OpeningStock";
                 stockposting.CompanyId = 1;
-                stockposting.FinancialYearId = 1;
+                stockposting.FinancialYearId = 2;
                 stockposting.AddedDate = DateTime.UtcNow;
                 _context.StockPosting.Add(stockposting);
                 await _context.SaveChangesAsync();

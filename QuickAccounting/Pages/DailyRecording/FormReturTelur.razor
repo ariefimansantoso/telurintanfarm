@@ -1,0 +1,245 @@
+﻿@page "/app/eggretur"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@using Newtonsoft.Json
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Form Pengembalian Telur</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding: 2px !important;
+        color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important;
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Pengembalian Telur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Jenis Telur</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnJenisTelurChanged">
+                                    @* <option value="UTUH">UTUH</option> *@
+                                    <option value="PUTIH">PUTIH</option>
+                                    <option value="BENTES">BENTES</option>
+                                    <option value="PARAH">PARAH</option>
+                                    <option value="PS">PARAH SEKALI</option>
+                                    <option value="RUSAK">RUSAK</option>
+                                    <option value="SUSUT">SUSUT</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@Kilogram" @onchange="OnKilogramChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;">Simpan</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>    
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Form Pengembalian Telur";
+
+
+    string JenisTelurSelected = "PUTIH";
+    decimal Kilogram = 0;    
+    int Butir = 0;
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+
+    private List<StockPenjualan> StockPenjualan = new List<StockPenjualan>();
+    int SelectedItemId;
+    public bool DeleteDialogOpen { get; set; }
+    bool isProcessing;
+    bool IsValid = true;
+
+    private async Task OnKilogramChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            Kilogram = v;            
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task Save()   
+    {
+        string auditMessage = "Mencoba menyimpan pengembalian telur.";
+
+        try
+        {
+            auditMessage = "Mencoba mengurangi stok telur jenis UTUH dengan jumlah: " + Kilogram + " karena ada retur.";
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            StockTelurUtuh stockTelurUtuh = await _db.StockTelurUtuh.FirstOrDefaultAsync(x => x.ID == 1);            
+            stockTelurUtuh.StockKG = stockTelurUtuh.StockKG - Kilogram;
+            stockTelurUtuh.ModifiedBy = modelEmployee.EmployeeId;
+            stockTelurUtuh.ModifiedOn = DateTime.Now;
+
+            auditMessage = "Mencoba menyimpan pengembalian telur jenis " + JenisTelurSelected + " dengan jumlah: " + Kilogram;
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            // kalau tipe telur tidak UTUH, maka langsung masukkan ke Stock Posting.
+            int productId = 0;
+            switch (JenisTelurSelected)
+            {
+                case "BENTES":
+                    productId = 16;
+                    break;
+                case "PUTIH":
+                    productId = 7;
+                    break;
+                case "PARAH":
+                    productId = 17;
+                    break;
+                case "PS":
+                    productId = 19;
+                    break;
+                case "RUSAK":
+                    productId = 106;
+                    break;
+                case "SUSUT":
+                    productId = 124;
+                    break;
+
+            }
+            StockPosting stockposting = new StockPosting();
+            stockposting.Date = DateTime.Now;
+            stockposting.ProductId = productId;
+            stockposting.InwardQty = Kilogram;
+            stockposting.OutwardQty = 0;
+            stockposting.UnitId = 0;
+            stockposting.BatchId = 0;
+            stockposting.Rate = 0;
+            stockposting.DetailsId = 0;
+            stockposting.InvoiceNo = productId.ToString();
+            stockposting.VoucherNo = productId.ToString();
+            stockposting.VoucherTypeId = 0;
+            stockposting.AgainstInvoiceNo = String.Empty;
+            stockposting.AgainstVoucherNo = String.Empty;
+            stockposting.AgainstVoucherTypeId = 0;
+            stockposting.WarehouseId = 1;
+            stockposting.StockCalculate = "Retur";
+            stockposting.CompanyId = 1;
+            stockposting.FinancialYearId = 2;
+            stockposting.AddedDate = DateTime.Now;
+            _db.StockPosting.Add(stockposting);
+
+
+            // Save changes to the database
+            await _db.SaveChangesAsync();
+
+            auditMessage = "Pengembalian telur jenis " + JenisTelurSelected + " dengan jumlah: " + Kilogram + " BERHASIL";
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            Snackbar.Add("Berhasil menyimpan", Severity.Success);
+            Kilogram = 0;
+            JenisTelurSelected = "UTUH";
+        }
+        catch (DbUpdateException dex)
+        {
+            auditMessage = "Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message; 
+            await _audit.LogAsync(LogTypes.LogError, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            auditMessage = "Error e: " + ex.Message + Environment.NewLine + ex.StackTrace;
+            await _audit.LogAsync(LogTypes.LogError, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task OnJenisTelurChanged(ChangeEventArgs e)
+    {
+        JenisTelurSelected = e.Value.ToString();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Pengembalian Telur.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        JenisTelurSelected = "PUTIH";
+    }
+}    

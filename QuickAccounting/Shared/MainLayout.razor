@@ -124,6 +124,9 @@
 													<li><a href="/app/returscan">Scan Retur</a></li>
 													<li><a href="/app/addsalesstock">Atur Stok Jualan</a></li>
 													<li><a href="/app/checkliststocksales">Terima Stock Jualan</a></li>
+													<li><a href="/app/stockcheck">Cek Stok Produksi</a></li>
+													<li><a href="/app/eggretur">Form Pengembalian Telur</a></li>
+													<li><a href="/app/reportstock">Laporan Stok Harian</a></li>
 												</ul>
 											</li>
 										}
@@ -160,8 +163,7 @@
 											</li>
 										}
 										@if(currentUserRole == "Supervisor")
-										{
-											
+										{											
 											<li class="submenu">
 												<a href="javascript:void(0);"><img src="assets/img/icons/users.svg" alt="img"><span>Absensi</span> <span class="menu-arrow"></span></a>
 												<ul>
@@ -188,6 +190,9 @@
 													<li><a href="/app/eggverification">Timbang Telur</a></li>
 													<li><a href="/app/addsalesstock">Atur Stok Jualan</a></li>
 													<li><a href="/app/checkliststocksales">Terima Stock Jualan</a></li>
+													<li><a href="/app/stockcheck">Cek Stok Produksi</a></li>
+													<li><a href="/app/eggretur">Form Pengembalian Telur</a></li>
+													<li><a href="/app/reportstock">Laporan Stok Harian</a></li>
 												</ul>
 											</li>
 										}
@@ -213,6 +218,7 @@
 													<li><a href="/app/eggproduction">Produksi Telur</a></li>
 													<li><a href="javascript:void(0);">Informasi Hen Day</a></li>
 													<li><a href="/app/recordingreportscage">Laporan Recording</a></li>
+													<li><a href="/app/stockcheck">Cek Stok Produksi</a></li>
 												</ul>
 											</li>
 										}
@@ -224,7 +230,24 @@
 													<li><a href="/app/checklistegg">Ambil Telur</a></li>
 													<li><a href="/app/eggverification">Timbang Telur</a></li>
 													<li><a href="/app/addsalesstock">Atur Stok Jualan</a></li>
-
+													<li><a href="/app/stockcheck">Cek Stok Produksi</a></li>
+													<li><a href="/app/reportstock">Laporan Stok Harian</a></li>
+												</ul>
+											</li>
+										}
+										@if (currentUserRole == "Yes Man")
+										{
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Recording</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/henpopulation">Populasi</a></li>
+													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
+													<li><a href="/app/concentrateform">Konsentrat Per Kandang</a></li>
+													<li><a href="/app/eggproduction">Produksi Telur</a></li>
+													<li><a href="/app/concentrateform">Ganti Konsentrat dan Strain</a></li>
+													<li><a href="/app/recordingvov">Recording VOV</a></li>
+													@* <li><a href="javascript:void(0);">Informasi Hen Day</a></li> *@
+													<li><a href="/app/recordingreports">Laporan Recording</a></li>
 												</ul>
 											</li>
 										}
@@ -235,8 +258,10 @@
 												<ul>
 													<li><a href="/app/henpopulation">Populasi</a></li>
 													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
+													<li><a href="/app/concentrateform">Konsentrat Per Kandang</a></li>
 													<li><a href="/app/eggproduction">Produksi Telur</a></li>
-													<li><a href="javascript:void(0);">Informasi Hen Day</a></li>
+													<li><a href="/app/concentrateform">Ganti Konsentrat dan Strain</a></li>
+													<li><a href="/app/recordingvov">Recording VOV</a></li>
 													<li><a href="/app/recordingreports">Laporan Recording</a></li>
 												</ul>
 											</li>
@@ -256,6 +281,12 @@
 												<li><a href="/app/budgetvariance">Budget Variance</a></li>
 											</ul>
 										</li>
+											<li class="">
+												<a href="/app/mixingpakan"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Mixing Pakan</span></a>
+											</li>
+										}
+										@if(currentUserRole == "Yes Man")
+										{
 											<li class="">
 												<a href="/app/mixingpakan"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Mixing Pakan</span></a>
 											</li>

@@ -37,14 +37,19 @@
 				</div>
 			</div>
 						
-			<div class="col-lg-1 col-sm-6 col-12">
+			<div class="col-lg-1 col-sm-12 col-12">
 				<div class="form-group" style="margin-top:20px;">
                         <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
                     </div>
 			</div>
-                <div class="col-lg-1 col-sm-6 col-12">
+                <div class="col-lg-1 col-sm-12 col-12">
                     <div class="form-group" style="margin-top:20px;">
-                        <button class="btn btn-primary" @onclick="PrintContent">Print</button>
+                        <button class="btn btn-primary" @onclick="PrintContent">Print Distribusi Pakan</button>
+                    </div>
+                </div>
+                <div class="col-lg-1 col-sm-12 col-12">
+                    <div class="form-group" style="margin-top:20px;">
+                        <button class="btn btn-primary" @onclick="PrintMixing">Print Mixing Pakan</button>
                     </div>
                 </div>
 		</div>
@@ -56,22 +61,25 @@
             <h3>Daftar Kebutuhan Pakan Per Kandang</h3>
             @if(GroupByConcentrate != null && GroupByConcentrate.Count > 0)
             {
-                <div class="table-responsive">
+                <div class="table-responsive table-scrollable" id="printKandang">
                     <table class="table table-striped" style="width: 700px !important; margin: 0px auto;">
                         <tbody>                            
                             @foreach (var record in GroupByConcentrate)
                             {
                                 <tr>
                                     <td colspan="2">@record.Key</td>
+                                    <td colspan="2">Distribusi</td>
                                 </tr>
-                                
+
                                 decimal totalPakan = 0;
-                                
-                                @foreach(var item in record)
+
+                                @foreach (var item in record)
                                 {
                                     <tr>
                                         <td>@item.CageNumber</td>
-                                        <td>@item.FoodNeededTodayKg</td>                                                                               
+                                        <td>@item.FoodNeededTodayKg</td>
+                                        <td>@(((decimal)30 / (decimal)100) * item.FoodNeededTodayKg)</td>
+                                        <td>@(((decimal)70 / (decimal)100) * item.FoodNeededTodayKg)</td>
                                     </tr>
                                     totalPakan = totalPakan + item.FoodNeededTodayKg;
                                 }
@@ -84,10 +92,15 @@
                     </table>
                 </div>
             }
-            
+                        
+        </div>
+    </div>
+    <div class="card" id="print-section">
+        <div class="card-body">
+            <h3>Daftar Mixing</h3>
             @if (MixingPakan.Count > 0)
             {
-                <div class="table-responsive" style="margin-top:30px !important;">
+                <div class="table-responsive table-scrollable" id="printMixing" style="margin-top:30px !important;">
                     <table class="table table-striped" style="width: 700px !important; margin: 0px auto;">
                         <tbody>
                             @foreach (var record in MixingPakan)
@@ -102,7 +115,7 @@
                                     <td>Katul</td>
                                     <td>Centrat</td>
                                 </tr>
-                                
+
                                 @foreach (var item in record.Value)
                                 {
                                     <tr>
@@ -127,7 +140,6 @@
             }
         </div>
     </div>
-
 </div>
 
 @code {
@@ -149,14 +161,22 @@
 
     private async Task PrintContent()
     {
-        await JSRuntime.InvokeVoidAsync("printPartOfPage", "print-section");
+        await JSRuntime.InvokeVoidAsync("printPartOfPage", "printKandang");
+    }
+
+    private async Task PrintMixing()
+    {
+        await JSRuntime.InvokeVoidAsync("printPartOfPage", "printMixing");
     }
 
     private async Task LoadRecording()
     {
         isProcessing = true;
+        GroupByConcentrate = new List<IGrouping<string, DailyRecording>>();
+        CentratTotalPakan = new Dictionary<string, decimal>();
+        MixingPakan = new Dictionary<string, List<Mixing>>();
 
-        var recording = await _db.DailyRecording.OrderBy(x => Convert.ToInt32(x.CageNumber)).Where(x => x.RecordDate == new DateTime(2024, 10, 5)).ToListAsync();
+        var recording = await _db.DailyRecording.OrderBy(x => Convert.ToInt32(x.CageNumber)).Where(x => x.RecordDate == dtFromDate.Date && !string.IsNullOrEmpty(x.ConcentrateType)).ToListAsync();
         if(recording.Count > 0)
         {
             GroupByConcentrate = recording.GroupBy(x => x.ConcentrateType).ToList();
@@ -224,6 +244,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        dtFromDate = DateTime.Now;
+
         await LoadRecording();
     }
 

@@ -1,0 +1,285 @@
+﻿@page "/app/reportstock"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Laporan Stok</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h2>Laporan Stok Harian</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">           
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDateFrom" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDateTo" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        <input type="button" class="btn btn-success" @onclick="(e => ShowData())" value="Tampilkan Data" />
+                    </div>
+                </div>
+            </div>
+
+            @if (stocks.Count > 0)
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: left !important;">                            
+                            <div class="table-responsive table-scrollable">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align:left;">Tanggal</th>
+                                            <th style="text-align:left;">Nett Kandang</th>
+                                            <th style="text-align:left;">Bruto Kandang</th>
+                                            <th style="text-align:left;">Bruto Gudang Picking</th>
+                                            <th style="text-align:left;">Utuh</th>
+                                            <th style="text-align:left;">Putih</th>
+                                            <th style="text-align:left;">Bentes</th>
+                                            <th style="text-align:left;">Rusak</th>
+                                            <th style="text-align:left;">Parah</th>
+                                            <th style="text-align:left;">PS</th>
+                                            <th style="text-align:left;">Selisih</th>
+                                            @* <th style="text-align:left;">Retur Utuh</th> *@
+                                            <th style="text-align:left;">Retur Putih</th>
+                                            <th style="text-align:left;">Retur Bentes</th>
+                                            <th style="text-align:left;">Retur Rusak</th>
+                                            <th style="text-align:left;">Retur Parah</th>
+                                            <th style="text-align:left;">Retur PS</th>
+                                            <th style="text-align:left;">Susut</th>
+                                            <th style="text-align:left;">Total Returan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach(var reportStock in stocks) 
+                                        {
+                                        <tr>
+                                            <td style="text-align:left !important;">@reportStock.CurrentDate.ToString("dd/MM/yyyy")</td>
+                                            <td style="text-align:left !important;">@reportStock.NettKandang</td>
+                                            <td style="text-align:left !important;">@reportStock.BrutoKandang</td>
+                                                <td style="text-align:left !important;">@reportStock.TotalStockGudang</td>
+                                            <td style="text-align:left !important;">@reportStock.Utuh</td>
+                                                <td style="text-align:left !important;">@reportStock.Putih</td>
+                                                <td style="text-align:left !important;">@reportStock.Bentes</td>
+                                                <td style="text-align:left !important;">@reportStock.Rusak</td>
+                                                <td style="text-align:left !important;">@reportStock.Parah</td>
+                                                <td style="text-align:left !important;">@reportStock.ParahSekali</td>
+                                                <td style="text-align:left !important;">@reportStock.Selisih</td>
+                                                @* <td style="text-align:left !important;">@reportStock.ReturUtuh</td> *@
+                                                <td style="text-align:left !important;">@reportStock.ReturPutih</td>
+                                                <td style="text-align:left !important;">@reportStock.ReturBentes</td>
+                                                <td style="text-align:left !important;">@reportStock.ReturRusak</td>
+                                                <td style="text-align:left !important;">@reportStock.ReturParah</td>
+                                                <td style="text-align:left !important;">@reportStock.ReturParahSekali</td>
+                                                <td style="text-align:left !important;">@reportStock.Susut</td>
+                                                <td style="text-align:left !important;">@reportStock.TotalReturan</td>
+                                        </tr>
+                                        }                                        
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Report Stock Produksi";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+    DateTime SelectedDateFrom;
+    DateTime SelectedDateTo;
+
+    public class StockReportItem
+    {
+        public DateTime CurrentDate { get; set; }
+        public decimal NettKandang { get; set; }
+        public decimal BrutoKandang { get; set; }        
+        public decimal TotalStockPenjualan { get; set; }
+        public decimal Utuh { get; set; }
+        public decimal Putih { get; set; }
+        public decimal Bentes { get; set; }
+        public decimal Rusak { get; set; }
+        public decimal Parah { get; set; }
+        public decimal ParahSekali { get; set; }
+        public decimal TotalStockGudang { get; set; }
+        public decimal Selisih { get; set; }
+        public decimal ReturUtuh { get; set; }
+        public decimal ReturPutih { get; set; }
+        public decimal ReturBentes { get; set; }
+        public decimal ReturRusak { get; set; }
+        public decimal ReturParah { get; set; }
+        public decimal ReturParahSekali { get; set; }
+        public decimal Susut { get; set; }
+        public decimal TotalReturan { get; set; }
+    }
+
+    bool isProcessing;
+    bool IsValid = true;
+    List<DateTime> dates = new List<DateTime>();
+    List<StockReportItem> stocks = new List<StockReportItem>();
+
+    private async Task ShowData()
+    {
+        stocks = new List<StockReportItem>();
+
+        for (DateTime date = SelectedDateFrom; date <= SelectedDateTo; date = date.AddDays(1))
+        {
+            dates.Add(date);
+            await LoadData(date);
+        }
+    }
+
+    private async Task LoadData(DateTime SelectedDate)
+    {
+        StockReportItem reportItem = new StockReportItem();
+        reportItem.CurrentDate = SelectedDate;
+
+        var result = _db.DailyEggPickup
+                .Where(d => d.RecordDate.Date == SelectedDate.Date && d.VerifiedBy > 0)
+                .GroupBy(d => 1) // Dummy grouping to calculate aggregates
+                .Select(g => new
+                {
+                    NettKandang = g.Sum(d => d.TotalNettKG),
+                    BrutoKandang = g.Sum(d => d.TelurUtuhKG + d.TelurBentesKG)
+                })
+                .FirstOrDefault();
+
+        if(result != null) {
+            reportItem.NettKandang = result.NettKandang;
+            reportItem.BrutoKandang = result.BrutoKandang;
+        }
+
+        var results = _db.StockPenjualan
+                .Where(s => s.DateCreated.Date == SelectedDate.Date && s.IsVerified == true)
+                .ToList();
+
+        if(results.Count > 0)
+        {
+            reportItem.TotalStockPenjualan = results.Sum(x => x.StockKg);
+            reportItem.Utuh = results.Where(x => x.EggType == "UTUH").Sum(x => x.StockKg);
+            reportItem.Putih = results.Where(x => x.EggType == "PUTIH").Sum(x => x.StockKg);
+            reportItem.Bentes = results.Where(x => x.EggType == "BENTES").Sum(x => x.StockKg);
+            reportItem.Rusak = results.Where(x => x.EggType == "RUSAK").Sum(x => x.StockKg);
+            reportItem.Parah = results.Where(x => x.EggType == "PARAH").Sum(x => x.StockKg);
+            reportItem.ParahSekali = results.Where(x => x.EggType == "PS").Sum(x => x.StockKg);
+        }
+
+        reportItem.TotalStockGudang = _db.StockGudang
+            .Where(sg => sg.DateDitimbang.Date == SelectedDate.Date)
+            .Sum(sg => sg.TotalDitimbang);
+
+        reportItem.Selisih = reportItem.TotalStockPenjualan - reportItem.NettKandang;
+
+        reportItem.ReturBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date == SelectedDate.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+        reportItem.ReturPutih = _db.StockPosting.Where(x => x.ProductId == 7 && x.Date.Date == SelectedDate.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+		// pecah
+        reportItem.ReturParah = _db.StockPosting.Where(x => x.ProductId == 17 && x.Date.Date == SelectedDate.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+		// pecah sekali
+        reportItem.ReturParahSekali = _db.StockPosting.Where(x => x.ProductId == 19 && x.Date.Date == SelectedDate.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+        reportItem.ReturRusak = _db.StockPosting.Where(x => x.ProductId == 106 && x.Date.Date == SelectedDate.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();	
+
+        reportItem.Susut = _db.StockPosting.Where(x => x.ProductId == 124 && x.Date.Date == SelectedDate.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefault();
+
+        reportItem.TotalReturan = reportItem.ReturBentes + reportItem.ReturPutih + reportItem.ReturParah + reportItem.ReturParahSekali + reportItem.ReturRusak + reportItem.Susut;
+
+        stocks.Add(reportItem);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {        
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Laporan Stok Produksi.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Laporan Stok Produksi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        SelectedDateFrom = SelectedDateTo = DateTime.Now;
+
+        await LoadData(DateTime.Now);
+    }
+}    

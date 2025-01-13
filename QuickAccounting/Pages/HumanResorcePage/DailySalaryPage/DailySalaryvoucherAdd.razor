@@ -59,7 +59,7 @@
                     </div>
                 </div>
                 </div>
-            <div class="table-responsive">
+            <div class="table-responsive table-scrollable">
                 <table class="table">
                     <thead>
                     <tr>
@@ -240,7 +240,7 @@
         {
                 master.InvoiceNo = string.Empty;
                 master.VoucherTypeId = decDailySalaryVoucherId;
-                master.FinancialYearId = 1;
+                master.FinancialYearId = 2;
                 master.TotalAmount = listModel.Sum(item => item.Wage);
                 master.Narration = string.Empty;
                 master.AddedDate = DateTime.UtcNow;

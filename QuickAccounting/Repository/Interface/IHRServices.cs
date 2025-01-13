@@ -23,7 +23,7 @@ namespace QuickAccounting.Repository.Interface
         List<dynamic> GetPerijinanUnApprovedForSupervisor(int supervisorId, int month, int year);
         List<Penalty> GetPenaltyByCurrentMonthYearAndSupervisorId(int supervisorId, DateTime fromDate, DateTime toDate);
         List<Penalty> GetAllPenaltyByCurrentMonthYear(DateTime fromDate, DateTime toDate);
-
-
+        int GetMasaKerja(DateTime tanggalMasukKerja);
+        decimal GetProsentasePremi(int masaKerjaDalamTahun);
     }
 }

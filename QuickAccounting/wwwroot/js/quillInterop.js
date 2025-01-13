@@ -3,9 +3,9 @@
 
     initializeQuill: function (elementId, initialContent) {
 
-        if (this.quillInstances[elementId]) {
-            return; // Quill is already initialized; do nothing
-        }
+        //if (this.quillInstances[elementId]) {
+        //    return; // Quill is already initialized; do nothing
+        //}
 
         const quill = new Quill(`#${elementId}`, {
             theme: 'snow'
@@ -18,8 +18,8 @@
         this.quillInstances[elementId] = quill;
 
         // Event listener to update the Blazor component when content changes
-        quill.on('text-change', () => {
-            DotNet.invokeMethodAsync("QuickAccounting", "UpdateQuillContent", elementId, quill.root.innerHTML);
+        quill.on('text-change', () => {            
+            DotNet.invokeMethodAsync("QuickAccounting", "UpdateQuillContentApart", elementId, quill.root.innerHTML);
         });
     },
 

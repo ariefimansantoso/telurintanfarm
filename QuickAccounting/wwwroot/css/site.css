@@ -183,3 +183,7 @@ span {
     font-size: 2em;
     font-weight: bold;
 }
+
+.table-scrollable {
+    overflow-x: scroll !important;
+}

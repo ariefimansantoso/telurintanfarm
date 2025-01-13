@@ -10,6 +10,8 @@
 @inject NavigationManager navManager
 @inject ISnackbar Snackbar
 @inject IEmployee _employee
+@inject IAuditLogService _audit
+
 <PageTitle>Masuk</PageTitle>
 <!-- Main Wrapper -->
 <div class="account-page">
@@ -113,8 +115,8 @@
     private Model model = new Model();
     Company company = new Company();
     bool isProcessing;
-    
-	private CustomErrorBoundary errorBoundary;
+
+    private CustomErrorBoundary errorBoundary;
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,28 +125,35 @@
     }
 
     private async void GoToDashboard()
-	{
-		navManager.NavigateTo("/app/dashboard" , true);
-	}
+    {
+        navManager.NavigateTo("/app/dashboard" , true);
+    }
 
     private async Task Authenticate()
     {
         isProcessing = true;
         try
         {
+            string auditMessage = "User dengan akun " + model.Email + " mencoba login.";
+            await _audit.LogAsync(LogTypes.LogInfo, "Login", auditMessage, -99, model.Email);
+
             var userAccount = userAccountService.GetByUserName(model.Email, model.Password);
             if (userAccount == null || userAccount.Password != model.Password)
             {
                 Snackbar.Add("Nama atau Password salah.", Severity.Error);
+                auditMessage = "User dengan akun " + model.Email + " login salah.";
+                await _audit.LogAsync(LogTypes.LogWarning, "Login", auditMessage, -99, model.Email);
                 return;
             }
             else
             {
                 var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
                 var employee = await _employee.GetbyUserId(userAccount.UserId);
-                if(!employee.isActive)
+                if(employee != null && !employee.isActive)
                 {
                     Snackbar.Add("Akun tidak ditemukan.", Severity.Error);
+                    auditMessage = "User dengan akun " + model.Email + " tidak aktif, tidak bisa login.";
+                    await _audit.LogAsync(LogTypes.LogWarning, "Login", auditMessage, employee.EmployeeId, employee.EmployeeName);
                     return;
                 }
 
@@ -153,6 +162,10 @@
                         Email = userAccount.Email,
                         RoleName = userAccount.RoleName
                     });
+
+                auditMessage = "User dengan akun " + model.Email + " berhasil login.";
+                await _audit.LogAsync(LogTypes.LogInfo, "Login", auditMessage, employee.EmployeeId, employee.EmployeeName);
+
                 var varCurrency = await _currency.GetCurrencyView(1);
                 PublicVariables._Symbol = varCurrency.CurrencySymbol;
                 navManager.NavigateTo("/app/dashboard", true);

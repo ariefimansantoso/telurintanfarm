@@ -53,7 +53,7 @@
 				</div>
 			</div>
 			<!-- /Filter -->
-								<div class="table-responsive">
+								<div class="table-responsive table-scrollable">
 				<MudTable Items="@listModel" Dense="@dense" Hover="@hover" Filter="new Func<BudgetMaster,bool>(FilterFunc1)">
 					<ToolBarContent>
 						<MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>

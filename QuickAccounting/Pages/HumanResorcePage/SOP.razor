@@ -12,7 +12,23 @@
 @inject PdfService pdfService;
 
 @attribute [Authorize]
+<style type="text/css">
+    ol {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        list-style:decimal !important;
+    }
 
+    ul {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        list-style:circle !important;
+    }
+
+    ol, ul {
+        padding-left: 2rem;
+    }
+    </style>
 <PageTitle>SOP</PageTitle>
 <div class="content">
     <div class="page-header">

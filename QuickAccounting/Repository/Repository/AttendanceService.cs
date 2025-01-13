@@ -130,6 +130,17 @@ namespace QuickAccounting.Repository.Repository
             return absensiList;
         }
 
+        public async Task<List<DailyAttendanceMaster>> GetAttendanceCurrentPeriodeByEmployee(int employeeId, DateTime startingPeriode, DateTime endingPeriode)
+        {
+            var absensiList = await (from d in _context.DailyAttendanceMaster
+                                     join e in _context.Employee on d.EmployeeID equals e.EmployeeId
+                                     where d.Date.Date >= startingPeriode && d.Date.Date <= endingPeriode && e.isActive
+                                            && d.EmployeeID == employeeId
+                                     select d).ToListAsync();
+
+            return absensiList;
+        }
+
         public async Task<List<DailyAttendanceMaster>> GetAttendanceAllUserPerDay(DateTime date)
         {
             var absensiList = await _context.DailyAttendanceMaster.Where(x => x.Date.Date == date).ToListAsync();
