@@ -1,20 +1,32 @@
-﻿@page "/app/calculatedatadaily"
+﻿
+@page "/app/calculatedatadaily"
+@layout EmptyLayout;
+
 @inject ApplicationDbContext _context
 @inject IAuditLogService _audit
 
 @using QuickAccounting.Data.Recording
-<PageTitle>Dashboard</PageTitle>
-<h1>Success</h1>
+<h1>@status</h1>
 @code{
-
+    string status = "Not Yet";
     protected async override void OnInitialized()
     {
-        var now = DateTime.Now.Date;
+        var now = new DateTime(2025,2,1,0,0,0);
+        var dateNow = DateTime.Now.Date;
 
-        string auditMessage = "Schedule Task CalculateRecordingData is running: " + now.ToString("dd/MM/yyyy hh:mm");
+        var daysDifference = (dateNow - now).Days;
+        string auditMessage = "Schedule Task CalculateRecordingData is running: " + DateTime.Now.ToString("dd/MM/yyyy hh:mm");
         await _audit.LogAsync(LogTypes.LogInfo, "CalculateRecordingData", auditMessage, -99, "System");
 
-        CalculateDailyRecording(now, 5);
+        for (int i = 1; i <= daysDifference; i++)
+        {
+            CalculateDailyRecording(now, 5);
+            now = now.AddDays(1);
+            status = "Done " + i;
+
+        }
+
+        status = "COMPLETED";
     }
 
     protected void CalculateDailyRecording(DateTime recordDate, int modifiedBy)

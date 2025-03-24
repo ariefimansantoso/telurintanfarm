@@ -49,7 +49,7 @@
                 <div class="row">
                     <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
-                            <label>Nama Strain Sebelumnya</label>
+                            <label>Nama Strain</label>
                             <div class="row">
                                 <div class="col-lg-12 col-sm-12 col-12">
                                     <input type="text" class="form-control" @bind="OldStrainName" disabled />
@@ -59,7 +59,7 @@
                     </div>
                 </div>
 
-                <div class="row">
+                @* <div class="row">
                     <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Strain</label>
@@ -71,7 +71,7 @@
                         </div>
                     </div>
                 </div>
-
+ *@
                 <div class="row">
                     <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
@@ -204,7 +204,7 @@
         if (record != null)
         {
             record.ConcentrateType = ConcentrateType;
-            record.StrainName = StrainName;
+            //record.StrainName = StrainName;
             record.ModifiedBy = modelEmployee.EmployeeId;
             record.ModifiedDate = DateTime.Now;
 

@@ -6,5 +6,6 @@
 		public decimal StockKG { get; set; }
 		public int ModifiedBy { get; set; }
 		public DateTime ModifiedOn { get; set; }
-	}
+		public DateTime StockDate { get; set; } = DateTime.Now.Date;
+    }
 }

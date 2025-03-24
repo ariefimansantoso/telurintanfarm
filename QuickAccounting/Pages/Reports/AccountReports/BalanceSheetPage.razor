@@ -81,8 +81,8 @@
 @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
-    DateTime dtFromDate = DateTime.UtcNow.AddDays(-1);
-    DateTime dtToDate = DateTime.UtcNow;
+    DateTime dtFromDate = DateTime.Now.AddDays(-1);
+    DateTime dtToDate = DateTime.Now;
     Company company = new Company();
     string myMarkup;
     bool value;
@@ -152,12 +152,15 @@
                 dtbl1 = DsetBalanceSheet1.Tables[0];
                 foreach (DataRow rw1 in dtbl1.Rows)
                 {
-                    values += @"<tr>
+                    var rw1Value = Convert.ToDecimal(rw1["Balance"].ToString());
+                    if (rw1Value > 0) {
+                        values += @"<tr>
 <td style='font-size:10px;'>" + rw1["Name"].ToString() + @"</td>
-<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", Convert.ToDecimal(rw1["Balance"].ToString())) + @"</td>
+<td style='width: 140px;font-style:bold; color:black;'>" + PublicVariables._Symbol + string.Format("{0:n0}", rw1Value) + @"</td>
 <td style='width: 260px;font-style:bold; color:black;'>" + "" + @"</td>
 <td style='width: 140px;font-style:bold; color:black;'>" + "" + @"</td>
             </tr>";
+                    }
                 }
             }
         }

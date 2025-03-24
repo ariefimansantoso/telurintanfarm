@@ -99,5 +99,8 @@ namespace QuickAccounting.Data
         public DbSet<AuditLog> AuditLog { get; set; }
 		
 		public DbSet<DailyRecordingVOV> DailyRecordingVOV { get; set; }
-	}
+        public DbSet<ChecklistPakanItem> ChecklistPakan { get; set; }
+        public DbSet<RecordNota> RecordNota { get; set; }
+        public DbSet<MutasiStockTelurHarian> MutasiStockTelurHarian { get; set; }
+    }
 }

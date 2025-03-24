@@ -105,7 +105,7 @@ namespace QuickAccounting.Repository.Repository
         public async Task<PayrollCutoff> GetLastPayrollCutoff()
         {
             var today = DateTime.Today;
-            return await _context.PayrollCutoff.OrderByDescending(x => x.PayrollDate).Where(x => x.PayrollDate.Date < today).FirstOrDefaultAsync();
+            return await _context.PayrollCutoff.OrderByDescending(x => x.RealPayrollDate).FirstOrDefaultAsync(); //.Where(x => x.PayrollDate.Date < today)
         }
 
         public async Task<List<DailyAttendanceMaster>> GetAttendanceCurrentPeriodeByEmployeeId(int employeeID, DateTime startingPeriode, DateTime endingPeriode)

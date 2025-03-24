@@ -1,0 +1,169 @@
+﻿@page "/app/reportnota"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Laporan Input Nota</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h2>Laporan Input Nota</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">           
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDateFrom" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        <input type="button" class="btn btn-success" @onclick="(e => ShowData())" value="Tampilkan Data" />
+                    </div>
+                </div>
+            </div>
+            
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: left !important;">                            
+                            <div class="table-responsive table-scrollable">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align:left !important;">Tgl</th>
+                                            <th style="text-align:left !important;">Utuh</th>
+                                            <th style="text-align:left !important;">Putih</th>
+                                            <th style="text-align:left !important;">Bentes</th>
+                                            <th style="text-align:left !important;">Parah</th>
+                                            <th style="text-align:left !important;">Parah Sekali</th>
+                                            <th style="text-align:left !important;">Rusak</th>
+                                            <th style="text-align:left !important;">Susut</th>
+                                            <th style="text-align:left !important;">Nr Nota Kosong</th>                                            
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                        <td style="text-align:left !important;">@SelectedDateFrom.ToString("dd/MM/yyyy")</td>
+                                        <td style="text-align:left !important;">@TheReportNota.Utuh.ToString("F2", new CultureInfo("id-ID"))</td>
+                                        <td style="text-align:left !important;">@TheReportNota.Putih.ToString("F2", new CultureInfo("id-ID"))</td>
+                                        <td style="text-align:left !important;">@TheReportNota.Bentes.ToString("F2", new CultureInfo("id-ID"))</td>
+                                        <td style="text-align:left !important;">@TheReportNota.Parah.ToString("F2", new CultureInfo("id-ID"))</td>
+                                            <td style="text-align:left !important;">@TheReportNota.ParahSekali.ToString("F2", new CultureInfo("id-ID"))</td>
+                                            <td style="text-align:left !important;">@TheReportNota.Rusak.ToString("F2", new CultureInfo("id-ID"))</td>
+                                            <td style="text-align:left !important;">@TheReportNota.Susut.ToString("F2", new CultureInfo("id-ID"))</td>
+                                        <td style="text-align:left !important;">@TheReportNota.Kosong.ToString("F2", new CultureInfo("id-ID"))</td>
+                                    </tr>                                        
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                    </div>
+                </div>
+            </div>            
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Report Input Nota";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+    DateTime SelectedDateFrom;
+    DateTime SelectedDateTo;
+
+    bool isProcessing;
+    bool IsValid = true;
+    List<RecordNota> ListNota = new List<RecordNota>();
+
+    public class ReportNotaItem {
+        public DateTime ReportDate { get; set; }
+        public decimal Utuh { get; set; }
+        public decimal Putih { get; set; }
+        public decimal Bentes { get; set; }
+        public decimal Parah { get; set; }
+        public decimal ParahSekali { get; set; }
+        public decimal Rusak { get; set; }
+        public decimal Susut { get; set; }
+        public decimal Kosong { get; set; }
+    }
+
+    ReportNotaItem TheReportNota = new ReportNotaItem();
+
+    private async Task ShowData()
+    {
+        await LoadData(SelectedDateFrom);
+    }
+
+    private async Task LoadData(DateTime SelectedDate)
+    {
+        ListNota = await _db.RecordNota.Where(x => x.DateCreated.Date == SelectedDate.Date).ToListAsync();
+
+        TheReportNota.Utuh = ListNota.Where(x => x.JenisTelur == "UTUH").Sum(x => x.BeratTelur);
+        TheReportNota.Putih = ListNota.Where(x => x.JenisTelur == "PUTIH").Sum(x => x.BeratTelur);
+        TheReportNota.Bentes = ListNota.Where(x => x.JenisTelur == "BENTES").Sum(x => x.BeratTelur);
+        TheReportNota.Parah = ListNota.Where(x => x.JenisTelur == "PARAH").Sum(x => x.BeratTelur);
+        TheReportNota.ParahSekali = ListNota.Where(x => x.JenisTelur == "PS").Sum(x => x.BeratTelur);
+        TheReportNota.Rusak = ListNota.Where(x => x.JenisTelur == "RUSAK").Sum(x => x.BeratTelur);
+        TheReportNota.Susut = ListNota.Where(x => x.JenisTelur == "SUSUT").Sum(x => x.BeratTelur);
+        TheReportNota.Kosong = ListNota.Where(x => x.JenisTelur == "").Sum(x => x.BeratTelur);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {        
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Laporan Stok Produksi.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Laporan Stok Produksi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        SelectedDateFrom = SelectedDateTo = DateTime.Now;
+
+        await LoadData(DateTime.Now);
+    }
+}    

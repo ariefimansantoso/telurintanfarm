@@ -264,7 +264,7 @@ namespace QuickAccounting.Repository.Repository
                         cashPosting.ReferenceN = model.Narration;
                         cashPosting.ChequeNo = String.Empty;
                         cashPosting.ChequeDate = String.Empty;
-                        cashPosting.AddedDate = DateTime.UtcNow;
+                        cashPosting.AddedDate = DateTime.Now;
                         _context.LedgerPosting.Add(cashPosting);
                         await _context.SaveChangesAsync();
                     }
@@ -287,7 +287,7 @@ namespace QuickAccounting.Repository.Repository
                 ledgerPosting.ReferenceN = model.Narration;
                 ledgerPosting.ChequeNo = String.Empty;
                 ledgerPosting.ChequeDate = String.Empty;
-                ledgerPosting.AddedDate = DateTime.UtcNow;
+                ledgerPosting.AddedDate = DateTime.Now;
                 _context.LedgerPosting.Add(ledgerPosting);
                 await _context.SaveChangesAsync();
                 return true;
@@ -345,7 +345,7 @@ namespace QuickAccounting.Repository.Repository
                         cashPosting.ReferenceN = model.Narration;
                         cashPosting.ChequeNo = String.Empty;
                         cashPosting.ChequeDate = String.Empty;
-                        cashPosting.AddedDate = DateTime.UtcNow;
+                        cashPosting.AddedDate = DateTime.Now;
                         _context.LedgerPosting.Add(cashPosting);
                         await _context.SaveChangesAsync();
                     }
@@ -377,7 +377,7 @@ namespace QuickAccounting.Repository.Repository
                         cashPosting.ReferenceN = model.Narration;
                         cashPosting.ChequeNo = String.Empty;
                         cashPosting.ChequeDate = String.Empty;
-                        cashPosting.AddedDate = DateTime.UtcNow;
+                        cashPosting.AddedDate = DateTime.Now;
                         _context.LedgerPosting.Add(cashPosting);
                         await _context.SaveChangesAsync();
                     }
@@ -401,7 +401,7 @@ namespace QuickAccounting.Repository.Repository
                 ledgerPosting.ReferenceN = model.Narration;
                 ledgerPosting.ChequeNo = String.Empty;
                 ledgerPosting.ChequeDate = String.Empty;
-                ledgerPosting.AddedDate = DateTime.UtcNow;
+                ledgerPosting.AddedDate = DateTime.Now;
                 _context.LedgerPosting.Add(ledgerPosting);
                 await _context.SaveChangesAsync();
 

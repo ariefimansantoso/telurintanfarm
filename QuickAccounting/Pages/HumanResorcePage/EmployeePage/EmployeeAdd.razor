@@ -193,8 +193,8 @@
 		model.Qualification = string.Empty;
 		model.Email = string.Empty;
 		model.Gender = "Male";
-		model.Dob = DateTime.UtcNow;
-		model.JoiningDate = DateTime.UtcNow;
+		model.Dob = DateTime.Now;
+		model.JoiningDate = DateTime.Now;
 		listDesignation = await _designation.GetAll();
 		listPackage = await _salaryPackage.GetAll();
 		model.DefaultPackageId = 0;

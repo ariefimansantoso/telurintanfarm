@@ -10,6 +10,8 @@
 @inject IHRServices _hr;
 @inject IExcelService _excelService;
 @inject PdfService pdfService;
+@inject ApplicationDbContext _context
+@inject IAuditLogService _audit
 
 @attribute [Authorize]
 
@@ -71,7 +73,6 @@
     List<StatusInfo> listStatus = new List<StatusInfo>();
     DateTime SelectedCutoffFrom;
     DateTime SelectedCutoffTo;
-    decimal gajiKaryawanTotal = 0;
     PayrollCutoff Cutoff;
     string UserRoleName;
     UserMaster modelUser = new UserMaster();
@@ -86,6 +87,7 @@
 
     string strMenu = "Slip Gaji";
     string HtmlContentPdf = "";
+    List<object> ParamDataPdf = new List<object>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -100,7 +102,12 @@
         modelUser = await _user.UserProfile(userName);
         modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
 
-        await LoadData();
+        PayrollCutoffs = await _attendance.GetPayrollCutoffs();
+        PayrollCutoffs = PayrollCutoffs.Where(x => x.ID >= 6).ToList();
+        var lastPayroll = await _attendance.GetLastPayrollCutoff();
+        Cutoff = lastPayroll;
+
+        await LoadDataNew();
 
         // if (strShow.ShowAction == true)
         // {
@@ -111,6 +118,215 @@
         //     navigation.NavigateTo("/app/dashboard");
         //     Snackbar.Add("You dont have to privilege..", Severity.Error);
         // }
+    }
+
+    // data dari table Payroll
+    private async Task LoadDataNew()
+    {        
+        var payrollKaryawan = _context.Payroll.Where(x => x.CutoffID == Cutoff.ID && x.EmployeeID == modelEmployee.EmployeeId).FirstOrDefault(); 
+        if(payrollKaryawan != null)
+        {
+            var totalPotongan = payrollKaryawan.BPJS_KES + payrollKaryawan.BPJS_TK + payrollKaryawan.Cicilan + payrollKaryawan.Potongan + payrollKaryawan.SetengahHari;
+
+            ParamDataPdf.Add(Cutoff.PayrollPeriode);
+            ParamDataPdf.Add(modelEmployee.EmployeeName);
+            ParamDataPdf.Add(modelEmployee.EmployeeId);
+            ParamDataPdf.Add(UserRoleName);
+            ParamDataPdf.Add("none");
+            ParamDataPdf.Add(modelEmployee.JoiningDate.ToString("dd MMMM yyyy"));
+            ParamDataPdf.Add(payrollKaryawan.NoRek);
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.GajiNonPremi));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.RpPremi));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.BPJS_KES));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.BPJS_TK));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.Tambahan));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.Tunjangan));
+            ParamDataPdf.Add(string.Format("{0:n0}", (payrollKaryawan.GajiNonPremi + payrollKaryawan.RpPremi + payrollKaryawan.Tambahan + payrollKaryawan.Tunjangan + payrollKaryawan.RpLembur)));
+            ParamDataPdf.Add("Jenis Potongan");
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.Cicilan));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.Potongan));
+            ParamDataPdf.Add(string.Format("{0:n0}", totalPotongan));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.GajiBersih));
+            ParamDataPdf.Add("none");
+            ParamDataPdf.Add(payrollKaryawan.Masuk);
+            ParamDataPdf.Add(payrollKaryawan.Libur);
+            ParamDataPdf.Add(payrollKaryawan.Ijin);
+            ParamDataPdf.Add(payrollKaryawan.Sakit);
+            ParamDataPdf.Add(payrollKaryawan.Alpha);
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.GajiHarian));
+            ParamDataPdf.Add(payrollKaryawan.SetengahHari);
+            ParamDataPdf.Add(payrollKaryawan.Lembur);
+            ParamDataPdf.Add(payrollKaryawan.DinasLuar);
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.RpLembur));
+
+            HtmlContentPdf = string.Format(@"<!DOCTYPE html>
+                        <html lang='en'>
+                        <head>
+                            <meta charset='UTF-8'>
+                            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                            <title>Slip Gaji</title>
+                            <link rel='stylesheet' href='https://telurintanfarm.com/css/slipgaji.css' />
+                        </head>
+                        <body>
+                            <div class='payslip-container'>
+                                <!-- Payslip Header -->
+                                <div class='header'>                                    
+                                    <h1>Slip Gaji</h1>
+                                    <p><strong>Nama Perusahaan:</strong> PT Telur Intan Farm</p>
+                                    <p><strong>Bulan:</strong> {0}</p>
+                                </div>
+
+                                <!-- Employee Details -->
+                                <div class='details'>
+                                    <table>
+                                        <tr>
+                                            <th>Nama Karyawan:</th>
+                                            <td>{1}</td>
+                                            <th>ID:</th>
+                                            <td>{2}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Jabatan:</th>
+                                            <td colspan='3'>{3}</td>
+                                            <!--<th>Department:</th>
+                                            <td>{4}</td>-->
+                                        </tr>
+                                        <tr>
+                                            <th>Tanggal Mulai:</th>
+                                            <td>{5}</td>
+                                            <th>Nomor Rekening:</th>
+                                            <td>{6}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Masuk:</th>
+                                            <td>{20}</td>
+                                            <th>Libur:</th>
+                                            <td>{21}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Ijin:</th>
+                                            <td>{22}</td>
+                                            <th>Sakit:</th>
+                                            <td>{23}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Setengah Hari:</th>
+                                            <td>{26}</td>
+                                            <th>Lembur:</th>
+                                            <td>{27}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Alpha:</th>
+                                            <td>{24}</td>
+                                            <th>Gaji Harian:</th>
+                                            <td>{25}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Dinas Luar:</th>
+                                            <td>{28}</td>
+                                            <th></th>
+                                            <td></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Earnings Section -->
+                                <div class='earnings'>
+                                    <h3>Pendapatan</h3>
+                                    <table>
+                                        <tr>
+                                            <th>Jenis</th>
+                                            <th>Jumlah (Rp)</th>
+                                        </tr>
+                                        <tr>
+                                            <td>Gaji Pokok (Gaji Harian x Hari Masuk)</td>
+                                            <td>{7}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Premi</td>
+                                            <td>{8}</td>
+                                        </tr>                                        
+                                        <tr>
+                                            <td>Tambahan</td>
+                                            <td>{11}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Tunjangan</td>
+                                            <td>{12}</td>
+                                        </tr>    
+                                        <tr>
+                                            <td>Lembur</td>
+                                            <td>{29}</td>
+                                        </tr>
+                                        <tr class='total'>
+                                            <td>Total Pendapatan</td>
+                                            <td>{13}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Deductions Section -->
+                                <div class='deductions'>
+                                    <h3>Potongan</h3>
+                                    <table>
+                                        <tr>
+                                            <th>{14}</th>
+                                            <th>Jumlah (Rp)</th>
+                                        </tr>
+                                        <tr>
+                                            <td>BPJS Kesehatan</td>
+                                            <td>{9}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>BPJS Ketenagakerjaan</td>
+                                            <td>{10}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Cicilan</td>
+                                            <td>{15}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Potongan</td>
+                                            <td>{16}</td>
+                                        </tr>
+                                        
+                                        <tr class='total'>
+                                            <td>Total Potongan</td>
+                                            <td>{17}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Net Pay -->
+                                <div class='net-pay'>
+                                    <h3>Gaji Bersih Rp. {18}</h3>                                    
+                                </div>
+
+                                <!-- Payslip Footer -->
+                                <div class='footer'>
+                                    <!--<p><strong>Tanggal Pembayaran:</strong> {19}</p> -->
+                                    <img src='https://telurintanfarm.com/img/ttd.png' style='width: 200px' />
+                                </div>
+                            </div>
+                        </body>
+                        </html>", ParamDataPdf.ToArray());
+
+            var fileNamePdf = "slipgaji_" + modelEmployee.EmployeeName.Replace(" ", "_") + "_" + Cutoff.PayrollPeriode.Replace(" ", "_") + "_.pdf";
+
+            var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+            // Initiate the download
+            // Using Javascript to download PDF
+            // var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
+            var base64 = Convert.ToBase64String(pdfResult);
+            var url = $"data:application/pdf;base64,{base64}";
+
+            await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+        }
+        else
+        {
+            Snackbar.Add("Slip Gaji belum tersedia.", Severity.Error);
+        }
     }
 
     private async Task LoadData()
@@ -152,6 +368,10 @@
 
     private async Task Save()
     {
+        await LoadDataNew();
+
+        return;
+
         var countMasuk = 0;        
         var alpha = 0;
 
@@ -179,8 +399,16 @@
         decimal totalGaji = gajiDasar;
         decimal cicilan = 0;
         decimal potonganNonCicilan = 0;
-        decimal tunjangan = modelEmployee.Tunjangan;
+        decimal tunjanganTetap = modelEmployee.Tunjangan;
+        int hariTerlambat = 0;
+        int hariDinasLuar = 0;
+        decimal rpLembur = 0;
+        DateTime tanggalMulaiKerja = modelEmployee.JoiningDate;
+        int masaKerjaDalamTahun = _hr.GetMasaKerja(tanggalMulaiKerja);
+        decimal prosentasiPremi = _hr.GetProsentasePremi(masaKerjaDalamTahun) / 100;
+        decimal gajiNonPremi = 0;
         decimal tambahanGaji = 0;
+
         var perijinanKaryawan = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
         var libur = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("LIBUR")).Count();
         var ijin = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("IJIN")).Count();
@@ -194,28 +422,50 @@
         var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);        
         var listBonus = listPenalty.Where(x => x.IsPenalty == false).ToList();
         listPenalty = listPenalty.Where(x => x.IsPenalty == true).ToList();
-
-        decimal lembur = modelEmployee.Lembur;
-        var totalHariLembur = absensiEmployeePerPeriode
-                                        .Where(record => record.Date.TimeOfDay > new TimeSpan(16, 15, 0))
-                                        .ToList();
+        
+        var listAttendances = _attendance.GetAttendanceCurrentPeriodeByEmployeeIdSync(modelEmployee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+        TimeSpan timeToCompare = new TimeSpan(6, 30, 59);
+        var jumlahTerlambat = listAttendances.OrderBy(x => x.Date)
+            .GroupBy(dt => dt.Date.Date)
+            .Select(g => g.Min(dt => dt.Date))
+            .ToList();
+        var jumlahTerlambatCount = 0;
+        foreach (DateTime kedatangan in jumlahTerlambat)
+        {
+            if (kedatangan.Hour == 6)
+            {
+                if (kedatangan.Minute > 30)
+                {
+                    jumlahTerlambatCount++;
+                }
+            }
+            else if (kedatangan.Hour > 6)
+            {
+                jumlahTerlambatCount++;
+            }
+        }
+        var totalHariLembur = listAttendances
+                .Where(record => record.Date.TimeOfDay > new TimeSpan(16, 15, 0))
+                .ToList();
         
         var matchingRecords = totalHariLembur
-            .Where(record => perijinanKaryawan
-            .Where(x => x.SubmittedFor.Equals("LEMBUR"))
-            .Any(perijinan => perijinan.ForDate.Date == record.Date.Date))
-            .ToList();
+                                        .Where(record => perijinanKaryawan
+                                        .Where(x => x.SubmittedFor.Equals("LEMBUR"))
+                                        .Any(perijinan => perijinan.ForDate.Date == record.Date.Date))
+                                        .ToList();
         var totalMenitLembur = matchingRecords
             .Where(record => record.Date.TimeOfDay > new TimeSpan(16, 15, 0)) // Filter records after 16:15
-            .Select(record => (int)(new TimeSpan(23, 59, 0) - record.Date.TimeOfDay).TotalMinutes) // Get minutes difference
+            .Select(record => (int)(record.Date.TimeOfDay - new TimeSpan(16, 15, 0)).TotalMinutes) // Get minutes difference
             .Sum();
 
-        decimal rpLembur = (modelEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur;
+        rpLembur = (modelEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur;
 
-        int hariDinasLuar = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("DINAS")).Count();
-        if (PeriodDaysCount > (countMasuk + alpha + libur + ijin + sakit))
+        hariDinasLuar = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("DINAS")).Count();
+        
+        decimal potonganSetengahHari = 0;
+        if (setengahHari > 0)
         {
-            alpha = PeriodDaysCount - (countMasuk + alpha + libur + ijin + sakit);
+            potonganSetengahHari = potonganSetengahHari + (modelEmployee.DailyWage / 2);
         }
 
         if (listPotongan.Count > 0)
@@ -249,17 +499,29 @@
         // }
         if (countMasuk <= 27)
         {
-            totalGaji = (modelEmployee.DailyWage * ((decimal)1 + (decimal)0.15) * (decimal)countMasuk);
+            totalGaji = (modelEmployee.DailyWage * ((decimal)1 + (decimal)prosentasiPremi) * (decimal)countMasuk);
         }
         else
         {
-            totalGaji = (modelEmployee.DailyWage * ((decimal)1 + (decimal)0.15) * (decimal)27) + (modelEmployee.DailyWage * ((decimal)countMasuk - (decimal)27));
+            totalGaji = (modelEmployee.DailyWage * ((decimal)1 + (decimal)prosentasiPremi) * (decimal)27) + (modelEmployee.DailyWage * ((decimal)countMasuk - (decimal)27));
         }
-        premi = totalGaji - gajiDasar;
-        totalGaji = totalGaji + tambahanGaji + tunjangan;
-        var totalPotongan = cicilan + potonganNonCicilan + modelEmployee.BPJS_KES + modelEmployee.BPJS_TK;
 
-        gajiBersih = totalGaji - totalPotongan;        
+        gajiNonPremi = modelEmployee.DailyWage * (decimal)countMasuk;
+        decimal rpPremi = totalGaji - gajiNonPremi;
+
+        // Apabila ada alpha, maka tidak dapat premi
+        if (alpha > 0)
+        {
+            totalGaji = gajiNonPremi;
+            rpPremi = 0;
+        }
+
+        var totalPotongan = modelEmployee.BPJS_KES + modelEmployee.BPJS_TK + cicilan + potonganNonCicilan + potonganSetengahHari;
+
+        gajiBersih = totalGaji - totalPotongan + tambahanGaji + tunjanganTetap + rpLembur;
+
+        int totalHours = totalMenitLembur / 60; // Get the whole number of hours
+        int remainingMinutes = totalMenitLembur % 60;
 
         var namaKaryawan = modelEmployee.EmployeeName;
         var idKaryawan = modelEmployee.EmployeeId;
@@ -428,13 +690,37 @@
                                 </div>
                             </div>
                         </body>
-                        </html>", periode, namaKaryawan, idKaryawan, UserRoleName, "none", tanggalJoin, modelEmployee.BankAccount,
-                                string.Format("{0:n0}", gajiDasar), string.Format("{0:n0}", premi), string.Format("{0:n0}", modelEmployee.BPJS_KES), string.Format("{0:n0}", modelEmployee.BPJS_TK),
-                                string.Format("{0:n0}", tambahanGaji), string.Format("{0:n0}", modelEmployee.Tunjangan), string.Format("{0:n0}", totalGaji),
-
-                                "Jenis Potongan", string.Format("{0:n0}", cicilan), string.Format("{0:n0}", potonganNonCicilan), string.Format("{0:n0}", totalPotongan),
-                                string.Format("{0:n0}", gajiBersih), "none",
-                                countMasuk, libur, ijin, sakit, alpha, string.Format("{0:n0}", modelEmployee.DailyWage), setengahHari, ijinLembur, hariDinasLuar, string.Format("{0:n0}", rpLembur));
+                        </html>"
+, periode
+, namaKaryawan
+, idKaryawan
+, UserRoleName
+, "none"
+, tanggalJoin
+, modelEmployee.BankAccount
+, string.Format("{0:n0}", gajiNonPremi)
+, string.Format("{0:n0}", rpPremi)
+, string.Format("{0:n0}", modelEmployee.BPJS_KES)
+, string.Format("{0:n0}", modelEmployee.BPJS_TK)
+, string.Format("{0:n0}", tambahanGaji)
+, string.Format("{0:n0}", modelEmployee.Tunjangan)
+, string.Format("{0:n0}", totalGaji)
+, "Jenis Potongan"
+, string.Format("{0:n0}", cicilan)
+, string.Format("{0:n0}", potonganNonCicilan)
+, string.Format("{0:n0}", totalPotongan)
+, string.Format("{0:n0}", gajiBersih)
+, "none"
+, countMasuk
+, libur
+, ijin
+, sakit
+, alpha
+, string.Format("{0:n0}", modelEmployee.DailyWage)
+, setengahHari
+, ijinLembur
+, hariDinasLuar
+, string.Format("{0:n0}", rpLembur));
         
         var fileNamePdf = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
         

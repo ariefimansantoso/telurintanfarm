@@ -160,7 +160,7 @@
         listCashBank = await _ledger.GetCashOrBank();
 
         master.VoucherNo = "DRAFT";
-        master.Date = DateTime.UtcNow;
+        master.Date = DateTime.Now;
         master.Narration = string.Empty;
         master.Amount = 0;
         OnChange();
@@ -201,7 +201,7 @@
             master.CompanyId = 1;
             master.PurchaseMasterId = 0;
             master.Narration = string.Empty;
-            master.AddedDate = DateTime.UtcNow;
+            master.AddedDate = DateTime.Now;
 
             foreach (var item in TodoList)
             {

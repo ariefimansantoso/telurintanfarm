@@ -254,8 +254,8 @@
         listProduct = await _product.ProductWithStock();
         master.LedgerId = 0;
         master.VoucherNo = "DRAFT";
-        master.Date = DateTime.UtcNow;
-        master.DueDate = DateTime.UtcNow;
+        master.Date = DateTime.Now;
+        master.DueDate = DateTime.Now;
         listTax = await _tax.GetAll();
         viewProduct.TaxId = 1;
         master.TaxId = 1;
@@ -306,7 +306,7 @@
             master.Status = "Unpaid";
             master.PurchaseOrderMasterId = 0;
             master.WarehouseId = 1;
-            master.AddedDate = DateTime.UtcNow;
+            master.AddedDate = DateTime.Now;
             foreach (var item in TodoList)
             {
                 PurchaseDetails details = new PurchaseDetails();

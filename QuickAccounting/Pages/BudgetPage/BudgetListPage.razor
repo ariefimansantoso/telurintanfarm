@@ -98,8 +98,8 @@
 	private bool hover = true;
 	IList<BudgetMaster> listModel;
 	private string searchString1 = "";
-	DateTime dtFromDate = DateTime.UtcNow.AddDays(-7);
-	DateTime dtToDate = DateTime.UtcNow;
+	DateTime dtFromDate = DateTime.Now.AddDays(-7);
+	DateTime dtToDate = DateTime.Now;
 	string strVoucherNo = string.Empty;
 	string strMenu = "Budget";
 	protected override async Task OnInitializedAsync()

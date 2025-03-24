@@ -223,7 +223,7 @@
             }
             else
             {
-                model.AddedDate = DateTime.UtcNow;
+                model.AddedDate = DateTime.Now;
                 var result = await _customersupplier.Save(model);
 
                 if (result > 0)
@@ -251,7 +251,7 @@
                 var isCheck = await _customersupplier.CheckNameId(model.LedgerName);
                 if (isCheck == model.LedgerId || isCheck == 0)
                 {
-                    model.ModifyDate = DateTime.UtcNow;
+                    model.ModifyDate = DateTime.Now;
                     bool result = false;
                     result = await _customersupplier.Update(model);
 

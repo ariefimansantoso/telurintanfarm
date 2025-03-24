@@ -140,8 +140,8 @@
 	private bool hover = true;
 	IList<AccountLedgerView> listLedger;
 	IList<SalesReturnMasterView> listModel;
-	DateTime dtFromDate = DateTime.UtcNow.AddDays(-7);
-	DateTime dtToDate = DateTime.UtcNow;
+	DateTime dtFromDate = DateTime.Now.AddDays(-7);
+	DateTime dtToDate = DateTime.Now;
 	string strVoucherNo = string.Empty;
 	int LedgerId = 0;
 	string strMenu = "Sales";

@@ -1,0 +1,189 @@
+﻿@page "/app/adminsetpayroll"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@using Newtonsoft.Json
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Admin - Set Tanggal Payroll</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Admin - Set Tanggal Payroll</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        Tanggal Payroll
+                        <input type="date" @bind="@SelectedDate" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Nama Periode</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" @bind="@NamaPeriode" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;" disabled="@( !IsValid )">Simpan</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        @if (PayrollCutoffs != null && PayrollCutoffs.Count > 0)
+                        {
+                            <div class="table-responsive table-scrollable">                                
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>                                                                                        
+                                            <th style="text-align:center;">Tanggal Mulai</th>
+                                            <th style="text-align:center;">Tanggal Akhir</th>
+                                            <th style="text-align:center;">Tanggal Gajian</th>
+                                            <th>Nama Periode</th>
+                                        </tr>                                        
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var record in PayrollCutoffs.ToList())
+                                        {
+                                            <tr>                                                
+                                                <td style="text-align:left;">@record.PayrollDateStart.ToString("dd/MM/yyyy")</td>
+                                                <td style="text-align:left;">@record.PayrollDate.ToString("dd/MM/yyyy")</td>
+                                                <td style="text-align:left;">@record.RealPayrollDate.ToString("dd/MM/yyyy")</td>
+                                                <td style="text-align:left;">
+                                                    @record.PayrollPeriode
+                                                </td>
+                                            </tr>
+                                        }                                       
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p>No data available.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>    
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Admin - Set Tanggal Payroll";
+
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+
+    private List<PayrollCutoff> PayrollCutoffs = new List<PayrollCutoff>();
+    bool isProcessing;
+    bool IsValid = true;
+    DateTime SelectedDate;
+    string NamaPeriode = "";
+
+    private async Task Save()   
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(NamaPeriode))
+            {
+                Snackbar.Add("Nama Periode belum diisi", Severity.Error);
+                return;
+            }
+
+            var lastCutoff = await _db.PayrollCutoff.Where(x => x.ID >= 6).OrderByDescending(x => x.ID).FirstOrDefaultAsync();
+
+            PayrollCutoff cutoff = new PayrollCutoff();
+            cutoff.PayrollPeriode = NamaPeriode;
+            cutoff.PayrollDateStart = lastCutoff.RealPayrollDate;
+            cutoff.RealPayrollDate = SelectedDate;
+            cutoff.PayrollDate = SelectedDate.AddDays(-1);
+            cutoff.DateCreated = DateTime.Now;
+            cutoff.CreatedBy = modelEmployee.EmployeeId;
+            _db.PayrollCutoff.Add(cutoff);
+
+            await _db.SaveChangesAsync();
+
+            PayrollCutoffs = await _db.PayrollCutoff.Where(x => x.ID >= 6).OrderByDescending(x => x.RealPayrollDate).ToListAsync();
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        SelectedDate = DateTime.Now;
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Admin - Set Tanggal Payroll.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Set Payroll", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        PayrollCutoffs = await _db.PayrollCutoff.Where(x => x.ID >= 6).OrderByDescending(x => x.RealPayrollDate).ToListAsync();
+    }
+}    

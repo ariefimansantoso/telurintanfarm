@@ -6,6 +6,7 @@ using QuickAccounting.Data.Inventory;
 using QuickAccounting.Data.Recording;
 using QuickAccounting.Data.Setting;
 using QuickAccounting.Repository.Interface;
+using QuickAccounting.Services;
 using System.Data;
 
 namespace QuickAccounting.Repository.Repository
@@ -301,7 +302,7 @@ namespace QuickAccounting.Repository.Repository
                         stockposting.StockCalculate = "Sales";
                         stockposting.CompanyId = model.CompanyId;
                         stockposting.FinancialYearId = model.FinancialYearId;
-                        stockposting.AddedDate = DateTime.UtcNow;
+                        stockposting.AddedDate = DateTime.Now;
                         _context.StockPosting.Add(stockposting);
                         await _context.SaveChangesAsync();
                 }
@@ -325,7 +326,7 @@ namespace QuickAccounting.Repository.Repository
                     ledgerPosting.ReferenceN = model.Narration;
                     ledgerPosting.ChequeNo = String.Empty;
                     ledgerPosting.ChequeDate = String.Empty;
-                    ledgerPosting.AddedDate = DateTime.UtcNow;
+                    ledgerPosting.AddedDate = DateTime.Now;
                     _context.LedgerPosting.Add(ledgerPosting);
                     await _context.SaveChangesAsync();
 
@@ -347,7 +348,7 @@ namespace QuickAccounting.Repository.Repository
                     purchasePosting.ReferenceN = model.Narration;
                     purchasePosting.ChequeNo = String.Empty;
                     purchasePosting.ChequeDate = String.Empty;
-                    purchasePosting.AddedDate = DateTime.UtcNow;
+                    purchasePosting.AddedDate = DateTime.Now;
                     _context.LedgerPosting.Add(purchasePosting);
                     await _context.SaveChangesAsync();
 
@@ -370,7 +371,7 @@ namespace QuickAccounting.Repository.Repository
                         vatPosting.ReferenceN = model.Narration;
                         vatPosting.ChequeNo = String.Empty;
                         vatPosting.ChequeDate = String.Empty;
-                        vatPosting.AddedDate = DateTime.UtcNow;
+                        vatPosting.AddedDate = DateTime.Now;
                         _context.LedgerPosting.Add(vatPosting);
                         await _context.SaveChangesAsync();
                     }
@@ -444,6 +445,14 @@ namespace QuickAccounting.Repository.Repository
                             stockTelurUtuh.StockKG = stockTelurUtuh.StockKG - item.Qty;
                             stockTelurUtuh.ModifiedBy = employeeItem.EmployeeId;
                             stockTelurUtuh.ModifiedOn = DateTime.Now;
+                                                        
+                            MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+                            mutasi.JenisTelur = "UTUH";
+                            mutasi.BeratTelurIn = 0;
+                            mutasi.BeratTelurOut = item.Qty;
+                            mutasi.DateCreated = DateTime.Now;
+                            mutasi.CreatedBy = employeeItem.EmployeeId;
+                            _context.MutasiStockTelurHarian.Add(mutasi);
                         }
                         
                         StockPosting stockposting = new StockPosting();
@@ -465,7 +474,7 @@ namespace QuickAccounting.Repository.Repository
                         stockposting.StockCalculate = "Sales";
                         stockposting.CompanyId = model.CompanyId;
                         stockposting.FinancialYearId = model.FinancialYearId;
-                        stockposting.AddedDate = DateTime.UtcNow;
+                        stockposting.AddedDate = DateTime.Now;
                         _context.StockPosting.Add(stockposting);
                         await _context.SaveChangesAsync();
                     }
@@ -514,7 +523,29 @@ namespace QuickAccounting.Repository.Repository
 							stockTelurUtuh.StockKG = stockTelurUtuh.StockKG + (stockposting.OutwardQty - item.Qty);
 							stockTelurUtuh.ModifiedBy = employeeItem.EmployeeId;
 							stockTelurUtuh.ModifiedOn = DateTime.Now;
-						}
+
+                            string auditMessage = "Update stock UTUH dengan jumlah: " + item.Qty;
+                            var log = new AuditLog
+                            {
+                                EmployeeName = employeeItem.EmployeeName,
+                                CreatedDate = DateTime.Now,
+                                ActionType = "SalesInvoiceService",
+                                ActionDescription = auditMessage,
+                                EmployeeID = employeeItem.EmployeeId,
+                                LogType = LogTypes.LogInfo
+                            };
+
+                            _context.AuditLog.Add(log);
+
+                            MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+                            mutasi.JenisTelur = "UTUH";
+                            mutasi.BeratTelurIn = (stockposting.OutwardQty - item.Qty);
+                            mutasi.BeratTelurOut = 0;
+                            mutasi.DateCreated = DateTime.Now;
+                            mutasi.CreatedBy = employeeItem.EmployeeId;
+                            mutasi.Reason = "UPDATE";
+                            _context.MutasiStockTelurHarian.Add(mutasi);
+                        }
 						stockposting.OutwardQty = item.Qty;
 						stockposting.UnitId = item.UnitId;
                         stockposting.BatchId = item.BatchId;
@@ -530,7 +561,7 @@ namespace QuickAccounting.Repository.Repository
                         stockposting.StockCalculate = "Sales";
                         stockposting.CompanyId = model.CompanyId;
                         stockposting.FinancialYearId = model.FinancialYearId;
-                        stockposting.ModifyDate = DateTime.UtcNow;
+                        stockposting.ModifyDate = DateTime.Now;
                         _context.StockPosting.Update(stockposting);
                         await _context.SaveChangesAsync();
                     }
@@ -563,7 +594,7 @@ namespace QuickAccounting.Repository.Repository
                 ledgerPosting.ReferenceN = model.Narration;
                 ledgerPosting.ChequeNo = String.Empty;
                 ledgerPosting.ChequeDate = String.Empty;
-                ledgerPosting.AddedDate = DateTime.UtcNow;
+                ledgerPosting.AddedDate = DateTime.Now;
                 _context.LedgerPosting.Add(ledgerPosting);
                 await _context.SaveChangesAsync();
 
@@ -585,7 +616,7 @@ namespace QuickAccounting.Repository.Repository
                 purchasePosting.ReferenceN = model.Narration;
                 purchasePosting.ChequeNo = String.Empty;
                 purchasePosting.ChequeDate = String.Empty;
-                purchasePosting.AddedDate = DateTime.UtcNow;
+                purchasePosting.AddedDate = DateTime.Now;
                 _context.LedgerPosting.Add(purchasePosting);
                 await _context.SaveChangesAsync();
 
@@ -608,7 +639,7 @@ namespace QuickAccounting.Repository.Repository
                     vatPosting.ReferenceN = model.Narration;
                     vatPosting.ChequeNo = String.Empty;
                     vatPosting.ChequeDate = String.Empty;
-                    vatPosting.AddedDate = DateTime.UtcNow;
+                    vatPosting.AddedDate = DateTime.Now;
                     _context.LedgerPosting.Add(vatPosting);
                     await _context.SaveChangesAsync();
                 }
@@ -812,6 +843,15 @@ namespace QuickAccounting.Repository.Repository
                     stockTelurUtuh.StockKG = stockTelurUtuh.StockKG - stockToAdd;
                     stockTelurUtuh.ModifiedBy = employeeItem.EmployeeId;
                     stockTelurUtuh.ModifiedOn = DateTime.Now;
+
+                    MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+                    mutasi.JenisTelur = "UTUH";
+                    mutasi.BeratTelurIn = 0;
+                    mutasi.BeratTelurOut = stockToAdd;
+                    mutasi.DateCreated = DateTime.Now;
+                    mutasi.CreatedBy = employeeItem.EmployeeId;
+                    mutasi.Reason = "SalesRestock";
+                    _context.MutasiStockTelurHarian.Add(mutasi);
 
                     if (stockTelurUtuh != null)
                     {

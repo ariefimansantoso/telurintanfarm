@@ -140,7 +140,7 @@
 			model.AccountGroupId = 22; // 22 is Supplier
 			model.Type = "Supplier";
 			model.CompanyId = 1;
-			model.ModifyDate = DateTime.UtcNow;
+			model.ModifyDate = DateTime.Now;
 			var result = await _customersupplier.Update(model);
 
 				Snackbar.Add("Save Successfully.", Severity.Success);

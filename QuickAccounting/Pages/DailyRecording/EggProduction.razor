@@ -81,6 +81,7 @@
                                 <div class="col-lg-12 col-sm-12 col-12">
                                     <select class="form-control" @onchange="OnJenisTelurChanged">
                                         <option value="UTUH">UTUH</option>
+                                        <option value="PUTIH">PUTIH</option>
                                         <option value="BENTES">BENTES</option>
                                     </select>
                                 </div>
@@ -189,6 +190,48 @@
                 </div>
                 }
 
+                @if (PutihVisible)
+                {
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Putih Butir (mohon diisi dulu)</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="number" class="form-control" value="@TelurPutihButir" @onchange="OnTelurPutihButirChanged" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Putih KG</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="text" class="form-control" value="@TelurPutihKG" @onchange="OnTelurPutihKGChanged" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                                <label>Telur Putih Netto KG</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                        <input type="text" class="form-control" @bind="TelurPutihActualKG" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                }
+
                 <br /> <br />
                 <div class="row">
                     <div class="col-lg-12" style="text-align: center !important;">
@@ -224,12 +267,18 @@
     public decimal TelurBentesKG { get; set; }
     public decimal TelurUtuhActualKG { get; set; }
     public decimal TelurBentesActualKG { get; set; }
+    public int TelurPutihButir { get; set; }
+    public decimal TelurPutihKG { get; set; }
+    public decimal TelurPutihActualKG { get; set; }
+
+
     private bool FormSubmitted { get; set; }
     string SelectedNoKandang = "";
     string SelectedTray = "";
     string SelectedJenisTelur = "";
     bool UtuhVisible = true;
     bool BentesVisible = false;
+    bool PutihVisible = false;
     bool IsValid = true;
     DateTime TodaysDate;
     private List<Kandang> CageList = new List<Kandang>(); // Placeholder for cage numbers.
@@ -262,6 +311,8 @@
             TelurUtuhKG = 0;
             TelurBentesButir = 0;
             TelurBentesKG = 0;
+            TelurPutihButir = 0;
+            TelurPutihKG = 0;
             SelectedJenisTelur = "UTUH";
             SelectedTray = "21";
 
@@ -297,11 +348,19 @@
         {
             UtuhVisible = true;
             BentesVisible = false;
+            PutihVisible = false;
         }
         else if (SelectedJenisTelur == "BENTES")
         {
             UtuhVisible = false;
             BentesVisible = true;
+            PutihVisible = false;
+        }
+        else if (SelectedJenisTelur == "PUTIH")
+        {
+            UtuhVisible = false;
+            BentesVisible = false;
+            PutihVisible = true;
         }
     }
 
@@ -368,13 +427,7 @@
 
     private void OnTelurBentesKGChanged(ChangeEventArgs e)
     {
-        // if (e.Value.ToString().Contains(","))
-        // {
-        //     Snackbar.Add("Input Telur Bentes KG tidak benar. Mohon pakai TITIK.", Severity.Warning);
-        //     IsValid = false;
-        //     return;
-        // }
-
+        
         decimal d;
         if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out d))
         {
@@ -392,6 +445,45 @@
         {
             IsValid = false;
             Snackbar.Add("Input Telur Bentes KG tidak benar.", Severity.Warning);
+        }
+    }
+
+    private void OnTelurPutihButirChanged(ChangeEventArgs e)
+    {
+        int c;
+        if (int.TryParse(e.Value.ToString(), out c))
+        {
+            IsValid = true;            
+            TelurPutihButir = c;
+            Calculate();
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Putih Butir tidak benar. Masukkan angka bulat.", Severity.Warning);
+        }
+    }
+
+    private void OnTelurPutihKGChanged(ChangeEventArgs e)
+    {
+        
+        decimal d;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out d))
+        {
+            TelurPutihKG = d;
+            if (TelurPutihKG > 20)
+            {
+                IsValid = false;
+                Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);
+                return;
+            }
+            IsValid = true;
+            Calculate();
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Putih KG tidak benar.", Severity.Warning);
         }
     }
 
@@ -416,8 +508,8 @@
 
         try
         {            
-            var totalEgg = TelurBentesButir + TelurUtuhButir;
-            var totalEggKG = TelurUtuhActualKG + TelurBentesActualKG;
+            var totalEgg = TelurBentesButir + TelurUtuhButir + TelurPutihButir;
+            var totalEggKG = TelurUtuhActualKG + TelurBentesActualKG + TelurPutihActualKG;
 
             if (totalEgg == 0 || totalEgg > 300)
             {
@@ -445,14 +537,17 @@
             dailyEggPickup.TelurUtuhButir = TelurUtuhButir;
             dailyEggPickup.TelurUtuhNettKG = TelurUtuhActualKG;
             dailyEggPickup.TelurUtuhKG = TelurUtuhKG;
-            dailyEggPickup.TotalButir = TelurBentesButir + TelurUtuhButir;
-            dailyEggPickup.TotalNettKG = TelurBentesActualKG + TelurUtuhActualKG;
+            dailyEggPickup.TelurPutihButir = TelurPutihButir;
+            dailyEggPickup.TelurPutihNettKG = TelurPutihActualKG;
+            dailyEggPickup.TelurPutihKG = TelurPutihKG;
+            dailyEggPickup.TotalButir = totalEgg;
+            dailyEggPickup.TotalNettKG = totalEggKG;
             dailyEggPickup.CreatedBy = modelEmployee.EmployeeId;
 
             var eggReport = await _egg.CreateAsync(dailyEggPickup);
 
             result = await _recording.SaveEggProductionAsync(SelectedNoKandang, StrainName, RecordDate,
-                TelurUtuhButir, TelurUtuhActualKG, TelurBentesButir, TelurBentesActualKG,
+                TelurUtuhButir, TelurUtuhActualKG, TelurBentesButir, TelurBentesActualKG, TelurPutihButir, TelurPutihActualKG,
                 totalEgg, totalEggKG, modelEmployee.EmployeeId);
 
 
@@ -495,6 +590,11 @@
         {
             TelurBentesActualKG = TelurBentesKG - beratTray;
             beratTelur = TelurBentesActualKG;
+        }
+        else if (PutihVisible)
+        {
+            TelurPutihActualKG = TelurPutihKG - beratTray;
+            beratTelur = TelurPutihActualKG;
         }
 
         if (beratTelur > 20)

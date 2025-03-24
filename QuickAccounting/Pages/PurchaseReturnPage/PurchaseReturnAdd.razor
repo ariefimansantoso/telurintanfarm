@@ -248,7 +248,7 @@
             listProduct = await _product.ProductWithStock();
             master.LedgerId = 0;
             master.VoucherNo = "DRAFT";
-            master.Date = DateTime.UtcNow;
+            master.Date = DateTime.Now;
             listTax = await _tax.GetAll();
             viewProduct.TaxId = 1;
             master.TaxId = 1;
@@ -267,7 +267,7 @@
             listLedger = await _ledger.GetAll(22);
             listProduct = await _product.ProductWithStock();
             master.VoucherNo = "DRAFT";
-            master.Date = DateTime.UtcNow;
+            master.Date = DateTime.Now;
             listTax = await _tax.GetAll();
             viewProduct.TaxId = 1;
             master.TaxId = 1;
@@ -318,7 +318,7 @@
             master.Status = "Draft";
             master.PurchaseMasterId = 0;
             master.WarehouseId = 1;
-            master.AddedDate = DateTime.UtcNow;
+            master.AddedDate = DateTime.Now;
             foreach (var item in TodoList)
             {
                 PurchaseReturnDetails details = new PurchaseReturnDetails();

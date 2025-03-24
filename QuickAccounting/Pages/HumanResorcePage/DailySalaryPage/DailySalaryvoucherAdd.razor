@@ -150,8 +150,8 @@
         master.SerialNo = serial;
         listCashBank = await _ledger.GetCashOrBank();
         master.LedgerId = 0;
-        master.Date = DateTime.UtcNow;
-        master.SalaryDate = DateTime.UtcNow;
+        master.Date = DateTime.Now;
+        master.SalaryDate = DateTime.Now;
         master.Narration = string.Empty;
         master.TotalAmount = 0;
         String sDate = master.SalaryDate.ToString();
@@ -243,7 +243,7 @@
                 master.FinancialYearId = 2;
                 master.TotalAmount = listModel.Sum(item => item.Wage);
                 master.Narration = string.Empty;
-                master.AddedDate = DateTime.UtcNow;
+                master.AddedDate = DateTime.Now;
                 foreach (var item in listModel)
                 {
                 DailySalaryVoucherDetails details = new DailySalaryVoucherDetails();

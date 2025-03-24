@@ -121,7 +121,7 @@
 	}
 	private async Task Save()
 	{
-			model.ModifyDate = DateTime.UtcNow;
+			model.ModifyDate = DateTime.Now;
 				bool result = await _bonusDeduction.Update(model);
 
 				if (result == true)

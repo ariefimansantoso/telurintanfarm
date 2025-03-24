@@ -164,7 +164,7 @@
 		{
 			model.Barcode = model.ProductCode;
 			model.IsActive = true;
-			model.ModifyDate = DateTime.UtcNow;
+			model.ModifyDate = DateTime.Now;
 			var result = await _product.Update(model);
 		    Snackbar.Add("Update Successfully.", Severity.Success);
 		    await LoadData();

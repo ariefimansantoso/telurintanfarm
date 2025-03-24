@@ -159,7 +159,7 @@
             }
             else
             {
-                model.AddedDate = DateTime.UtcNow;
+                model.AddedDate = DateTime.Now;
                 var result = await _category.Save(model);
 
                 if (result > 0)
@@ -181,7 +181,7 @@
             var isCheck = await _category.CheckNameId(model.GroupName);
             if (isCheck == model.GroupId || isCheck == 0)
             {
-                model.ModifyDate = DateTime.UtcNow;
+                model.ModifyDate = DateTime.Now;
                 bool result = false;
                 result = await _category.Update(model);
 

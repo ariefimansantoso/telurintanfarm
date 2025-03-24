@@ -15,19 +15,21 @@
 @inject IKandangService _kandang
 @inject IDailyEggPickupService _egg
 @inject ApplicationDbContext _db
+@inject IExcelService _excelService
 @attribute [Authorize]
 
 <PageTitle>Laporan Recording</PageTitle>
 <Loader IsLoading="isProcessing"></Loader>
 <style type="text/css">
     .table tbody tr td {
-        padding: 2px !important;
-        color: #637381;
-        font-size: 14px !important;
-        border-bottom: 1px solid #E9ECEF;
-        vertical-align: middle;
-        white-space: nowrap;
-        border: 1px solid #979797;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
     }
 
     .table thead th {
@@ -83,6 +85,7 @@
 			<div class="col-lg-1 col-sm-6 col-12">
 				<div class="form-group" style="margin-top:20px;">
                         <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+                        <a class="btn btn-filters ms-auto" @onclick="()=>DownloadExcel()"><img src="assets/img/icons/download.svg" alt="img" /></a>
 				</div>
 			</div>
 		</div>
@@ -108,6 +111,8 @@
             {
                 if (SelectedNoKandang != "ALL") 
                 {
+                    PerKandang = new List<ReportPerKandang>();
+
                     <div class="table-responsive table-scrollable">
                         <h3>
                             Kandang: @DailyRecordings[0].CageNumber<br />
@@ -118,16 +123,13 @@
                                 <tr>
                                     <th></th>
                                     <th colspan="2" style="text-align:center;">UMUR</th>
-                                    <th colspan="7" style="text-align:center;">POPULASI</th>
+                                    <th colspan="8" style="text-align:center;">POPULASI</th>
                                     <th colspan="3" style="text-align:center;">PAKAN</th>
 
-                                    <th colspan="2" style="text-align:center;">PROD UTUH</th>
-                                    <th colspan="2" style="text-align:center;">PROD BENTES</th>
-                                    <th colspan="2" style="text-align:center;">PROD TOTAL</th>
+                                    <th colspan="10" style="text-align:center;">PROD TELUR</th>
 
-                                    <th colspan="2" style="text-align:center;">%HD</th>
-                                    <th colspan="2" style="text-align:center;">EM(Kg)</th>
-                                    <th colspan="2" style="text-align:center;">EW(Gr)</th>
+                                    <th colspan="7" style="text-align:center;"></th>
+                                    <th colspan="2" style="text-align:center;">Program Kesehatan</th>
 
                                     <th></th>
 
@@ -141,45 +143,73 @@
 
                                     <th>Awal</th>
                                     <th>Mati</th>
-                                    <th>Afkir/Jual</th>
-                                    <th>Sakit</th>
-                                    <th>P+</th>
+                                    <th>Afkir</th>
+                                    <th>S-</th>
+                                    <th>S+</th>
                                     <th>P-</th>
-                                    <th>Akhir</th>
+                                    <th>P+</th>
+                                    <th>Sisa</th>
 
-                                    <th>Konsentrat</th>
-                                    @* <th>KRM</th>
-                                <th>SLD</th>
-                                <th>PAKAI</th>
-                                <th>SISA</th> *@
+                                    <th>PAKAN</th>
+                                    <th>PAKAI</th>
                                     <th>FI</th>
-                                    <th>DEV</th>
 
-                                    <th>Butir</th>
+                                    <th>UTUH</th>
                                     <th>Kg</th>
-                                    <th>Butir</th>
+                                    <th>PUTIH</th>
                                     <th>Kg</th>
-                                    <th>Butir</th>
+                                    <th>BENTES</th>
                                     <th>Kg</th>
+                                    <th>Total BTR</th>
+                                    <th>Total Kg</th>
+                                    <th>Kum BTR</th>
+                                    <th>KWM KG</th>
 
-                                    <th>HD</th>
-                                    @* <th>STD</th> *@
-                                    <th>DEV</th>
+                                    <th>%HD</th>
+                                    <th>+/- HD</th>
+                                    <th>HH (BTR)</th>
+                                    <th>HH (KG)</th>
                                     <th>EM</th>
-                                    @*  <th>STD</th> *@
-                                    <th>DEV</th>
-                                    <th>EW</th>
-                                    @* <th>STD</th> *@
-                                    <th>DEV</th>
-
+                                    <th>Grbt</th>
                                     <th>FCR</th>
-                                    @* <th>Modified By</th>
-                                <th>Modified Date</th> *@
+
+                                    <th>Nama</th>
+                                    <th>Pakai</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var record in DailyRecordings)
                                 {
+                                    var newItemPerKandang = new ReportPerKandang();
+                                    newItemPerKandang.Tanggal = record.RecordDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+                                    newItemPerKandang.Minggu = record.HenAgeWeeks.ToString();
+                                    newItemPerKandang.Hari = record.HenAgeDays.ToString();
+                                    newItemPerKandang.Awal = record.PopulationStart.ToString();
+                                    newItemPerKandang.Mati = record.DeadHenCount.ToString();
+                                    newItemPerKandang.Afkir = record.UnproductiveHenCount.ToString();
+                                    newItemPerKandang.SMinus = "0";
+                                    newItemPerKandang.SPlus = "0";
+                                    newItemPerKandang.PMinus = record.MoveOutHenCount.ToString();
+                                    newItemPerKandang.PPlus = record.MoveInHenCount.ToString();
+                                    newItemPerKandang.Sisa = record.PopulationEnd.ToString();
+                                    newItemPerKandang.PAKAN = record.ConcentrateType.ToString();
+                                    newItemPerKandang.PAKAI = record.FoodNeededTodayKg.ToString();
+                                    newItemPerKandang.FI = record.FoodIntakePerHen.ToString("N2");
+                                    newItemPerKandang.UTUH = record.PerfectEggCount.ToString();
+                                    newItemPerKandang.UtuhKg = record.PerfectEggKg.ToString();
+                                    newItemPerKandang.PUTIH = record.TelurPutihButir.ToString();
+                                    newItemPerKandang.PutihKg = record.TelurPutihKG.ToString();
+                                    newItemPerKandang.BENTES = record.BrokenEggCount.ToString();
+                                    newItemPerKandang.BentesKg = record.BrokenEggKg.ToString();
+                                    newItemPerKandang.TotalBTR = record.TotalEggCount.ToString();
+                                    newItemPerKandang.TotalKG = record.TotalEggKg.ToString();
+                                    newItemPerKandang.PersenHD = record.ActualHenDay.ToString("N2");
+                                    newItemPerKandang.KumBTR = "0";
+                                    newItemPerKandang.KWMKG = "0";
+                                    newItemPerKandang.HHBTR = "0";
+                                    newItemPerKandang.HHKG = "0";
+                                    newItemPerKandang.Nama = "";
+                                    newItemPerKandang.PakaiVoV = "0";
                                     <tr>
                                         @* <td>@record.CageNumber</td> *@
                                         <td>@record.RecordDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</td>
@@ -190,25 +220,30 @@
                                         <td>@record.PopulationStart</td>
                                         <td>@record.DeadHenCount</td>
                                         <td>@record.UnproductiveHenCount</td>
-                                        <td>@record.SickHenCount</td>
-                                        <td>@record.MoveInHenCount</td>
+                                        <td></td>
+                                        <td></td>
                                         <td>@record.MoveOutHenCount</td>
+                                        <td>@record.MoveInHenCount</td>
                                         <td>@record.PopulationEnd</td>
 
                                         <td>@record.ConcentrateType</td>
                                         @* <td>@record.ActualFoodNeededKG</td>
-                                <td>@record.SaldoFoodKG</td>
-                                <td>@record.FoodNeededTodayKg</td>
-                                <td>@record.RemainingFoodKg</td> *@
+                            <td>@record.SaldoFoodKG</td>
+                            <td>@record.FoodNeededTodayKg</td>
+                            <td>@record.RemainingFoodKg</td> *@
+                                        <td>@record.FoodNeededTodayKg</td>
                                         <td>@record.FoodIntakePerHen</td>
-                                        <td>@record.FoodIntakeDeviation</td>
 
                                         <td>@record.PerfectEggCount</td>
                                         <td>@record.PerfectEggKg</td>
+                                        <td>@record.TelurPutihButir</td>
+                                        <td>@record.TelurPutihKG</td>
                                         <td>@record.BrokenEggCount</td>
                                         <td>@record.BrokenEggKg</td>
                                         <td>@record.TotalEggCount</td>
                                         <td>@record.TotalEggKg</td>
+                                        <td></td>
+                                        <td></td>
 
                                         <td>@record.ActualHenDay</td>
                                         @* <td>@record.StandardHenDay</td> *@
@@ -220,17 +255,22 @@
                                         {
                                             <td>@record.DailyHenDayDifference</td>
                                         }
-
+                                        @{
+                                            newItemPerKandang.DevHD = record.DailyHenDayDifference.ToString("N2");
+                                            newItemPerKandang.EM = record.ActualEggMassKg.ToString();
+                                            newItemPerKandang.Grbt = record.ActualEggWeightG.ToString();
+                                            newItemPerKandang.FCR = record.FeedConversionRatio.ToString();
+                                        }
+                                        <td></td>
+                                        <td></td>
                                         <td>@record.ActualEggMassKg</td>
-                                        @* <td>@record.StandardEggMassKg</td> *@
-                                        <td>@record.EggMassDeviation</td>
                                         <td>@record.ActualEggWeightG</td>
-                                        @* <td>@record.StandardEggWeightG</td> *@
-                                        <td>@record.EggWeightDeviation</td>
                                         <td>@record.FeedConversionRatio</td>
-                                        @* <td>@record.ModifiedBy</td>
-                                <td>@record.ModifiedDate.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture)</td> *@
+
+                                        <td></td>
+                                        <td></td>
                                     </tr>
+                                    PerKandang.Add(newItemPerKandang);
                                 }
                             </tbody>
                         </table>
@@ -238,24 +278,22 @@
                 }
                 else
                 {
+                    
+                    AllKandang = new List<ReportAllKandang>();                        
+                    
                     <div class="table-responsive table-scrollable">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
                                     <th></th>
-                                    <th></th>                                    
-                                    <th colspan="7" style="text-align:center;">POPULASI</th>
-                                    <th colspan="5" style="text-align:center;">PAKAN</th>
-
-                                    <th colspan="2" style="text-align:center;">PROD UTUH</th>
-                                    <th colspan="2" style="text-align:center;">PROD BENTES</th>
-                                    <th colspan="2" style="text-align:center;">PROD TOTAL</th>
-
-                                    <th style="text-align:center;">%HD</th>
-                                    <th style="text-align:center;">EM(Kg)</th>
-                                    <th style="text-align:center;">EW(Gr)</th>
-
                                     <th></th>
+                                    <th colspan="8" style="text-align:center;">POPULASI</th>
+                                    <th colspan="3" style="text-align:center;">PAKAN</th>
+
+                                    <th colspan="10" style="text-align:center;">PROD TELUR</th>
+
+                                    <th colspan="7" style="text-align:center;"></th>
+                                    <th colspan="2" style="text-align:center;">Program Kesehatan</th>
 
                                 </tr>
                                 <tr>
@@ -264,30 +302,38 @@
 
                                     <th>Awal</th>
                                     <th>Mati</th>
-                                    <th>Afkir/Jual</th>
-                                    <th>Sakit</th>
-                                    <th>P+</th>
+                                    <th>Afkir</th>
+                                    <th>S-</th>
+                                    <th>S+</th>
                                     <th>P-</th>
-                                    <th>Akhir</th>
+                                    <th>P+</th>
+                                    <th>Sisa</th>
 
-                                    <th>KRM</th>
-                                    <th>SLD</th>
+                                    <th>PAKAN</th>
                                     <th>PAKAI</th>
-                                    <th>SISA</th>
                                     <th>FI</th>
-                                    @* <th>DEV</th> *@
 
-                                    <th>Butir</th>
+                                    <th>UTUH</th>
                                     <th>Kg</th>
-                                    <th>Butir</th>
+                                    <th>PUTIH</th>
                                     <th>Kg</th>
-                                    <th>Butir</th>
+                                    <th>BENTES</th>
                                     <th>Kg</th>
+                                    <th>Total BTR</th>
+                                    <th>Total Kg</th>
+                                    <th>Kum BTR</th>
+                                    <th>KWM KG</th>
 
-                                    <th>HD</th>
+                                    <th>%HD</th>
+                                    <th>+/- HD</th>
+                                    <th>HH (BTR)</th>
+                                    <th>HH (KG)</th>
                                     <th>EM</th>
-                                    <th>EW</th>
-                                    <th>FCR</th>                                  
+                                    <th>Grbt</th>
+                                    <th>FCR</th>
+
+                                    <th>Nama</th>
+                                    <th>Pakai</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -299,7 +345,34 @@
                                 {
                                     var strain = group.First().StrainName;
                                     var jumlahRecord = group.Count();
-
+                                    var reportKandangItem = new ReportAllKandang();
+                                    reportKandangItem.Kandang = group.Key;
+                                    reportKandangItem.Strain = strain;
+                                    reportKandangItem.Awal = group.Sum(x => x.PopulationStart).ToString();
+                                    reportKandangItem.Mati = group.Sum(x => x.DeadHenCount).ToString();
+                                    reportKandangItem.Afkir = group.Sum(x => x.UnproductiveHenCount).ToString();
+                                    reportKandangItem.SMinus = "0";
+                                    reportKandangItem.SPlus = "0";
+                                    reportKandangItem.PMinus = group.Sum(x => x.MoveOutHenCount).ToString();
+                                    reportKandangItem.PPlus = group.Sum(x => x.MoveInHenCount).ToString();
+                                    reportKandangItem.Sisa = group.Sum(x => x.PopulationEnd).ToString();
+                                    reportKandangItem.PAKAN = group.First().ConcentrateType.ToString();
+                                    reportKandangItem.PAKAI = group.Sum(x => x.FoodNeededTodayKg).ToString();
+                                    reportKandangItem.FI = (group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2");
+                                    reportKandangItem.UTUH = group.Sum(x => x.PerfectEggCount).ToString();
+                                    reportKandangItem.UtuhKg    = group.Sum(x => x.PerfectEggKg).ToString();
+                                    reportKandangItem.PUTIH     = group.Sum(x => x.TelurPutihButir).ToString();
+                                    reportKandangItem.PutihKg   = group.Sum(x => x.TelurPutihKG).ToString();
+                                    reportKandangItem.BENTES    = group.Sum(x => x.BrokenEggCount).ToString();
+                                    reportKandangItem.BentesKg  = group.Sum(x => x.BrokenEggKg).ToString();
+                                    reportKandangItem.TotalBTR = group.Sum(x => x.TotalEggCount).ToString();
+                                    reportKandangItem.TotalKG = group.Sum(x => x.TotalEggKg).ToString();
+                                    reportKandangItem.KumBTR = "0";
+                                    reportKandangItem.KWMKG = "0";                                    
+                                    reportKandangItem.HHBTR = "0";
+                                    reportKandangItem.HHKG = "0";
+                                    reportKandangItem.Nama = "";
+                                    reportKandangItem.PakaiVoV = "0";
                                     <tr>
                                         <td>@group.Key</td>
                                         <td>@strain</td>                                       
@@ -307,37 +380,28 @@
                                         <td>@group.Sum(x => x.PopulationStart)</td>
                                         <td>@group.Sum(x => x.DeadHenCount)</td>
                                         <td>@group.Sum(x => x.UnproductiveHenCount)</td>
-                                        <td>@group.Sum(x => x.SickHenCount)</td>
-                                        <td>@group.Sum(x => x.MoveInHenCount)</td>
+                                        <td></td>
+                                        <td></td>
                                         <td>@group.Sum(x => x.MoveOutHenCount)</td>
+                                        <td>@group.Sum(x => x.MoveInHenCount)</td>
                                         <td>@group.Sum(x => x.PopulationEnd)</td>
                                       
-                                        <td>@group.Sum(x => x.ActualFoodNeededKG)</td>
-                                        <td>@group.Sum(x => x.SaldoFoodKG)</td>
+                                        <td>@group.First().ConcentrateType</td>
                                         <td>@group.Sum(x => x.FoodNeededTodayKg)</td>
-                                        <td>@group.Sum(x => x.RemainingFoodKg)</td>
                                         <td>
-                                            @((group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2"))
-                                            @* @{
-                                                decimal fi = 0;
-                                                try
-                                                {
-                                                    fi = (group.Sum(x => x.FoodNeededTodayKg) / group.Sum(x => x.PopulationEnd)) * 1000;
-                                                }
-                                                catch(Exception ex)
-                                                {
-                                                    fi = (group.Sum(x => x.FoodIntakePerHen) / (decimal)group.Count());
-                                                }
-                                            }
-                                            @fi.ToString("N2") *@
+                                            @((group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2"))                                           
                                         </td>
 
                                         <td>@group.Sum(x => x.PerfectEggCount)</td>
                                         <td>@group.Sum(x => x.PerfectEggKg)</td>
+                                        <td>@group.Sum(x => x.TelurPutihButir)</td>
+                                        <td>@group.Sum(x => x.TelurPutihKG)</td>
                                         <td>@group.Sum(x => x.BrokenEggCount)</td>
                                         <td>@group.Sum(x => x.BrokenEggKg)</td>
                                         <td>@group.Sum(x => x.TotalEggCount)</td>
                                         <td>@group.Sum(x => x.TotalEggKg)</td>
+                                        <td></td>
+                                        <td></td>
 
                                         <td>
                                             @{
@@ -350,9 +414,20 @@
                                                 {
                                                     hd = (group.Sum(x => x.ActualHenDay) / (decimal)group.Count());
                                                 }
+                                                reportKandangItem.PersenHD = hd.ToString("N2");
                                             }
-                                            @hd.ToString("N2")
+                                            @hd.ToString("N2")                                            
                                         </td>
+                                        <td>
+                                            @{
+                                                decimal hdd = 0;
+                                                hdd = (group.Sum(x => x.DailyHenDayDifference) / (decimal)group.Count());
+                                                reportKandangItem.DevHD = hdd.ToString("N2");
+                                            }
+                                            @hdd.ToString("N2")                                           
+                                        </td>
+                                        <td></td>
+                                        <td></td>
                                         <td>
                                             @{
                                                 decimal em = 0;
@@ -363,9 +438,10 @@
                                                 catch (Exception ex)
                                                 {
                                                     em = (group.Sum(x => x.ActualEggMassKg) / (decimal)group.Count());
+                                                    reportKandangItem.EM = em.ToString("N2");
                                                 }
                                             }
-                                            @em.ToString("N2")
+                                            @em.ToString("N2")                                            
                                         </td>
                                         <td>
                                             @{
@@ -377,9 +453,10 @@
                                                 catch (Exception ex)
                                                 {
                                                     ew = (group.Sum(x => x.ActualEggWeightG) / (decimal)group.Count());
+                                                    reportKandangItem.Grbt = ew.ToString("N2");
                                                 }
                                             }
-                                            @ew.ToString("N2")
+                                            @ew.ToString("N2")                                            
                                         </td>
                                         <td>
                                             @{
@@ -391,11 +468,15 @@
                                                 catch (Exception ex)
                                                 {
                                                     fcr = (group.Sum(x => x.FeedConversionRatio) / (decimal)group.Count());
+                                                    reportKandangItem.FCR = fcr.ToString("N2");
                                                 }
                                             }
-                                            @fcr.ToString("N2")
+                                            @fcr.ToString("N2")                                            
                                         </td>
+                                        <td></td>
+                                        <td></td>
                                     </tr>
+                                    AllKandang.Add(reportKandangItem);
                                 }
                             </tbody>
                         </table>
@@ -409,6 +490,35 @@
         </div>
     </div>
 </div>
+
+<script>
+    window.JS = {
+        SaveAs: function (fileName, byteBase64) {
+            byteBase64 = byteBase64.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Convert base64 string to byte array
+            const byteCharacters = atob(byteBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            // Create a link element and trigger the download
+            const link = document.createElement('a');
+            const url = window.URL.createObjectURL(blob);
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            link.remove();
+        }
+    };
+</script>
 
 @code {
     [CascadingParameter]
@@ -435,6 +545,33 @@
     bool ChartDataLoaded = false;
 
     bool isProcessing;
+
+    List<ReportAllKandang> AllKandang = new List<ReportAllKandang>();
+    List<ReportPerKandang> PerKandang = new List<ReportPerKandang>();
+
+    private async Task DownloadExcel()
+    {
+        isProcessing = true;
+
+        var year = DateTime.Now.Year;
+        var month = DateTime.Now.Month;
+        var fileName = "Laporan_Recording.xlsx";
+        byte[] excelData;
+        if (SelectedNoKandang == "ALL")
+        {
+            excelData = _excelService.ExportListToExcel(AllKandang, "Sheet1");
+        }
+        else
+        {
+            excelData = _excelService.ExportListToExcel(PerKandang, "Sheet1");
+        }
+        var base64String = Convert.ToBase64String(excelData);
+        base64String = base64String.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64String);
+
+        isProcessing = false;
+    }
 
     private async Task LoadRecording()
     {
@@ -517,5 +654,79 @@
             .Skip((CurrentPage - 1) * PageSize)
             .Take(PageSize)
             .ToList();
+    }
+
+    public class ReportAllKandang
+    {
+        public string Kandang { get; set; }
+        public string Strain { get; set; }
+       
+        public string Awal { get; set; }
+        public string Mati { get; set; }
+        public string Afkir { get; set; }
+        public string SMinus { get; set; }
+        public string SPlus { get; set; }
+        public string PMinus { get; set; }
+        public string PPlus { get; set; }
+        public string Sisa { get; set; }
+        public string PAKAN { get; set; }
+        public string PAKAI { get; set; }
+        public string FI { get; set; }
+        public string UTUH { get; set; }
+        public string UtuhKg { get; set; }
+        public string PUTIH { get; set; }
+        public string PutihKg { get; set; }
+        public string BENTES { get; set; }
+        public string BentesKg { get; set; }
+        public string TotalBTR { get; set; }
+        public string TotalKG { get; set; }
+        public string KumBTR { get; set; }
+        public string KWMKG { get; set; }
+        public string PersenHD { get; set; }
+        public string DevHD { get; set; }
+        public string HHBTR { get; set; }
+        public string HHKG { get; set; }
+        public string EM { get; set; }
+        public string Grbt { get; set; }
+        public string FCR { get; set; }
+        public string Nama { get; set; }
+        public string PakaiVoV { get; set; }
+    }
+
+    public class ReportPerKandang
+    {
+        public string Tanggal { get; set; }
+        public string Minggu { get; set; }
+        public string Hari { get; set; }
+        public string Awal { get; set; }
+        public string Mati { get; set; }
+        public string Afkir { get; set; }
+        public string SMinus { get; set; }
+        public string SPlus { get; set; }
+        public string PMinus { get; set; }
+        public string PPlus { get; set; }
+        public string Sisa { get; set; }
+        public string PAKAN { get; set; }
+        public string PAKAI { get; set; }
+        public string FI { get; set; }
+        public string UTUH { get; set; }
+        public string UtuhKg { get; set; }
+        public string PUTIH { get; set; }
+        public string PutihKg { get; set; }
+        public string BENTES { get; set; }
+        public string BentesKg { get; set; }
+        public string TotalBTR { get; set; }
+        public string TotalKG { get; set; }
+        public string KumBTR { get; set; }
+        public string KWMKG { get; set; }
+        public string PersenHD { get; set; }
+        public string DevHD { get; set; }
+        public string HHBTR { get; set; }
+        public string HHKG { get; set; }
+        public string EM { get; set; }
+        public string Grbt { get; set; }
+        public string FCR { get; set; }
+        public string Nama { get; set; }
+        public string PakaiVoV { get; set; }
     }
 }

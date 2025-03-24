@@ -17,6 +17,7 @@
 @inject IDailyEggPickupService _egg
 @inject AuthenticationStateProvider authStateProvider
 @inject ApplicationDbContext _db
+@inject IAuditLogService _audit
 @attribute [Authorize]
 
 <PageTitle>Terima Stock Telur Jualan</PageTitle>
@@ -181,7 +182,20 @@
                                 stockTelurUtuh = new StockTelurUtuh();
                                 stockTelurUtuh.StockKG = 0;
                             }
+
                             stockTelurUtuh.StockKG = stockTelurUtuh.StockKG + dbRecord.StockKg;
+                            
+                            string auditMessage = "Menambah stock telur UTUH: " + stockTelurUtuh.StockKG + " tambahan: " + dbRecord.StockKg;
+                            await _audit.LogAsync(LogTypes.LogInfo, "Checklist Stock Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                            MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+                            mutasi.JenisTelur = "UTUH";
+                            mutasi.BeratTelurIn = dbRecord.StockKg;
+                            mutasi.BeratTelurOut = 0;
+                            mutasi.DateCreated = DateTime.Now;
+                            mutasi.CreatedBy = modelEmployee.EmployeeId;
+                            _db.MutasiStockTelurHarian.Add(mutasi);
+
                             stockTelurUtuh.ModifiedBy = modelEmployee.EmployeeId;
                             stockTelurUtuh.ModifiedOn = DateTime.Now;
                             if (newStock)
@@ -192,7 +206,7 @@
                         else
                         {
                             // kalau tipe telur tidak UTUH, maka langsung masukkan ke Stock Posting.
-                            int productId = 0;
+                            int productId = 0;                            
                             switch(record.EggType)
                             {
                                 case "BENTES":
@@ -232,6 +246,18 @@
                             stockposting.FinancialYearId = 2;
                             stockposting.AddedDate = DateTime.Now;
                             _db.StockPosting.Add(stockposting);
+
+                            string auditMessage = "Menambah stok telur " + record.EggType + " tambahan: " + dbRecord.StockKg;
+                            await _audit.LogAsync(LogTypes.LogInfo, "Checklist Stock Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                            MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+                            mutasi.JenisTelur = record.EggType;
+                            mutasi.BeratTelurIn = dbRecord.StockKg;
+                            mutasi.BeratTelurOut = 0;
+                            mutasi.DateCreated = DateTime.Now;
+                            mutasi.CreatedBy = modelEmployee.EmployeeId;
+                            _db.MutasiStockTelurHarian.Add(mutasi);
+
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using QuickAccounting.Constants;
 using QuickAccounting.Data;
 using QuickAccounting.Data.Authentication;
 using QuickAccounting.Repository.Interface;
@@ -74,6 +75,7 @@ builder.Services.AddTransient<PdfService>();
 builder.Services.AddTransient<DataAccess>();
 builder.Services.AddTransient<DatabaseConnection>();
 builder.Services.AddTransient<IAuditLogService, AuditLogService>();
+builder.Services.AddTransient<IStartingStockDate, StartingStockDate>();
 
 var app = builder.Build();
 

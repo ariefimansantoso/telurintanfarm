@@ -24,13 +24,16 @@
 
 <style type="text/css">
     .table tbody tr td {
-        padding: 2px !important;
-        color: #637381;
-        font-weight: 200 !important;
-        border-bottom: 1px solid #E9ECEF;
-        vertical-align: middle;
-        white-space: nowrap;
-        text-align: right !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        font-weight: bold !important;
+        font-size: 24px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
     }
 </style>
 
@@ -71,6 +74,7 @@
                             <div class="col-lg-12 col-sm-12 col-12">
                                 <select class="form-control" @onchange="OnJenisTelurChanged">
                                     <option value="UTUH">UTUH</option>
+                                    <option value="PUTIH">PUTIH</option>
                                     <option value="BENTES">BENTES</option>
                                 </select>
                             </div>
@@ -85,7 +89,7 @@
                         <label>Jumlah Timbangan</label>
                         <div class="row">
                             <div class="col-lg-12 col-sm-12 col-12">
-                                <input type="text" class="form-control" value="@Timbangan" @onchange="OnTimbanganChanged" />
+                                <input type="text" style="font-weight: bold !important; font-size: 24px !important;" class="form-control" @bind="@TimbanganString" @onkeydown="@Enter" />
                             </div>
                         </div>
                     </div>
@@ -95,7 +99,7 @@
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
-                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;" disabled="@( !IsValid )">Timbang</button>
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;">Timbang</button>
                     </div>
                 </div>
             </div>
@@ -115,8 +119,9 @@
                                         </tr>                                        
                                     </thead>
                                     <tbody>
-                                        @{                                            
+                                        @{
                                             decimal totalKG = 0;
+                                            StockGudangs = StockGudangs.OrderByDescending(x => x.ID).ToList();
                                         }
                                         @foreach (var record in StockGudangs.ToList())
                                         {
@@ -171,6 +176,8 @@
     decimal TotalSisa = 0;
     string JenisTelurSelected = "UTUH";
     decimal Timbangan = 0;
+    [Parameter]
+    public string TimbanganString { get; set; }
     bool TimbangDone = false;
     decimal TotalDibawaKeGudang = 0;
     decimal TotalSisaBelumDitimbang = 0;
@@ -244,6 +251,25 @@
     {
         try
         {
+            decimal v;
+            if (decimal.TryParse(TimbanganString, NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+            {
+                IsValid = true;
+                Timbangan = v;
+                if(Timbangan > 25)
+                {
+                    IsValid = false;
+                    Snackbar.Add("Nimbangnya dikit aja, 10 tray maksimal", Severity.Warning);
+                    return;
+                }
+            }
+            else
+            {
+                IsValid = false;
+                Snackbar.Add("Input tidak benar.", Severity.Warning);
+                return;
+            }
+
             var timbangan = new StockGudang();
             timbangan.TotalDitimbang = Timbangan;
             timbangan.CreatedBy = modelEmployee.EmployeeId;
@@ -254,7 +280,8 @@
             TotalSisaBelumDitimbang = TotalDibawaKeGudang - Timbangan;
             Snackbar.Add("Data produksi telur telah tersimpan.", Severity.Success);
             Timbangan = 0;
-            
+            TimbanganString = "";
+
             await LoadData();
             await LoadStockGudang();
         }
@@ -268,6 +295,68 @@
         }
     }
 
+    public async void Enter(KeyboardEventArgs e)
+	{		
+		if (e.Key == "Enter" || e.Key == "NumpadEnter")
+		{		
+            isProcessing = true;
+		    if (string.IsNullOrEmpty(TimbanganString))
+		    {
+			    isProcessing = false;
+			    Snackbar.Add("Angka timbangan kosong.", Severity.Error);
+			    return;
+		    }
+
+            decimal v;
+            if (decimal.TryParse(TimbanganString, NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+            {
+                IsValid = true;
+                Timbangan = v;
+                if (Timbangan > 25)
+                {
+                    IsValid = false;
+                    Snackbar.Add("Nimbangnya dikit aja, 10 tray maksimal", Severity.Warning);
+                }
+            }
+            else
+            {
+                IsValid = false;
+                Snackbar.Add("Input tidak benar.", Severity.Warning);
+            }
+
+            try
+            {
+                var timbangan = new StockGudang();
+                timbangan.TotalDitimbang = Timbangan;
+                timbangan.CreatedBy = modelEmployee.EmployeeId;
+                timbangan.DateDitimbang = DateTime.Now;
+                timbangan.EggType = JenisTelurSelected;
+                _db.StockGudang.Add(timbangan);
+                await _db.SaveChangesAsync();
+                TotalSisaBelumDitimbang = TotalDibawaKeGudang - Timbangan;
+                Snackbar.Add("Data produksi telur telah tersimpan.", Severity.Success);
+                Timbangan = 0;
+                TimbanganString = "";
+
+                await LoadData();
+                await LoadStockGudang();
+            }
+            catch (DbUpdateException dex)
+            {
+                Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+            }
+		}
+		
+		isProcessing = false;
+
+		StateHasChanged();
+	}
+
+
     private async Task LoadData()
     {
         if(JenisTelurSelected == "UTUH")
@@ -275,6 +364,12 @@
             TotalDiambil = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);
             TotalSisa = _db.DailyEggPickup.Where(x => x.ReceivedBy < 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurUtuhKG);
             TotalDitimbang = _db.StockGudang.Where(x => x.EggType == "UTUH" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
+        }
+        else if (JenisTelurSelected == "PUTIH")
+        {
+            TotalDiambil = _db.DailyEggPickup.Where(x => x.ReceivedBy > 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurPutihKG);
+            TotalSisa = _db.DailyEggPickup.Where(x => x.ReceivedBy < 0 && x.VerifiedBy < 0 && x.RecordDate.Date == DateTime.Now.Date).Sum(x => x.TelurPutihKG);
+            TotalDitimbang = _db.StockGudang.Where(x => x.EggType == "PUTIH" && x.DateDitimbang.Date == DateTime.Now.Date).Sum(x => x.TotalDitimbang);
         }
         else
         {

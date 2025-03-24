@@ -108,8 +108,8 @@
 	IList<PaymentReceiveView> listModel;
 	ReceiptMaster paymentDelete = new ReceiptMaster();
 	private string searchString1 = "";
-	DateTime dtFromDate = DateTime.UtcNow.AddDays(-7);
-	DateTime dtToDate = DateTime.UtcNow;
+	DateTime dtFromDate = DateTime.Now.AddDays(-7);
+	DateTime dtToDate = DateTime.Now;
 	string strVoucherNo = string.Empty;
 	string strType = "ReceiptVoucher";
 	string strMenu = "Accounting";

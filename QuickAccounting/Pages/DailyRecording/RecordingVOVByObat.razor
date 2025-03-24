@@ -1,0 +1,246 @@
+﻿@page "/app/recordingvovbyobat"
+@using System.Security.Claims;
+@using QuickAccounting.Data.Recording;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Form Recording VOV Pilih Obat</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Recording VOV Pilih Obat</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (FormSubmitted == false)
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pilih Obat/Vitamin</label>
+                            <div class="row">
+                                <div class="col-lg col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnVOVListChanged">
+                                        <option value="TIDAK">PILIH VOV</option>
+                                        @foreach (var vovItem in VOVList)
+                                        {
+                                            <option value="@vovItem.ProductId">@vovItem.ProductName</option>
+                                        }
+
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>                
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Record Date</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" value="@RecordDate.ToString("dd/MM/yyyy")" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <div class="table-responsive table-scrollable">                
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Kandang</th>
+                                            <th>Pemakaian (KG)</th>
+                                            <th>Hari Ke-</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var product in KandangItems)
+                                    {
+                                        <tr>
+                                                <td style="text-align:left !important;">@product.Name</td>
+                                                <td><input type="text" @bind="@product.Usage" class="form-control" /></td>
+                                                <td><input type="text" @bind="@product.Day" class="form-control" /></td>
+                                        </tr>                                                                 
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <br /> <br />
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <input type="button" @onclick="@(e => SaveVOVAsync())" class="btn btn-submit me-2" value="Simpan VOV Data" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Data VOV telah tersimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+    private DateTime RecordDate { get; set; }
+    private decimal HenAgeWeek { get; set; }
+    private decimal HenAgeDays { get; set; }
+    private string StrainName { get; set; }
+    private bool FormSubmitted { get; set; }
+    string SelectedNoKandang = "";
+    DateTime TodaysDate;
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<Product> VOVList = new List<Product>(); // Placeholder for cage numbers.
+    private DailyRecording CurrentRecording;
+    string strMenu = "Form Recording VOV Obat";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+
+    int SelectedVOVID = 0;
+    string SelectedVOVName = "";
+
+    List<Product> ProductObat = new List<Product>();
+    List<KandangItem> KandangItems = new List<KandangItem>();
+
+    private void SetTodaysDate()
+    {
+        var today = DateTime.Now;
+        TodaysDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string strName = currentUser.FindFirst(ClaimTypes.Role).Value;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        if (strShow.ShowAction == true)
+        {           
+            SetTodaysDate();           
+            RecordDate = TodaysDate;
+
+            // Fetch cage numbers, can be populated dynamically from a service or DB
+            CageList = await _kandang.GetAll();
+
+            VOVList = ProductObat = _db.Product.Where(x => x.GroupId == 7).ToList();   
+            foreach (Kandang p in CageList)
+            {
+                KandangItems.Add(new KandangItem
+                {
+                    ID = p.ID,
+                    Name = p.NoKandang,
+                    Usage = 0,
+                    Day = 0
+                });
+            }
+        }
+        else
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnVOVListChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedVOVID = Convert.ToInt32(e.Value.ToString());
+            SelectedVOVName = VOVList.FirstOrDefault(x => x.ProductId == SelectedVOVID).ProductName;
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveVOVAsync()
+    {
+        if (SelectedVOVID == 0)
+        {
+            Snackbar.Add("Mohon pilih Obat/Vitamin terlebih dahulu.", Severity.Error);
+            return;
+        }
+
+        List<DailyRecordingVOV> dailyRecordingVOVs = new List<DailyRecordingVOV>();
+        foreach (var item in KandangItems)
+        {
+            if (item.Usage > 0)
+            {
+                //var currentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
+
+                DailyRecordingVOV newRecording = new DailyRecordingVOV();
+                newRecording.VOVProductID = SelectedVOVID;
+                newRecording.VOVProductName = SelectedVOVName;
+                newRecording.RecordDate = RecordDate;
+                newRecording.CageNumber = item.Name;
+                newRecording.DateCreated = DateTime.Now;
+                newRecording.CreatedBy = modelEmployee.EmployeeId;
+                newRecording.Day = item.Day;
+                newRecording.StrainName = "";
+                newRecording.HenAgeDays = 0;
+                newRecording.HenAgeWeeks = 0;
+                newRecording.Usage = item.Usage;
+
+                dailyRecordingVOVs.Add(newRecording);
+            }
+        }
+
+        if (dailyRecordingVOVs.Count > 0)
+        {
+            await _db.AddRangeAsync(dailyRecordingVOVs);
+            await _db.SaveChangesAsync();
+
+            Snackbar.Add("VOV data telah tersimpan.", Severity.Success);
+            FormSubmitted = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Recording tidak ditemukan untuk kandang yang dipilih.", Severity.Error);
+        }
+    }
+
+    public class KandangItem
+    {
+        public int ID { get; set; }
+        public string Name { get; set; }
+        public decimal Usage { get; set; }
+        public int Day { get; set; }
+    }
+}

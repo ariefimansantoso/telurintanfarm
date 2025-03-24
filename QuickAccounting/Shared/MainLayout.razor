@@ -127,6 +127,8 @@
 													<li><a href="/app/stockcheck">Cek Stok Produksi</a></li>
 													<li><a href="/app/eggretur">Form Pengembalian Telur</a></li>
 													<li><a href="/app/reportstock">Laporan Stok Harian</a></li>
+													<li><a href="/app/formnota">Form Input Nota</a></li>
+													<li><a href="/app/reportnota">Laporan Input Nota</a></li>
 												</ul>
 											</li>
 										}
@@ -154,6 +156,10 @@
 													<li><a href="/app/salarypackage">Salary Package</a></li> *@
 													<li><a href="/app/adminattendancelist">Laporan Absensi Harian</a></li>
 													<li><a href="/app/attendance">Laporan Absensi Harian dan Gaji</a></li>
+													@if(currentUserRole == "Admin")
+													{
+														<li><a href="/app/adminsetpayroll">Tambah Tanggal Payroll</a></li>
+													}													
 													<li><a href="/app/recordpenalty">Sanksi dan Hukuman</a></li>
 													<li><a href="/app/recordbonus">Bonus dan Tambahan Gaji</a></li>
 													<li><a href="/app/adminrecordattendance">Absensi Manual</a></li>
@@ -244,8 +250,8 @@
 													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
 													<li><a href="/app/concentrateform">Konsentrat Per Kandang</a></li>
 													<li><a href="/app/eggproduction">Produksi Telur</a></li>
-													<li><a href="/app/concentrateform">Ganti Konsentrat dan Strain</a></li>
-													<li><a href="/app/recordingvov">Recording VOV</a></li>
+													<li><a href="/app/recordingvov">Recording VOV Kandang</a></li>
+													<li><a href="/app/recordingvovbyobat">Recording VOV Obat</a></li>
 													@* <li><a href="javascript:void(0);">Informasi Hen Day</a></li> *@
 													<li><a href="/app/recordingreports">Laporan Recording</a></li>
 												</ul>
@@ -257,11 +263,12 @@
 												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Recording</span> <span class="menu-arrow"></span></a>
 												<ul>
 													<li><a href="/app/henpopulation">Populasi</a></li>
-													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
-													<li><a href="/app/concentrateform">Konsentrat Per Kandang</a></li>
+													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>													
 													<li><a href="/app/eggproduction">Produksi Telur</a></li>
-													<li><a href="/app/concentrateform">Ganti Konsentrat dan Strain</a></li>
-													<li><a href="/app/recordingvov">Recording VOV</a></li>
+													<li><a href="/app/concentrateform">Ganti Konsentrat Per Kandang</a></li>
+													<li><a href="/app/recordingvov">Recording VOV Kandang</a></li>
+													<li><a href="/app/recordingvovbyobat">Recording VOV Obat</a></li>
+													<li><a href="/app/setperiodebaru">Set Periode Baru</a></li>												
 													<li><a href="/app/recordingreports">Laporan Recording</a></li>
 												</ul>
 											</li>
@@ -307,6 +314,9 @@
 										{
 											<li class="">
 												<a href="/app/pricing"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Set Harga</span></a>									
+											</li>
+											<li class="">
+												<a href="/app/resetsalesstock"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Reset Stok Telur</span></a>
 											</li>
 										}
 										@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")

@@ -121,9 +121,9 @@
 		listEmployee = await _emploee.GetAll();
 		model.EmployeeId = 0;
 		model.LedgerId = 0;
-		model.Date = DateTime.UtcNow;
+		model.Date = DateTime.Now;
 		model.Narration = string.Empty;
-		model.SalaryMonth = DateTime.UtcNow;
+		model.SalaryMonth = DateTime.Now;
 		string strMonth = model.SalaryMonth.ToString("MMMMyyyy");
 		string Month = strMonth.Substring(0, 3);
 		string strmonthYear = Convert.ToDateTime(strMonth.ToString()).Year.ToString();
@@ -152,7 +152,7 @@
 			model.VoucherTypeId = decAdvancePaymentVouchertypeId;
 			model.InvoiceNo = string.Empty;
 			model.FinancialYearId = 2;
-			model.AddedDate = DateTime.UtcNow;
+			model.AddedDate = DateTime.Now;
 				var result = await _advancePayment.Save(model);
 
 				if (result > 0)

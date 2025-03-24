@@ -273,7 +273,7 @@
 	{
 		model.FinancialYearId = 2;
 		model.WarehouseId = 1;
-		model.AddedDate = DateTime.UtcNow;
+		model.AddedDate = DateTime.Now;
 		var result = await _company.Update(model);
 		Snackbar.Add("Update Successfully.", Severity.Success);
 	}

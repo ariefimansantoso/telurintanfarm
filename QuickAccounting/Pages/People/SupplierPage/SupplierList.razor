@@ -179,7 +179,7 @@
             model.AccountGroupId = 22; // 22 is Supplier
             model.Type = "Supplier";
             model.CompanyId = 1;
-            model.AddedDate = DateTime.UtcNow;
+            model.AddedDate = DateTime.Now;
             var isCheck = await _customersupplier.CheckName(model.LedgerName);
             if (isCheck == true)
             {

@@ -94,16 +94,13 @@
                             <tr>
                                 <th></th>
                                 <th colspan="2" style="text-align:center;">UMUR</th>
-                                <th colspan="7" style="text-align:center;">POPULASI</th>
+                                <th colspan="8" style="text-align:center;">POPULASI</th>
                                 <th colspan="3" style="text-align:center;">PAKAN</th>
 
-                                <th colspan="2" style="text-align:center;">PROD UTUH</th>
-                                <th colspan="2" style="text-align:center;">PROD BENTES</th>
-                                <th colspan="2" style="text-align:center;">PROD TOTAL</th>
+                                <th colspan="10" style="text-align:center;">PROD TELUR</th>
 
-                                <th colspan="2" style="text-align:center;">%HD</th>
-                                <th colspan="2" style="text-align:center;">EM(Kg)</th>
-                                <th colspan="2" style="text-align:center;">EW(Gr)</th>
+                                <th colspan="7" style="text-align:center;"></th>
+                                <th colspan="2" style="text-align:center;">Program Kesehatan</th>
 
                                 <th></th>
 
@@ -117,40 +114,42 @@
 
                                 <th>Awal</th>
                                 <th>Mati</th>
-                                <th>Afkir/Jual</th>                                                                                                                            
-                                <th>Sakit</th>
-                                <th>P+</th>
+                                <th>Afkir</th>                                                                                                                            
+                                <th>S-</th>
+                                <th>S+</th>
                                 <th>P-</th>
-                                <th>Akhir</th>
-                                
-                                <th>Konsentrat</th>
+                                <th>P+</th>                                
+                                <th>Sisa</th>
+
+                                <th>PAKAN</th>
                                 @* <th>KRM</th>
                                 <th>SLD</th>
                                 <th>PAKAI</th>
                                 <th>SISA</th> *@
-                                <th>FI</th>                                
-                                <th>DEV</th>
+                                <th>PAKAI</th>
+                                <th>FI</th>   
 
-                                <th>Butir</th>
+                                <th>UTUH</th>
                                 <th>Kg</th>
-                                <th>Butir</th>
+                                <th>PUTIH</th>
                                 <th>Kg</th>
-                                <th>Butir</th>
+                                <th>BENTES</th>
                                 <th>Kg</th>
+                                <th>Total BTR</th>
+                                <th>Total Kg</th>
+                                <th>Kum BTR</th>
+                                <th>KWM KG</th>
 
-                                <th>HD</th>
-                                @* <th>STD</th> *@
-                                <th>DEV</th>
+                                <th>%HD</th>                                
+                                <th>+/- HD</th>
+                                <th>HH (BTR)</th>
+                                <th>HH (KG)</th>
                                 <th>EM</th>
-                               @*  <th>STD</th> *@
-                                <th>DEV</th>
-                                <th>EW</th>
-                                @* <th>STD</th> *@
-                                <th>DEV</th>
-
+                                <th>Grbt</th>
                                 <th>FCR</th>
-                                @* <th>Modified By</th>
-                                <th>Modified Date</th> *@
+
+                                <th>Nama</th>
+                                <th>Pakai</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -166,9 +165,10 @@
                                     <td>@record.PopulationStart</td>                                                                      
                                     <td>@record.DeadHenCount</td>
                                     <td>@record.UnproductiveHenCount</td>
-                                    <td>@record.SickHenCount</td>
-                                    <td>@record.MoveInHenCount</td>
+                                    <td></td>
+                                    <td></td>
                                     <td>@record.MoveOutHenCount</td>
+                                    <td>@record.MoveInHenCount</td>
                                     <td>@record.PopulationEnd</td>
 
                                     <td>@record.ConcentrateType</td>
@@ -176,15 +176,19 @@
                                     <td>@record.SaldoFoodKG</td>
                                     <td>@record.FoodNeededTodayKg</td>
                                     <td>@record.RemainingFoodKg</td> *@
-                                    <td>@record.FoodIntakePerHen</td>                                    
-                                    <td>@record.FoodIntakeDeviation</td>
+                                    <td>@record.FoodNeededTodayKg</td>
+                                    <td>@record.FoodIntakePerHen</td>
 
                                     <td>@record.PerfectEggCount</td>
                                     <td>@record.PerfectEggKg</td>
+                                    <td>@record.TelurPutihButir</td>
+                                    <td>@record.TelurPutihKG</td>
                                     <td>@record.BrokenEggCount</td>
                                     <td>@record.BrokenEggKg</td>
                                     <td>@record.TotalEggCount</td>
                                     <td>@record.TotalEggKg</td>
+                                    <td></td>
+                                    <td></td>
 
                                     <td>@record.ActualHenDay</td>
                                     @* <td>@record.StandardHenDay</td> *@
@@ -197,13 +201,14 @@
                                         <td>@record.DailyHenDayDifference</td>
                                     }
                                     
+                                    <td></td>
+                                    <td></td>
                                     <td>@record.ActualEggMassKg</td>
-                                    @* <td>@record.StandardEggMassKg</td> *@
-                                    <td>@record.EggMassDeviation</td>
                                     <td>@record.ActualEggWeightG</td>
-                                    @* <td>@record.StandardEggWeightG</td> *@
-                                    <td>@record.EggWeightDeviation</td>
                                     <td>@record.FeedConversionRatio</td>
+
+                                    <td></td>
+                                    <td></td>
                                     @* <td>@record.ModifiedBy</td>
                                     <td>@record.ModifiedDate.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture)</td> *@
                                 </tr>

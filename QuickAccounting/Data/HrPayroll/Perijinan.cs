@@ -46,7 +46,8 @@ namespace QuickAccounting.Data.HrPayroll
         public int CreatedBy { get; set; }
 
         public decimal PayrollTotal { get; set; }
-        
+        public DateTime RealPayrollDate { get; set; }
+
     }
 
     public class AbsensiPotongan

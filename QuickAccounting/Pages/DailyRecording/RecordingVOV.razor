@@ -79,7 +79,7 @@
                                     <thead>
                                         <tr>
                                             <th>Produk</th>
-                                            <th>Pemakaian</th>
+                                            <th>Pemakaian (KG)</th>
                                             <th>Hari Ke-</th>
                                         </tr>
                                     </thead>
@@ -225,6 +225,7 @@
                 newRecording.StrainName = StrainName;
                 newRecording.HenAgeDays = HenAgeDays;
                 newRecording.HenAgeWeeks = HenAgeWeek;
+                newRecording.Usage = item.Usage;
 
                 dailyRecordingVOVs.Add(newRecording);
             }

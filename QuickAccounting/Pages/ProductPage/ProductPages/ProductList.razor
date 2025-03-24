@@ -175,10 +175,10 @@
             model.Barcode = string.Empty;
             model.Image = string.Empty;
             model.OpeningStock = 0;
-            model.ExiparyDate = DateTime.UtcNow;
+            model.ExiparyDate = DateTime.Now;
             model.Barcode = model.ProductCode;
             model.IsActive = true;
-            model.AddedDate = DateTime.UtcNow;
+            model.AddedDate = DateTime.Now;
             var isCheck = await _product.CheckName(model.ProductName);
             if (isCheck == true)
             {

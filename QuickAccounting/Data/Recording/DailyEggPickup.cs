@@ -26,6 +26,16 @@ namespace QuickAccounting.Data.Recording
         [Required]
         [Column(TypeName = "decimal(18, 2)")]
         public decimal TelurUtuhKG { get; set; }
+        [Required]
+        public int TelurPutihButir { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(18, 2)")]
+        public decimal TelurPutihKG { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(18, 2)")]
+        public decimal TelurPutihNettKG { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18, 2)")]

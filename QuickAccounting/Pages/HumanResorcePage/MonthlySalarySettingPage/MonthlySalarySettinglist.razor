@@ -108,7 +108,7 @@
     }
     private async Task LoadData()
     {
-        master.SalaryMonth = DateTime.UtcNow;
+        master.SalaryMonth = DateTime.Now;
         string strMonth = master.SalaryMonth.ToString("MMMMyyyy");
         string Month = strMonth.Substring(0, 3);
         string strmonthYear = Convert.ToDateTime(strMonth.ToString()).Year.ToString();
@@ -138,7 +138,7 @@
         {
             master.YearMonth = monthYear;
             master.Narration = string.Empty;
-            master.AddedDate = DateTime.UtcNow;
+            master.AddedDate = DateTime.Now;
             foreach (var item in listModel)
             {
                 if(item.SalaryPackageId > 0)

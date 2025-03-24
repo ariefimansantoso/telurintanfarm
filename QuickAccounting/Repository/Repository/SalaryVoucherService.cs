@@ -173,7 +173,7 @@ namespace QuickAccounting.Repository.Repository
             cashPosting.ReferenceN = model.Narration;
             cashPosting.ChequeNo = String.Empty;
             cashPosting.ChequeDate = String.Empty;
-            cashPosting.AddedDate = DateTime.UtcNow;
+            cashPosting.AddedDate = DateTime.Now;
             _context.LedgerPosting.Add(cashPosting);
             await _context.SaveChangesAsync();
 
@@ -194,7 +194,7 @@ namespace QuickAccounting.Repository.Repository
             advancePosting.ReferenceN = model.Narration;
             advancePosting.ChequeNo = String.Empty;
             advancePosting.ChequeDate = String.Empty;
-            advancePosting.AddedDate = DateTime.UtcNow;
+            advancePosting.AddedDate = DateTime.Now;
             _context.LedgerPosting.Add(advancePosting);
             await _context.SaveChangesAsync();
             return id;

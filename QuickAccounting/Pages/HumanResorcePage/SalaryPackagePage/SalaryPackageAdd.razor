@@ -185,7 +185,7 @@
                 var user = authState.User;
                 string userName = user.FindFirst(ClaimTypes.Name).Value;
                 master.TotalAmount = decTotalAmount;
-                master.AddedDate = DateTime.UtcNow;
+                master.AddedDate = DateTime.Now;
                 foreach (var item in TodoList)
                 {
                     SalaryPackageDetails details = new SalaryPackageDetails();

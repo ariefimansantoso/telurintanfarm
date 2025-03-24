@@ -37,7 +37,7 @@ namespace QuickAccounting.Repository.Repository
 
         public string SerializeObjectToString(object obj)
         {
-            return JsonConvert.SerializeObject(obj, Formatting.Indented);
+            return ""; JsonConvert.SerializeObject(obj, Formatting.Indented);
         }
     }
 }

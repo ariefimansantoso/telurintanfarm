@@ -147,7 +147,7 @@
         listLedger = await _ledger.GetAll(22);
 
         master.VoucherNo = "DRAFT";
-        master.Date = DateTime.UtcNow;
+        master.Date = DateTime.Now;
         master.Narration = string.Empty;
         //master.Amount = TodoList.Sum(item => item.ReceiveAmount);
         OnChange();
@@ -179,7 +179,7 @@
             master.WarehouseId = 1;
             master.CompanyId = 1;
             master.Narration = string.Empty;
-            master.AddedDate = DateTime.UtcNow;
+            master.AddedDate = DateTime.Now;
 
             foreach (var item in TodoList)
             {

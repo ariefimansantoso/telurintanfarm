@@ -106,11 +106,11 @@
 	{
 		listEmployee = await _emploee.GetAll();
 		model.EmployeeId = 0;
-		model.Date = DateTime.UtcNow;
+		model.Date = DateTime.Now;
 		model.BonusAmount = 0;
 		model.DeductionAmount = 0;
 		model.Narration = string.Empty;
-		model.Month = DateTime.UtcNow;
+		model.Month = DateTime.Now;
 		string strMonth = model.Month.ToString("MMMMyyyy");
 		string Month = strMonth.Substring(0, 3);
 		string strmonthYear = Convert.ToDateTime(strMonth.ToString()).Year.ToString();
@@ -136,7 +136,7 @@
 		}
 		else
 		{
-			model.AddedDate = DateTime.UtcNow;
+			model.AddedDate = DateTime.Now;
 				var result = await _bonusDeduction.Save(model);
 
 				if (result > 0)

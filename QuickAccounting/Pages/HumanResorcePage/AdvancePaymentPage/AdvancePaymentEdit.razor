@@ -134,7 +134,7 @@
 			model.VoucherTypeId = decAdvancePaymentVouchertypeId;
 			model.InvoiceNo = string.Empty;
 			model.FinancialYearId = 2;
-			model.ModifyDate = DateTime.UtcNow;
+			model.ModifyDate = DateTime.Now;
 				bool result = await _advancePayment.Update(model);
 
 				if (result == true)

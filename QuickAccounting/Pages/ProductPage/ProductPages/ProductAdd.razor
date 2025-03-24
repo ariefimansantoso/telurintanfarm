@@ -177,7 +177,7 @@
 		model.Barcode = string.Empty;
 		model.Image = string.Empty;
 		model.OpeningStock = 0;
-		model.ExiparyDate = DateTime.UtcNow;
+		model.ExiparyDate = DateTime.Now;
 		model.IsActive = true;
 		model.QueueNumber = 16;
 		StateHasChanged();
@@ -192,14 +192,22 @@
 		}
 		else
 		{
-			model.Barcode = model.ProductCode;
+			if(model.ProductName.ToLower().StartsWith("telur partai"))
+			{
+				model.ProductCode = "TA-" + model.ProductCode;
+				model.Barcode = model.ProductCode;
+			}
+			else
+			{
+				model.Barcode = model.ProductCode;
+			}
 			model.IsActive = true;
-			model.AddedDate = DateTime.UtcNow;
+			model.AddedDate = DateTime.Now;
 				var result = await _product.Save(model);
 
 				if (result > 0)
 				{
-					Snackbar.Add("Save Successfully.", Severity.Success);
+					Snackbar.Add("Berhasil disimpan.", Severity.Success);
 					await LoadData();
 					StateHasChanged();
 				navigation.NavigateTo("/app/product");

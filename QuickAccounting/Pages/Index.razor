@@ -19,8 +19,10 @@
 @inject IDailyRecordingService _recording
 @inject ApplicationDbContext _db
 @inject IAuditLogService _audit
+@inject IStartingStockDate _stockDate;
 
 @using QuickAccounting.Components
+@using QuickAccounting.Constants;
 @using QuickAccounting.Data.Recording
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
@@ -42,10 +44,41 @@
 			<div class="col-12">
 				<div class="dash-widget" style="background-color:#ff0000;">					
 					<div class="dash-widgetcontent">
-						<span class="counters" style="color:#fff !important; font-weight:bold;">
-						<h2 style="color:#fff !important;">Pengumuman!</h2>
-							Laporan Recording (Telur, Populasi) harap menggunakan aplikasi baru (Telurintanfarm.com), aplikasi lama akan dimatikan.
-						</span>						
+						
+							<h2 style="color:#fff !important;">PENGUMUMAN LIBUR LEBARAN</h2>
+							<p class="counters" style="color:#fff !important; font-weight:bold;">
+								Sehubungan dengan masa libur Lebaran tahun 2025, berikut adalah ketentuan yang berlaku bagi seluruh karyawan PT Telur Intan Farm:
+								<br /><br />
+								<b>Masa Kontrak Kerja</b>
+								<br /><br />
+								Masa kontrak kerja berlaku selama 2 hari kerja, yaitu pada tanggal 31 Maret 2025 hingga 6 April 2025.
+						<br /><br />
+						<b>Ketentuan Libur</b>
+						<br /><br />
+								Karyawan diperbolehkan mengambil 2 hari libur bagi yang tidak memiliki kegiatan di divisi masing-masing.
+								<br /><br />
+								Bagi karyawan yang tetap masuk kerja selama masa kontrak tersebut, akan mendapatkan tunjangan sebesar Rp75.000 per hari.
+								<br /><br />
+								Mulai tanggal 7 April 2025 dan seterusnya, ketidakhadiran akan memotong jatah libur karyawan.
+								<br /><br />
+								<b>Jadwal dan Jam Kerja</b>
+								<br /><br />
+								Hari pertama kontrak kerja (31 Maret 2025): Masuk pukul 08.30 WIB dan pulang pukul 15.00 WIB.
+								<br /><br />
+								Hari kedua kontrak kerja (1 April 2025): Masuk pukul 06.30 WIB dan pulang pukul 15.00 WIB.
+								<br /><br />
+								Selama masa Lebaran (2-6 April 2025): Jam kerja normal, namun pulang dimajukan menjadi 15.00 WIB.
+								<br /><br />
+								<b>Koordinasi Divisi</b>
+								<br /><br />
+								Mohon kepada masing-masing kepala divisi untuk mengatur jadwal kerja agar tidak terjadi ketidakseimbangan dalam operasional perusahaan.
+								<br /><br />
+								Demikian pengumuman ini disampaikan. Atas perhatian dan kerja samanya, kami ucapkan terima kasih.
+								<br /><br />
+								Manajemen PT Telur Intan Farm
+								<br /><br /><br />
+								Balung, Jumat 21 Maret 2025
+							</p>						
 					</div>
 				</div>
 			</div>
@@ -110,7 +143,7 @@
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", StockTelurUtuh) KG</span></h5>
+						<h5><span class="counters">@StockTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Utuh</h6>
 					</div>
 				</div>
@@ -121,7 +154,7 @@
 						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", StockTelurPutih) KG</span></h5>
+						<h5><span class="counters">@StockTelurPutih.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Putih</h6>
 					</div>
 				</div>
@@ -132,7 +165,7 @@
 						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", StockTelurBentes) KG</span></h5>
+						<h5><span class="counters">@StockTelurBentes.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Bentes</h6>
 					</div>
 				</div>
@@ -143,7 +176,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", StockTelurParah) KG</span></h5>
+						<h5><span class="counters">@StockTelurParah.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah</h6>
 					</div>
 				</div>
@@ -179,7 +212,7 @@
 						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", ReturPutih) KG</span></h5>
+						<h5><span class="counters">@ReturPutih.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Putih</h6>
 					</div>
 				</div>
@@ -190,7 +223,7 @@
 						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", ReturBentes) KG</span></h5>
+						<h5><span class="counters">@ReturBentes.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Bentes</h6>
 					</div>
 				</div>
@@ -201,7 +234,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", ReturRusak) KG</span></h5>
+						<h5><span class="counters">@ReturRusak.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Rusak</h6>
 					</div>
 				</div>
@@ -212,7 +245,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", ReturParah) KG</span></h5>
+						<h5><span class="counters">@ReturParah.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah</h6>
 					</div>
 				</div>
@@ -223,7 +256,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", ReturParahSekali) KG</span></h5>
+						<h5><span class="counters">@ReturParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah Sekali</h6>
 					</div>
 				</div>
@@ -234,7 +267,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", Susut) KG</span></h5>
+						<h5><span class="counters">@Susut.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Susut</h6>
 					</div>
 				</div>
@@ -245,7 +278,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", TotalReturan) KG</span></h5>
+						<h5><span class="counters">@TotalReturan.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Total Retur dan Susut</h6>
 					</div>
 				</div>
@@ -258,7 +291,7 @@
 			<div class="container-fluid">
 				<div class="col-md-12">
 					<div class="brand-text float-left mt-4">
-						<h3>Laporan Penjualan Hari Ini (Dalam Rupiah)<span></span> </h3>
+						<h3>Laporan Penjualan Telur Hari Ini (Dalam Rupiah)<span></span> </h3>
 					</div>				
 				</div>
 			</div>
@@ -363,6 +396,32 @@
 		</div>
 		<!-- RP Total -->
 
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Laporan Penjualan Non Telur Hari Ini<span></span> </h3>
+					</div>				
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="cust-col-20 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", TotalNonTelurRupiah)</span></h5>
+						<h6>Non Telur</h6>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
 		<!-- Sales Butir -->
 		<div class="row">
 			<div class="container-fluid">
@@ -382,7 +441,7 @@
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",TelurUtuh) KG</span></h5>
+						<h5><span class="counters">@TelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Utuh</h6>
 						<table style="margin-top:10px;">
 							<tr>
@@ -390,8 +449,8 @@
 								<td style="padding:3px 3px; font-weight:bold;"><b>Partai</b></td>
 							</tr>
 							<tr>
-								<td style="padding:3px 3px; font-weight:bold;"><b>@string.Format("{0:n0}",TelurUtuhEcer) KG</b></td>
-								<td style="padding:3px 3px; font-weight:bold;"><b>@string.Format("{0:n0}",TelurUtuhPartai) KG</b></td>
+								<td style="padding:3px 3px; font-weight:bold;"><b>@TelurUtuhEcer.ToString("F2", new CultureInfo("id-ID")) KG</b></td>
+								<td style="padding:3px 3px; font-weight:bold;"><b>@TelurUtuhPartai.ToString("F2", new CultureInfo("id-ID")) KG</b></td>
 							</tr>							
 						</table>
 						@if (PartaiKGList != null && PartaiKGList.Count > 0)
@@ -405,7 +464,7 @@
 								{
 									<tr>
 										<td style="padding:3px 3px;">@partaiTransferTrx.LedgerName</td>
-										<td style="padding:3px 3px; text-align:right;">@string.Format("{0:n0}", partaiTransferTrx.TotalKG)</td>
+										<td style="padding:3px 3px; text-align:right;">@partaiTransferTrx.TotalKG.ToString("F2", new CultureInfo("id-ID"))</td>
 									</tr>
 								}
 							</table>
@@ -419,7 +478,7 @@
 						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",TelurPutih) KG</span></h5>
+						<h5><span class="counters">@TelurPutih.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Putih</h6>
 					</div>
 				</div>
@@ -430,7 +489,7 @@
 						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",TelurBentes) KG</span></h5>
+						<h5><span class="counters">@TelurBentes.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Bentes</h6>
 					</div>
 				</div>
@@ -441,7 +500,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", TelurParah) KG</span></h5>
+						<h5><span class="counters">@TelurParah.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah</h6>
 					</div>
 				</div>
@@ -452,7 +511,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", TelurParahSekali) KG</span></h5>
+						<h5><span class="counters">@TelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah Sekali</h6>
 					</div>
 				</div>
@@ -478,7 +537,7 @@
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",TotalTelurUtuh) KG</span></h5>
+						<h5><span class="counters">@TotalTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Utuh</h6>
 					</div>
 				</div>
@@ -489,7 +548,7 @@
 						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",TotalTelurPutih) KG</span></h5>
+						<h5><span class="counters">@TotalTelurPutih.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Putih</h6>
 					</div>
 				</div>
@@ -500,7 +559,7 @@
 						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}",TotalTelurBentes) KG</span></h5>
+						<h5><span class="counters">@TotalTelurBentes.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Bentes</h6>
 					</div>
 				</div>
@@ -511,7 +570,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", TotalTelurParah) KG</span></h5>
+						<h5><span class="counters">@TotalTelurParah.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah</h6>
 					</div>
 				</div>
@@ -522,12 +581,12 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", TotalTelurParahSekali) KG</span></h5>
+						<h5><span class="counters">@TotalTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah Sekali</h6>
 					</div>
 				</div>
 			</div>
-		</div>
+		</div>		
 
 		<div class="row">	
 			<div class="col-lg col-sm-12 col-12">
@@ -573,8 +632,89 @@
 					</div>
 				</div>
 			</div> *@
- 
+		</div>
 
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Laporan Singkat Recording Seluruh Kandang<span></span> </h3>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+
+			<div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@TotalPopulasi</span></h5>
+						<h6>Total Populasi</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@RataRataHD.ToString("F2", new CultureInfo("id-ID"))</span></h5>
+						<h6>HD</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@RataRataFI.ToString("F2", new CultureInfo("id-ID"))</span></h5>
+						<h6>FI</h6>
+					</div>
+				</div>
+			</div>
+			@* <div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@TotalPakan.ToString("F2", new CultureInfo("id-ID"))</span></h5>
+						<h6>Pakan Rumus</h6>
+					</div>
+				</div>
+			</div> *@
+			<div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@TotalPakanSum.ToString("F2", new CultureInfo("id-ID"))</span></h5>
+						<h6>Pakan</h6>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-2 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@RataRataFCR.ToString("F2", new CultureInfo("id-ID"))</span></h5>
+						<h6>FCR</h6>
+					</div>
+				</div>
+			</div>			
+		</div>
+
+		<div class="row">
 			<div class="col-lg-12 col-sm-12 col-12 d-flex">
 				<div class="card flex-fill">
 					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
@@ -1079,7 +1219,7 @@
 	</ModalDialog>
 }
 @code{
-	/* Kode baru */
+		/* Kode baru */
 	private bool AdaPerijinan;
 	string currentUserRole = "User";
 	List<dynamic> unapprovedPerijinan;
@@ -1108,6 +1248,8 @@
 	bool ChartDataLoaded = false;
 	/* Kode baru */
 
+	int TotalPopulasi = 0;
+	decimal RataRataHD, RataRataFI, RataRataFCR = 0;
 
 	private bool dense = true;
 	private bool hover = true;
@@ -1156,6 +1298,11 @@
 	decimal Susut = 0;
 	decimal TotalReturan = 0;
 
+	decimal TotalPakan = 0;
+	decimal TotalPakanSum = 0;
+
+	decimal TotalNonTelurRupiah = 0;
+
 	DateTime dtFromDate;
 	DateTime dtToDate;
 
@@ -1192,6 +1339,34 @@
 		SelectedPerijinanID = id;
 		ApproveDialogOpen = true;
 		StateHasChanged();
+	}
+
+	private void CalculateTotalNonTelurRupiah()
+	{
+		TotalNonTelurRupiah = (from sd in _db.SalesDetails
+										join rm in _db.SalesMaster on sd.SalesMasterId equals rm.SalesMasterId
+										join rd in _db.ReceiptDetails on rm.SalesMasterId equals rd.SalesMasterId
+										join al in _db.AccountLedger on rm.LedgerId equals al.LedgerId
+										join p in _db.Product on sd.ProductId equals p.ProductId
+										where rm.LedgerId >= 19 &&
+										rm.Date >= new DateTime(dtFromDate.Year, dtFromDate.Month, dtFromDate.Day, 0, 0, 0) &&
+										rm.Date <= new DateTime(dtToDate.Year, dtToDate.Month, dtToDate.Day, 23, 59, 59) &&
+										(rd.LedgerId == 1 || rd.LedgerId == 10) &&
+										!p.ProductCode.StartsWith("TA-")
+										select sd.NetAmount).Sum();
+	}
+
+	private void LoadReportRecordingSummary()
+	{		
+		var todayDataForFCR = _db.DailyRecording.Where(x => x.RecordDate.Date == DateTime.Now.AddDays(-1).Date && x.ActualHenDay >= 20).ToList();
+		var todayData = _db.DailyRecording.Where(x => x.RecordDate.Date == DateTime.Now.AddDays(-1).Date).ToList();
+		int totalRecord = todayData.Count;
+		TotalPopulasi = todayData.Sum(x => x.PopulationEnd);
+		RataRataHD = todayData.Average(x => x.ActualHenDay);
+		RataRataFI = todayData.Average(x => x.FoodIntakePerHen);
+		RataRataFCR = todayDataForFCR.Count > 0 ? todayDataForFCR.Average(x => x.FeedConversionRatio) : 0;
+		TotalPakan = RataRataFI * TotalPopulasi;
+		TotalPakanSum = todayData.Sum(x => x.ActualFoodNeededKG);
 	}
 
 	private void OpenRejectDialog(int id)
@@ -1302,7 +1477,7 @@
 			StockTelurUtuh = stockTelurUtuh.StockKG;
 		}
 
-		var startingStockDate = new DateTime(2025, 1, 11, 0, 0, 0);
+		var startingStockDate = stockTelurUtuh.StockDate;
 
 		// bentes
 		var stockBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
@@ -1405,9 +1580,13 @@
 		PartaiKGList = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 10);
 		var partaiKGCash = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 1);
 		PartaiKGList.AddRange(partaiKGCash);
+		PartaiKGList = PartaiKGList.Distinct().ToList();
 
 		PartaiTunai = Convert.ToDecimal(PartaiCashList.Sum(x => (decimal)x.Amount));
 		PartaiBank = Convert.ToDecimal(PartaiTransferList.Sum(x => (decimal)x.Amount));
+
+		LoadReportRecordingSummary();
+		CalculateTotalNonTelurRupiah();
 
 		if(currentUserRole == "Supervisor")
 		{
@@ -1494,6 +1673,7 @@
 		PartaiKGList = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 10);
 		var partaiKGCash = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 1);
 		PartaiKGList.AddRange(partaiKGCash);
+		PartaiKGList = PartaiKGList.Distinct().ToList();
 
 		PartaiTunai = Convert.ToDecimal(PartaiCashList.Sum(x => (decimal)x.Amount));
 		PartaiBank = Convert.ToDecimal(PartaiTransferList.Sum(x => (decimal)x.Amount));
@@ -1504,6 +1684,13 @@
 		TelurParah =			_sales.GetPenjualanTelurParah(dtFromDate, dtToDate);
 		TelurParahSekali =		_sales.GetPenjualanTelurParahSekali(dtFromDate, dtToDate);
 		
+		//=====		
+		TelurUtuhEcer = _sales.GetPenjualanTelurUtuhEcer(dtFromDate, dtToDate);
+		TelurUtuhPartai = _sales.GetPenjualanTelurUtuhPartai(dtFromDate, dtToDate);		
+		//=====
+		LoadReportRecordingSummary();
+		CalculateTotalNonTelurRupiah();
+
 		isProcessing = false;
 
 		StateHasChanged();
@@ -1515,8 +1702,8 @@
 		string strDay7 = "DeActive";
 		string strDay30 = "DeActive";
 		string strDay365 = "DeActive";
-		DateTime dtFromDate = DateTime.UtcNow.AddDays(-1);
-		DateTime dtToDate = DateTime.UtcNow;
+		DateTime dtFromDate = DateTime.Now.AddDays(-1);
+		DateTime dtToDate = DateTime.Now;
 		var result = report.SalesPurchaseTotal( dtFromDate , dtToDate, 1); //GetTotalSales&Purchase
 		TotalSale = result.totalSale;
 		TotalPurchase = result.totalPurchase;
@@ -1583,8 +1770,8 @@
 		string strDay7 = "DeActive";
 		string strDay30 = "active";
 		string strDay365 = "DeActive";
-		DateTime dtFromDate = DateTime.UtcNow.AddDays(-30);
-		DateTime dtToDate = DateTime.UtcNow;
+		DateTime dtFromDate = DateTime.Now.AddDays(-30);
+		DateTime dtToDate = DateTime.Now;
 		var result = report.SalesPurchaseTotal(dtFromDate, dtToDate, 1); //GetTotalSales&Purchase
 		TotalSale = result.totalSale;
 		TotalPurchase = result.totalPurchase;
@@ -1615,8 +1802,8 @@
 		string strDay7 = "DeActive";
 		string strDay30 = "DeActive";
 		string strDay365 = "active";
-		DateTime dtFromDate = DateTime.UtcNow.AddDays(-365);
-		DateTime dtToDate = DateTime.UtcNow;
+		DateTime dtFromDate = DateTime.Now.AddDays(-365);
+		DateTime dtToDate = DateTime.Now;
 		var result = report.SalesPurchaseTotal(dtFromDate, dtToDate, 1); //GetTotalSales&Purchase
 		TotalSale = result.totalSale;
 		TotalPurchase = result.totalPurchase;
@@ -1650,8 +1837,4 @@
 	{
 		value = true;
 	}
-	//string FormatAsUSD(object value)
-	//{
-	//	//return PublicVariables._Symbol;
-	//}
 }

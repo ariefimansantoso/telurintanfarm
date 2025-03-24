@@ -1,0 +1,364 @@
+﻿@page "/app/formnota"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@using Newtonsoft.Json
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Form Input Nota</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                font-weight: 200 !important;
+                border-bottom: 1px solid #E9ECEF;
+                vertical-align: middle;
+                white-space: nowrap;
+                text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Input Nota</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Jenis Telur</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnJenisTelurChanged">
+                                    <option value="TIDAK">PILIH JENIS TELUR</option>
+                                    <option value="UTUH">UTUH</option>
+                                    <option value="PUTIH">PUTIH</option>
+                                    <option value="BENTES">BENTES</option>
+                                    <option value="PARAH">PARAH</option>
+                                    <option value="PS">PARAH SEKALI</option>
+                                    <option value="RUSAK">RUSAK</option>
+                                    <option value="SUSUT">SUSUT</option>
+                                    <option value="AFKIR">AFKIR</option>
+                                    <option value="PETI">PETI</option>
+                                    <option value="LAINNYA">LAINNYA</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Nomor Nota</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="number" class="form-control" value="@NomorNota" @onchange="OnNomorNotaChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@Kilogram" @onchange="OnKilogramChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;" disabled="@(!IsValid)">Simpan</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="table-responsive table-scrollable">                    
+                    <table class="table table-striped">
+                        <thead>                            
+                            <tr>                               
+                                    <th style="text-align:left !important;">Tgl</th>
+                                    <th style="text-align:left !important;">Nomor Nota</th>                                    
+                                    <th style="text-align:left !important;">Jenis Telur</th>
+                                    <th style="text-align:left !important;">Jumlah</th>
+                                    <th style="text-align:left !important;">Diinput Oleh</th>
+                                    <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (RecordNota rn in ListNota)
+                            {
+                                <tr>
+                                    <td style="text-align:left !important;">@rn.DateCreated.ToString("dd/MM/yyyy")</td>
+                                    <td style="text-align:left !important;">@rn.NomorNota</td>
+                                    <td style="text-align:left !important;">@rn.JenisTelur</td>
+                                    <td style="text-align:left !important;">@rn.BeratTelur.ToString("F2", new CultureInfo("id-ID"))</td>
+                                    <td>
+                                        @{
+                                            var employeeInput = _db.Employee.FirstOrDefault(x => x.EmployeeId == rn.CreatedBy);
+                                        }
+                                        @employeeInput.EmployeeName
+                                    </td>
+                                    <td>
+                                        <a @onclick="( () => { OpenDeleteDialog(rn.ID); } )" class="btn btn-danger" style="color:#fff !important; font-size:12px !important;">HAPUS</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>    
+</div>
+@if (DeleteDialogOpen)
+{
+    <ModalDialog Title="Hapus Stok"
+                 Text="Apakah anda yakin anda ingin menghapus stok ini?"
+                 OnClose="@OnDeleteDialogClose"
+                 DialogType="ModalDialog.ModalDialogType.Delete">
+    </ModalDialog>
+}
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Form Input Nota";
+
+
+    string JenisTelurSelected = "";
+    decimal Kilogram = 0;    
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+
+    public bool DeleteDialogOpen { get; set; }
+    bool isProcessing;
+    bool IsValid = true;
+    string NomorNota = "";
+    int SelectedItemId;
+    List<RecordNota> ListNota = new List<RecordNota>();
+
+    private async Task OnNomorNotaChanged(ChangeEventArgs e)
+    {
+        NomorNota = e.Value.ToString();
+    }
+
+    private async Task OnKilogramChanged(ChangeEventArgs e)
+    {
+        string auditMessage = "Form Input Nota:OnKilogramChanged";
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        auditMessage = "Form Input Nota:OnKilogramChanged: " + e.Value.ToString();
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            Kilogram = v;            
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input tidak benar.", Severity.Warning);
+
+            auditMessage = "Form Input Nota:OnKilogramChanged:Input tidak benar: " + e.Value.ToString();
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+        }
+    }
+
+    private async Task Save()   
+    {
+        string auditMessage = "Mencoba menyimpan Form Nota.";
+
+        try
+        {
+            if (string.IsNullOrEmpty(NomorNota))
+            {
+                Snackbar.Add("Nomor Nota Tidak Boleh Kosong", Severity.Warning);
+
+                auditMessage = "Nomor nota kosong";
+                await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                return;
+            }
+
+            if (JenisTelurSelected == "TIDAK" || JenisTelurSelected == "")
+            {
+                Snackbar.Add("Mohon pilih jenis telur", Severity.Warning);
+
+                auditMessage = "Jenis telur belum dipilih";
+                await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                return;
+            }           
+
+            auditMessage = "Mencoba mengurangi stok telur jenis UTUH dengan jumlah: " + Kilogram + " karena ada retur.";
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            RecordNota recordNota = new RecordNota();
+            recordNota.BeratTelur = Kilogram;
+            recordNota.JenisTelur = JenisTelurSelected;
+            recordNota.NomorNota = NomorNota;
+            recordNota.DateCreated = DateTime.Now;
+            recordNota.CreatedBy = modelEmployee.EmployeeId;
+
+            auditMessage = "Mencoba menyimpan pengembalian telur jenis " + JenisTelurSelected + " dengan jumlah: " + Kilogram;
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            _db.RecordNota.Add(recordNota);
+
+            // Save changes to the database
+            await _db.SaveChangesAsync();
+
+            auditMessage = "Input Nota " + JenisTelurSelected + " dengan nomor nota: " + NomorNota + " dan jumlah: " + Kilogram + " BERHASIL";
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            ListNota = await _db.RecordNota.Where(x => x.DateCreated.Date == DateTime.Now.Date).ToListAsync();
+            ListNota = ListNota.OrderByDescending(x => Convert.ToInt32(x.NomorNota)).ToList();
+
+            Snackbar.Add("Berhasil menyimpan", Severity.Success);
+            Kilogram = 0;
+            JenisTelurSelected = "TIDAK";
+            NomorNota = "";
+        }
+        catch (DbUpdateException dex)
+        {
+            auditMessage = "Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message; 
+            await _audit.LogAsync(LogTypes.LogError, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            auditMessage = "Error e: " + ex.Message + Environment.NewLine + ex.StackTrace;
+            await _audit.LogAsync(LogTypes.LogError, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task OnJenisTelurChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString() != "TIDAK")
+        {
+            JenisTelurSelected = e.Value.ToString();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Input Nota.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        ListNota = await _db.RecordNota.Where(x => x.DateCreated.Date == DateTime.Now.Date).ToListAsync();
+        ListNota = ListNota.OrderByDescending(x => Convert.ToInt32(x.NomorNota)).ToList();
+    }
+
+    private void OpenDeleteDialog(int id)
+    {
+        SelectedItemId = id;
+
+        DeleteDialogOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task OnDeleteDialogClose(bool accepted)
+    {
+        if (accepted)
+        {
+            await DeleteNota();
+            ListNota = await _db.RecordNota.Where(x => x.DateCreated.Date == DateTime.Now.Date).ToListAsync();
+            ListNota = ListNota.OrderByDescending(x => Convert.ToInt32(x.NomorNota)).ToList();
+        }
+
+        DeleteDialogOpen = false;
+        StateHasChanged();
+
+        Snackbar.Add("Berhasil menghapus nota", Severity.Success);
+    }
+
+    private async Task DeleteNota()
+    {
+        try
+        {
+            var nota = await _db.RecordNota.FirstOrDefaultAsync(x => x.ID == SelectedItemId);
+            if (nota != null)
+            {
+                //string serializedStock = _audit.SerializeObjectToString(nota);
+                string auditMessage = "Mencoba menghapus Nota: " + nota.NomorNota;
+                await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                _db.RecordNota.Remove(nota);
+                await _db.SaveChangesAsync();
+                Thread.Sleep(2000);
+
+                auditMessage = "" + modelEmployee.EmployeeName + " berhasil menghapus Nota: " + nota.NomorNota;
+                await _audit.LogAsync(LogTypes.LogInfo, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            }
+        }
+        catch (DbUpdateException ex)
+        {
+            string auditMessage = "Error DbUpdateException dalam menghapus nota: " + ex.Message + Environment.NewLine + ex.InnerException?.Message;
+            await _audit.LogAsync(LogTypes.LogError, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            Console.WriteLine($"Database Update Exception: {ex.InnerException?.Message}");
+        }
+        catch (Exception ex)
+        {
+            string auditMessage = "Error Exception dalam menghapus nota: " + ex.Message + Environment.NewLine + ex.StackTrace;
+            await _audit.LogAsync(LogTypes.LogError, "Form Input Nota", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            Snackbar.Add("Terjadi kesalahan pada system. Tolong di screenshot: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+}    

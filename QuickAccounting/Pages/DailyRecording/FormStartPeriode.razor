@@ -1,0 +1,354 @@
+﻿@page "/app/setperiodebaru"
+@using System.Security.Claims;
+@using QuickAccounting.Data.Recording;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Form Mulai Periode Baru</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Mulai Periode Baru</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (FormSubmitted == false)
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pilih Nomor Kandang</label>
+                            <div class="row">
+                                <div class="col-lg col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnCageChanged">
+                                        <option value="TIDAK">PILIH NO KANDANG</option>
+                                        @foreach (var kandangItem in CageList)
+                                        {
+                                            <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                        }
+
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Strain</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="StrainName" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Record Date</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" value="@RecordDate.ToString("dd/MM/yyyy")" disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Umur Awal (Hari)</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" @bind="StartingDays" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Umur Awal (Minggu)</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" @bind="StartingWeek" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Populasi Awal</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" @bind="PopulationCount" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Mati</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" value="@DeadCount" @onchange="OnDeadChanged" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Afkir</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" value="@UnproductiveCount" @onchange="OnAfkirChanged" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Sakit</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" value="@SickCount" @onchange="OnSickChanged" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pindah Masuk</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" value="@MoveInCount" @onchange="OnMoveInChanged" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Pindah Keluar</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" value="@MoveOutCount" @onchange="OnMoveOutChanged" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Populasi Akhir</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="number" class="form-control" @bind="PopulationEndCount" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <br /> <br />
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <input type="button" @onclick="@(e => SaveHenPopulationAsync())" class="btn btn-submit me-2" value="Simpan Data Awal Periode" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Data awal periode telah tersimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+
+    private DateTime RecordDate { get; set; }
+    private decimal HenAgeWeek { get; set; }
+    private int PopulationCount { get; set; }
+    private int DeadCount { get; set; }
+    private int UnproductiveCount { get; set; }
+    private int SickCount { get; set; }
+    private int MoveInCount { get; set; }
+    private int MoveOutCount { get; set; }
+    private int PopulationEndCount { get; set; }
+    private int StartingDays { get; set; }
+    private int StartingWeek { get; set; }
+
+    private string StrainName { get; set; }
+    public int HenAgeDays { get; set; }
+    private bool FormSubmitted { get; set; }
+    string SelectedNoKandang = "";
+    DateTime TodaysDate;
+    private List<Kandang> CageList = new List<Kandang>(); // Placeholder for cage numbers.
+    private DailyRecording CurrentRecording;
+    string strMenu = "Form Mulai Periode Baru";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+
+    private void SetTodaysDate()
+    {
+        var today = DateTime.Now;
+        TodaysDate = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0);
+        RecordDate = TodaysDate;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string strName = currentUser.FindFirst(ClaimTypes.Role).Value;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        if (strShow.ShowAction == true)
+        {           
+            SetTodaysDate();
+
+            // Fetch cage numbers, can be populated dynamically from a service or DB
+            CageList = await _kandang.GetAll();
+        }
+        else
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {        
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
+            RecordDate = CurrentRecording.RecordDate;
+            StrainName = CurrentRecording.StrainName;
+            PopulationCount = CurrentRecording.PopulationEnd;
+            PopulationEndCount = CurrentRecording.PopulationEnd;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeadChanged(ChangeEventArgs e)
+    {
+        DeadCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnAfkirChanged(ChangeEventArgs e)
+    {
+        UnproductiveCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnSickChanged(ChangeEventArgs e)
+    {
+        SickCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnMoveInChanged(ChangeEventArgs e)
+    {
+        MoveInCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task OnMoveOutChanged(ChangeEventArgs e)
+    {
+        MoveOutCount = Convert.ToInt32(e.Value.ToString());
+        PopulationEndCount = PopulationCount - DeadCount - UnproductiveCount - SickCount - MoveOutCount + MoveInCount;
+    }
+
+    private async Task SaveHenPopulationAsync()
+    {
+        if (SelectedNoKandang == "")
+        {
+            Snackbar.Add("Mohon pilih No Kandang terlebih dahulu.", Severity.Error);
+            return;
+        }
+
+        // Check if there is a PeriodeStart = true before this record
+        bool hasStartBefore = _db.DailyRecording.Any(r =>
+            r.CageNumber == SelectedNoKandang &&
+            r.StrainName == StrainName &&
+            r.PeriodeStart == true &&
+            r.RecordDate < RecordDate
+        );
+
+        if (!hasStartBefore)
+        {
+            Snackbar.Add("Tidak bisa memulai Periode Baru karena Periode sebelumnya belum berakhir.", Severity.Error);
+            return;
+        }
+
+        var result = await _recording.SaveHenPopulationAsync(SelectedNoKandang,
+            TodaysDate, StrainName, PopulationCount, PopulationEndCount, DeadCount, UnproductiveCount, SickCount,
+            MoveInCount, MoveOutCount, modelEmployee.EmployeeId, true, false);
+
+        if (result)
+        {
+            Snackbar.Add("Data periode baru telah tersimpan.", Severity.Success);
+            FormSubmitted = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Snackbar.Add("Recording tidak ditemukan untuk kandang yang dipilih.", Severity.Error);
+        }
+    }
+}

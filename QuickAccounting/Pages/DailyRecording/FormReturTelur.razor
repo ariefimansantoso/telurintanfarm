@@ -26,13 +26,14 @@
 
 <style type="text/css">
     .table tbody tr td {
-        padding: 2px !important;
-        color: #637381;
-        font-weight: 200 !important;
-        border-bottom: 1px solid #E9ECEF;
-        vertical-align: middle;
-        white-space: nowrap;
-        text-align: right !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
     }
 </style>
 
@@ -150,6 +151,14 @@
             auditMessage = "Mencoba menyimpan pengembalian telur jenis " + JenisTelurSelected + " dengan jumlah: " + Kilogram;
             await _audit.LogAsync(LogTypes.LogInfo, "Form Pengembalian Telur", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
+            MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+            mutasi.JenisTelur = "UTUH";
+            mutasi.BeratTelurIn = 0;
+            mutasi.BeratTelurOut = Kilogram;
+            mutasi.DateCreated = DateTime.Now;
+            mutasi.CreatedBy = modelEmployee.EmployeeId;
+            _db.MutasiStockTelurHarian.Add(mutasi);
+
             // kalau tipe telur tidak UTUH, maka langsung masukkan ke Stock Posting.
             int productId = 0;
             switch (JenisTelurSelected)
@@ -196,6 +205,13 @@
             stockposting.AddedDate = DateTime.Now;
             _db.StockPosting.Add(stockposting);
 
+            MutasiStockTelurHarian mutasiNonUtuh = new MutasiStockTelurHarian();
+            mutasiNonUtuh.JenisTelur = JenisTelurSelected;
+            mutasiNonUtuh.BeratTelurIn = Kilogram;
+            mutasiNonUtuh.BeratTelurOut = 0;
+            mutasiNonUtuh.DateCreated = DateTime.Now;
+            mutasiNonUtuh.CreatedBy = modelEmployee.EmployeeId;
+            _db.MutasiStockTelurHarian.Add(mutasiNonUtuh);
 
             // Save changes to the database
             await _db.SaveChangesAsync();

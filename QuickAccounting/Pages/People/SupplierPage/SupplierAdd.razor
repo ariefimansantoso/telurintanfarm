@@ -174,7 +174,7 @@
 			model.AccountGroupId = 22; // 22 is Supplier
 			model.Type = "Supplier";
 			model.CompanyId = 1;
-			model.AddedDate = DateTime.UtcNow;
+			model.AddedDate = DateTime.Now;
 				var result = await _customersupplier.Save(model);
 
 				if (result > 0)

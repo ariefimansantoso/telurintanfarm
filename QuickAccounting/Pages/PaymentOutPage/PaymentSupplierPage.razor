@@ -209,7 +209,7 @@
         listCashOrBank = await _ledger.GetCashOrBank();
         intCashBank = 0;
         master.VoucherNo = "DRAFT";
-        master.Date = DateTime.UtcNow;
+        master.Date = DateTime.Now;
         master.Narration = string.Empty;
         TodoList = await _purchase.PaymentAllocations(purchase.PurchaseMasterId);
         master.Amount = TodoList.Sum(item => item.ReceiveAmount);
@@ -250,7 +250,7 @@
             master.CompanyId = 1;
             master.PurchaseMasterId = purchase.PurchaseMasterId;
             master.Narration = string.Empty;
-            master.AddedDate = DateTime.UtcNow;
+            master.AddedDate = DateTime.Now;
 
             foreach (var item in TodoList)
             {

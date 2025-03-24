@@ -311,7 +311,7 @@
             master.Status = "Unpaid";
             master.PurchaseOrderMasterId = 0;
             master.WarehouseId = 1;
-            master.ModifyDate = DateTime.UtcNow;
+            master.ModifyDate = DateTime.Now;
             foreach (var item in TodoList)
             {
                 PurchaseDetails details = new PurchaseDetails();

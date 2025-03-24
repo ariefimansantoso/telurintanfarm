@@ -28,7 +28,9 @@ namespace QuickAccounting.Data.Recording
 		public decimal PerfectEggKg { get; set; }                    // Weight of perfect eggs in KG
 		public int BrokenEggCount { get; set; }                      // Number of broken eggs in pcs
 		public decimal BrokenEggKg { get; set; }                     // Weight of broken eggs in KG
-		public int TotalEggCount { get; set; }                       // Total eggs in pcs
+        public int TelurPutihButir { get; set; }                      // Number of broken eggs in pcs
+        public decimal TelurPutihKG { get; set; }
+        public int TotalEggCount { get; set; }                       // Total eggs in pcs
 		public decimal TotalEggKg { get; set; }                      // Total eggs in KG
 		public decimal ActualHenDay { get; set; }                        // Actual hen day percentage
 		public decimal StandardHenDay { get; set; }                      // Standard hen day percentage
@@ -42,7 +44,9 @@ namespace QuickAccounting.Data.Recording
 		public decimal FeedConversionRatio { get; set; }             // Calculated feed conversion ratio
 		public int ModifiedBy { get; set; }                           // ID of the person who last modified the record
 		public DateTime ModifiedDate { get; set; }                    // Date and time of the last modification
-	}
+        public bool PeriodeStart { get; set; }
+        public bool PeriodeEnd { get; set; }
+    }
 
 	public class DailyRecordingVOV
 	{
@@ -70,4 +74,38 @@ namespace QuickAccounting.Data.Recording
 
 		public int CreatedBy { get; set; }
 	}
+
+    public class ChecklistPakanItem
+    {
+        public long ID { get; set; }
+        public string JenisCentrat { get; set; }
+        public int Jagung { get; set; }
+        public int Katul { get; set; }
+        public int Centrat { get; set; }
+        public DateTime DateCreated { get; set; }
+        public int CreatedBy { get; set; }
+        public int VerifiedBy { get; set; }
+        public DateTime? VerifiedOn { get; set; } // Nullable in case it's not verified yet
+    }
+
+    public class RecordNota
+    {
+        public int ID { get; set; }
+        public string JenisTelur { get; set; } = string.Empty; // Ensures a non-null default value
+        public decimal BeratTelur { get; set; }
+        public DateTime DateCreated { get; set; }
+        public int CreatedBy { get; set; }
+        public string NomorNota { get; set; } = string.Empty; // Ensures a non-null default value
+    }
+
+    public class MutasiStockTelurHarian
+    {
+        public long ID { get; set; } // bigint in SQL maps to long in C#
+        public string JenisTelur { get; set; } = string.Empty; // Ensures a non-null default value
+        public decimal BeratTelurIn { get; set; } // decimal(18, 2) in SQL
+        public decimal BeratTelurOut { get; set; } // decimal(18, 2) in SQL
+        public DateTime DateCreated { get; set; } // datetime2(7) in SQL maps to DateTime in C#
+        public int CreatedBy { get; set; } // int in SQL
+		public string Reason { get; set; } = "Mutasi";
+    }
 }

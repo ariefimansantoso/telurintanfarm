@@ -43,7 +43,7 @@ namespace QuickAccounting.Repository.Repository
 		// Save Hen Population Data
 		public async Task<bool> SaveHenPopulationAsync(string cageNumber, DateTime recordDate, string strainName,
 			int populationStart, int populationEnd, int deadHenCount, int unproductiveHenCount,
-			int sickHenCount, int newHenCount, int moveOutHenCount, int modifiedBy)
+			int sickHenCount, int newHenCount, int moveOutHenCount, int modifiedBy, bool periodeStart, bool periodeEnd)
 		{
             cageNumber = Helper.ConvertCageNumber(cageNumber);
 
@@ -66,6 +66,9 @@ namespace QuickAccounting.Repository.Repository
 
                 record.ModifiedBy = modifiedBy;
 				record.ModifiedDate = DateTime.Now;
+
+				record.PeriodeStart = periodeStart;
+				record.PeriodeEnd = periodeEnd;
 
 				_context.DailyRecording.Update(record);
 
@@ -115,7 +118,7 @@ namespace QuickAccounting.Repository.Repository
 
 		// Save Egg Production Data
 		public async Task<bool> SaveEggProductionAsync(string cageNumber, string strainName, DateTime recordDate,
-			int perfectEggCount, decimal perfectEggKg, int brokenEggCount, decimal brokenEggKg,
+			int perfectEggCount, decimal perfectEggKg, int brokenEggCount, decimal brokenEggKg, int telurPutihButir, decimal telurPutihKG,
 			int totalEggCount, decimal totalEggKg, int modifiedBy)
 		{
             cageNumber = Helper.ConvertCageNumber(cageNumber);
@@ -132,6 +135,8 @@ namespace QuickAccounting.Repository.Repository
 				record.BrokenEggKg = record.BrokenEggKg + brokenEggKg;
 				record.TotalEggCount = record.TotalEggCount + totalEggCount;
 				record.TotalEggKg = record.TotalEggKg + totalEggKg;
+				record.TelurPutihButir = record.TelurPutihButir + telurPutihButir;
+				record.TelurPutihKG	= record.TelurPutihKG + telurPutihKG;
 
 				if (record.PopulationStart > 0 && record.TotalEggCount > 0)
 				{

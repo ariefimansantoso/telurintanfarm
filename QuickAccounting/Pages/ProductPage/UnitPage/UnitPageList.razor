@@ -138,7 +138,7 @@
             }
             else
             {
-                model.AddedDate = DateTime.UtcNow;
+                model.AddedDate = DateTime.Now;
                 var result = await _unit.Save(model);
 
                 if (result > 0)
@@ -160,7 +160,7 @@
             var isCheck = await _unit.CheckNameId(model.UnitName);
             if (isCheck == model.UnitId || isCheck == 0)
             {
-                model.ModifyDate = DateTime.UtcNow;
+                model.ModifyDate = DateTime.Now;
                 bool result = false;
                 result = await _unit.Update(model);
 

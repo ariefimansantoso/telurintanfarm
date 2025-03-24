@@ -24,13 +24,14 @@
 
 <style type="text/css">
     .table tbody tr td {
-        padding: 2px !important;
-        color: #637381;
-        font-weight: 200 !important;
-        border-bottom: 1px solid #E9ECEF;
-        vertical-align: middle;
-        white-space: nowrap;
-        text-align: right !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
     }
 </style>
 
@@ -70,6 +71,7 @@
                             <div class="col-lg-12 col-sm-12 col-12">
                                 <select class="form-control" @onchange="OnJenisTelurChanged">
                                     <option value="UTUH">UTUH</option>
+                                    <option value="PUTIH">PUTIH</option>
                                     <option value="BENTES">BENTES</option>
                                 </select>
                             </div>
@@ -227,8 +229,8 @@
                                                          {
                                                             ID = x.DailyEggPickup.ID,
                                                             EggType = JenisTelurSelected,
-                                                            Butir = JenisTelurSelected == "UTUH" ? x.DailyEggPickup.TelurUtuhButir : x.DailyEggPickup.TelurBentesButir,
-                                                            KG = JenisTelurSelected == "UTUH" ? x.DailyEggPickup.TelurUtuhKG : x.DailyEggPickup.TelurBentesKG,
+                                                                 Butir = JenisTelurSelected == "UTUH" ? x.DailyEggPickup.TelurUtuhButir : (JenisTelurSelected == "PUTIH" ? x.DailyEggPickup.TelurPutihButir : x.DailyEggPickup.TelurBentesButir),
+                                                                 KG = JenisTelurSelected == "UTUH" ? x.DailyEggPickup.TelurUtuhKG : (JenisTelurSelected == "PUTIH" ? x.DailyEggPickup.TelurPutihKG : x.DailyEggPickup.TelurBentesKG),
                                                             IsSelected = false,
                                                             Name = x.Employee.EmployeeName
                                                          })

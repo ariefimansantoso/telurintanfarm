@@ -157,7 +157,7 @@ namespace QuickAccounting.Repository.Repository
                 //PostingOpeningBalance
                 //Customer
                 LedgerPosting ledgerPosting = new LedgerPosting();
-                ledgerPosting.Date = DateTime.UtcNow;
+                ledgerPosting.Date = DateTime.Now;
                 ledgerPosting.NepaliDate = String.Empty;
                 ledgerPosting.LedgerId = id;
                 if(model.CrOrDr == "Dr")
@@ -180,7 +180,7 @@ namespace QuickAccounting.Repository.Repository
                 ledgerPosting.ReferenceN = String.Empty;
                 ledgerPosting.ChequeNo = String.Empty;
                 ledgerPosting.ChequeDate = String.Empty;
-                ledgerPosting.AddedDate = DateTime.UtcNow;
+                ledgerPosting.AddedDate = DateTime.Now;
                 _context.LedgerPosting.Add(ledgerPosting);
                 await _context.SaveChangesAsync();
             }

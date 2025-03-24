@@ -270,7 +270,7 @@ namespace QuickAccounting.Repository.Repository
                         stockposting.StockCalculate = "Sales";
                         stockposting.CompanyId = model.CompanyId;
                         stockposting.FinancialYearId = model.FinancialYearId;
-                        stockposting.AddedDate = DateTime.UtcNow;
+                        stockposting.AddedDate = DateTime.Now;
                         _context.StockPosting.Add(stockposting);
                         await _context.SaveChangesAsync();
                 }
@@ -294,7 +294,7 @@ namespace QuickAccounting.Repository.Repository
                     ledgerPosting.ReferenceN = model.Narration;
                     ledgerPosting.ChequeNo = String.Empty;
                     ledgerPosting.ChequeDate = String.Empty;
-                    ledgerPosting.AddedDate = DateTime.UtcNow;
+                    ledgerPosting.AddedDate = DateTime.Now;
                     _context.LedgerPosting.Add(ledgerPosting);
                     await _context.SaveChangesAsync();
 
@@ -316,7 +316,7 @@ namespace QuickAccounting.Repository.Repository
                     purchasePosting.ReferenceN = model.Narration;
                     purchasePosting.ChequeNo = String.Empty;
                     purchasePosting.ChequeDate = String.Empty;
-                    purchasePosting.AddedDate = DateTime.UtcNow;
+                    purchasePosting.AddedDate = DateTime.Now;
                     _context.LedgerPosting.Add(purchasePosting);
                     await _context.SaveChangesAsync();
 
@@ -339,7 +339,7 @@ namespace QuickAccounting.Repository.Repository
                         vatPosting.ReferenceN = model.Narration;
                         vatPosting.ChequeNo = String.Empty;
                         vatPosting.ChequeDate = String.Empty;
-                        vatPosting.AddedDate = DateTime.UtcNow;
+                        vatPosting.AddedDate = DateTime.Now;
                         _context.LedgerPosting.Add(vatPosting);
                         await _context.SaveChangesAsync();
                     }
@@ -407,7 +407,7 @@ namespace QuickAccounting.Repository.Repository
                         stockposting.StockCalculate = "Sales";
                         stockposting.CompanyId = model.CompanyId;
                         stockposting.FinancialYearId = model.FinancialYearId;
-                        stockposting.AddedDate = DateTime.UtcNow;
+                        stockposting.AddedDate = DateTime.Now;
                         _context.StockPosting.Add(stockposting);
                         await _context.SaveChangesAsync();
                     }
@@ -491,7 +491,7 @@ namespace QuickAccounting.Repository.Repository
                 ledgerPosting.ReferenceN = model.Narration;
                 ledgerPosting.ChequeNo = String.Empty;
                 ledgerPosting.ChequeDate = String.Empty;
-                ledgerPosting.AddedDate = DateTime.UtcNow;
+                ledgerPosting.AddedDate = DateTime.Now;
                 _context.LedgerPosting.Add(ledgerPosting);
                 await _context.SaveChangesAsync();
 
@@ -513,7 +513,7 @@ namespace QuickAccounting.Repository.Repository
                 purchasePosting.ReferenceN = model.Narration;
                 purchasePosting.ChequeNo = String.Empty;
                 purchasePosting.ChequeDate = String.Empty;
-                purchasePosting.AddedDate = DateTime.UtcNow;
+                purchasePosting.AddedDate = DateTime.Now;
                 _context.LedgerPosting.Add(purchasePosting);
                 await _context.SaveChangesAsync();
 
@@ -536,7 +536,7 @@ namespace QuickAccounting.Repository.Repository
                     vatPosting.ReferenceN = model.Narration;
                     vatPosting.ChequeNo = String.Empty;
                     vatPosting.ChequeDate = String.Empty;
-                    vatPosting.AddedDate = DateTime.UtcNow;
+                    vatPosting.AddedDate = DateTime.Now;
                     _context.LedgerPosting.Add(vatPosting);
                     await _context.SaveChangesAsync();
                 }

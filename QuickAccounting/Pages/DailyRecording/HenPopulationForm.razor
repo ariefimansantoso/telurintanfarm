@@ -10,6 +10,7 @@
 @inject NavigationManager navigation
 @inject IDailyRecordingService _recording
 @inject IKandangService _kandang
+@inject ApplicationDbContext _db
 @attribute [Authorize]
 
 <PageTitle>Form Recording Populasi Kandang</PageTitle>
@@ -161,6 +162,19 @@
                     </div>
                 </div>
 
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Periode Berakhir</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="checkbox" class="form-control" @bind="PeriodeEnd" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <br /> <br />
                 <div class="row">
                     <div class="col-lg-12" style="text-align: center !important;">
@@ -195,6 +209,7 @@
     private int MoveInCount { get; set; }
     private int MoveOutCount { get; set; }
     private int PopulationEndCount { get; set; }
+    bool PeriodeEnd = false;
     private string StrainName { get; set; }
     public int HenAgeDays { get; set; }
     private bool FormSubmitted { get; set; }
@@ -291,9 +306,26 @@
             return;
         }
 
+        if (PeriodeEnd)
+        {
+            // Check if there is a PeriodeStart = true before this record
+            bool hasStartBefore = _db.DailyRecording.Any(r =>
+                r.CageNumber == SelectedNoKandang &&
+                r.StrainName == StrainName &&
+                r.PeriodeStart == true &&
+                r.RecordDate < RecordDate
+            );
+
+            if (!hasStartBefore)
+            {
+                Snackbar.Add("Tidak bisa set Berakhir Periode karena belum ada Awal Periode.", Severity.Error);
+                return;
+            }
+        }
+
         var result = await _recording.SaveHenPopulationAsync(SelectedNoKandang,
             TodaysDate, StrainName, PopulationCount, PopulationEndCount, DeadCount, UnproductiveCount, SickCount,
-            MoveInCount, MoveOutCount, modelEmployee.EmployeeId);
+            MoveInCount, MoveOutCount, modelEmployee.EmployeeId, false, PeriodeEnd);
 
         if (result)
         {

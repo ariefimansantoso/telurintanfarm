@@ -279,7 +279,7 @@
 			string userName = user.FindFirst(ClaimTypes.Name).Value;
 			master.UserId = userName;
 			master.Status = "Approved";
-			master.ModifyDate = DateTime.UtcNow;
+			master.ModifyDate = DateTime.Now;
 			foreach (var item in TodoList)
 			{
 				SalesReturnDetails details = new SalesReturnDetails();

@@ -8,8 +8,11 @@
 @inject IJSRuntime JSRuntime
 @using System.Security.Claims
 @using QuickAccounting.Components
+@using QuickAccounting.Constants;
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
+@inject ApplicationDbContext _db
+@inject IStartingStockDate _stockDate
 @attribute [Authorize]
 <Loader IsLoading="isLoading"></Loader>
 <PageTitle>SalesInvoice Add</PageTitle>
@@ -395,8 +398,8 @@
         listProduct = await _product.ProductWithStock();
         master.LedgerId = 0;
         master.VoucherNo = "DRAFT";
-        master.Date = DateTime.UtcNow;
-        master.DueDate = DateTime.UtcNow;
+        master.Date = DateTime.Now;
+        master.DueDate = DateTime.Now;
         listTax = await _tax.GetAll();
         viewProduct.TaxId = 1;
         master.TaxId = 1;
@@ -413,11 +416,11 @@
         {
             if (TodoList == null)
             {
-                Snackbar.Add("Invalid Entry.", Severity.Info);
+                Snackbar.Add("Input produk.", Severity.Info);
             }
             else if (master.LedgerId == 0)
             {
-                Snackbar.Add("Choose Customer.", Severity.Info);
+                Snackbar.Add("Pilih pelanggan.", Severity.Info);
             }
             else if (master.VoucherNo == string.Empty)
             {
@@ -425,7 +428,7 @@
             }
             else if (master.GrandTotal == 0)
             {
-                Snackbar.Add("Invalid Entry.", Severity.Info);
+                Snackbar.Add("Belum pilih produk.", Severity.Info);
             }
             else
             {
@@ -449,7 +452,7 @@
                 master.QuotationMasterId = 0;
                 master.OrderMasterId = 0;
                 master.WarehouseId = 1;
-                master.AddedDate = DateTime.UtcNow;
+                master.AddedDate = DateTime.Now;
                 master.Bayar = master.Bayar;
                 master.Kembali = master.Bayar - master.GrandTotal;
                 master.TipePembayaran = "Partai";
@@ -458,6 +461,81 @@
                     SalesDetails details = new SalesDetails();
                     if (item != null)
                     {
+                        var startingStockDate = await _stockDate.Get();
+                        var productDb = _db.Product.FirstOrDefault(x => x.ProductId == item.ProductId);
+
+                        if (productDb.ProductCode.StartsWith("TA-"))
+                        {
+                            var stokUtuh = _db.StockTelurUtuh.FirstOrDefault();
+                            if(stokUtuh != null)
+                            {
+                                if(item.Qty > stokUtuh.StockKG)
+                                {
+                                    Snackbar.Add("Stok tidak mencukupi.", Severity.Error);
+                                    return;
+                                }
+                            }
+                        }
+                        // telur bentes
+                        else if (item.ProductId == 16)
+                        {
+                            // bentes
+                            var stockBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
+                                                                .GroupBy(x => 1)
+                                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                                .FirstOrDefault();
+
+                            if (item.Qty > stockBentes)
+                            {
+                                Snackbar.Add("Stok Telur Bentes tidak mencukupi.", Severity.Error);
+                                return;
+                            }
+                        }
+                        // telur parah
+                        else if (item.ProductId == 17)
+                        {
+                            // pecah
+                            var stockPecah = _db.StockPosting.Where(x => x.ProductId == 17 && x.Date.Date >= startingStockDate)
+                                                                    .GroupBy(x => 1)
+                                                                    .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                                    .FirstOrDefault();
+
+                            if (item.Qty > stockPecah)
+                            {
+                                Snackbar.Add("Stok Telur Parah tidak mencukupi.", Severity.Error);
+                                return;
+                            }
+                        }
+                        // telur putih
+                        else if (item.ProductId == 7)
+                        {
+                            // putih
+                            var stockPutih = _db.StockPosting.Where(x => x.ProductId == 7 && x.Date.Date >= startingStockDate)
+                                                                .GroupBy(x => 1)
+                                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                                .FirstOrDefault();
+
+                            if (item.Qty > stockPutih)
+                            {
+                                Snackbar.Add("Stok Telur Putih tidak mencukupi.", Severity.Error);
+                                return;
+                            }
+                        }
+                        // telur PS
+                        else if (item.ProductId == 19)
+                        {
+                            // pecah sekali
+                            var stockPecahSekali = _db.StockPosting.Where(x => x.ProductId == 19 && x.Date.Date >= startingStockDate)
+                                                                    .GroupBy(x => 1)
+                                                                    .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                                    .FirstOrDefault();
+
+                            if (item.Qty > stockPecahSekali)
+                            {
+                                Snackbar.Add("Stok Telur PS tidak mencukupi.", Severity.Error);
+                                return;
+                            }
+                        }
                         details.ProductId = item.ProductId;
                         details.Qty = item.Qty;
                         details.UnitId = item.UnitId;
@@ -895,7 +973,7 @@
             customer.AccountGroupId = 26; // 26 is Customer
             customer.Type = "Customer";
             customer.CompanyId = 1;
-            customer.AddedDate = DateTime.UtcNow;
+            customer.AddedDate = DateTime.Now;
             var result = await _ledger.Save(customer);
 
             if (result > 0)

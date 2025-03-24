@@ -275,7 +275,7 @@
         else
         {
             navigation.NavigateTo("/app/dashboard");
-            Snackbar.Add("You dont have to privilege..", Severity.Error);
+            Snackbar.Add("Anda tidak memiliki hak akses", Severity.Error);
         }
     }
     private async Task LoadData()
@@ -299,9 +299,17 @@
             {
                 Snackbar.Add("Invalid Entry.", Severity.Info);
             }
+            else if (master.Narration == string.Empty)
+            {
+                Snackbar.Add("Catatan wajib diisi.", Severity.Error);
+            }
+            // else if (master.Reference == string.Empty)
+            // {
+            //     Snackbar.Add("Referensi wajib diisi.", Severity.Error);
+            // }
             else if (master.LedgerId == 0)
             {
-                Snackbar.Add("Choose Customer.", Severity.Info);
+                Snackbar.Add("Pilih pelanggan.", Severity.Info);
             }
             else if (master.VoucherNo == string.Empty)
             {
@@ -332,7 +340,7 @@
                 master.QuotationMasterId = 0;
                 master.OrderMasterId = 0;
                 master.WarehouseId = 1;
-                master.ModifyDate = DateTime.UtcNow;                 
+                master.ModifyDate = DateTime.Now;                 
                 foreach (var item in TodoList)
                 {
                     SalesDetails details = new SalesDetails();
@@ -430,12 +438,12 @@
         {
             if (strStatus == "Reject")
             {
-                Snackbar.Add("Cannot continue ,due to negative stock qty.", Severity.Info);
+                Snackbar.Add("Tidak bisa dilanjutkan karena stok tidak cukup.", Severity.Info);
                 return;
             }
             else if (strStatus == "Warn")
             {
-                bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Negative Stock qty exists,Do you want to Continue?");
+                bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Stok tidak cukup, anda ingin lanjut?");
                 if (confirmed)
                 {
 
@@ -456,7 +464,7 @@
             {
                 if(myTodo.ProductId == item.ProductId)
                 {
-                    Snackbar.Add("This product is already added.", Severity.Info);
+                    Snackbar.Add("Barang ini sudah ditambahkan.", Severity.Info);
                     return;
                 }
             }

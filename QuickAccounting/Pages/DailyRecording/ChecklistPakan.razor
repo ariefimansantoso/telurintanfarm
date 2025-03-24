@@ -1,0 +1,357 @@
+﻿@page "/app/checklistpakan"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Checklist Bahan Baku Pakan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+            font-weight: 200 !important;
+            border-bottom: 1px solid #E9ECEF;
+            vertical-align: middle;
+            white-space: nowrap;
+            text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Checklist Bahan Baku Pakan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group">
+                        Mixing untuk Tanggal
+                        <input type="date" @bind="@dtFromDate" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="col-lg-1 col-sm-12 col-12">
+                    <div class="form-group" style="margin-top:20px;">
+                        <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+                    </div>
+                </div>               
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;">Simpan Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="print-section">
+        <div class="card-body">
+            <h3>Daftar Mixing</h3>
+            @if (MixingPakan.Count > 0)
+            {
+                <div class="table-responsive table-scrollable" id="printMixing" style="margin-top:30px !important;">
+                    <table class="table table-striped" style="width: 700px !important; margin: 0px auto;">
+                        <thead>
+                            <tr>
+                                <th>Jenis</th>
+                                <th>Jagung</th>
+                                <th>Katul</th>
+                                <th>Centrat</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>                                                            
+                                @foreach(MixingItems item in MixingItemsList)
+                                {
+                                    <tr>
+                                    <td>@item.Key</td>
+                                    <td>@item.Jagung</td>
+                                    <td>@item.Katul</td>
+                                    <td>@item.Centrat</td>
+                                    <td><MudCheckBox T="bool" @bind-Checked="item.IsSelected" /></td>
+                                    </tr>
+                                }                            
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Checklist Pakan";
+
+    string SelectedNoKandang = "";
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
+    DateTime dtFromDate;
+
+    List<IGrouping<string, DailyRecording>> GroupByConcentrate;
+    Dictionary<string, decimal> CentratTotalPakan = new Dictionary<string, decimal>();
+    Dictionary<string, List<Mixing>> MixingPakan = new Dictionary<string, List<Mixing>>();
+    List<MixingItems> MixingItemsList = new List<MixingItems>();
+
+    bool isProcessing;
+
+    private async Task Save()
+    {
+        foreach(MixingItems item in MixingItemsList)
+        {
+            ChecklistPakanItem checklistPakan = new ChecklistPakanItem();
+
+            int productId = 0;
+            if (item.Key.Contains("HGC 24P"))
+            {
+                productId = 91;
+            }
+            if (item.Key.Contains("36 SPR"))
+            {
+                productId = 66;
+            }
+            if (item.Key.Contains("863 SPR"))
+            {
+                productId = 97;
+            }
+            if (item.Key.Contains("CP 124P"))
+            {
+                productId = 92;
+            }
+            if (item.Key.Contains("Par Doc & SPR"))
+            {
+                productId = 67;
+            }
+
+            if (productId > 0)
+            {
+                StockPosting stockpostingCentrat = new StockPosting();
+                stockpostingCentrat.Date = DateTime.Now;
+                stockpostingCentrat.ProductId = productId;
+                stockpostingCentrat.InwardQty = 0;
+                stockpostingCentrat.OutwardQty = item.Centrat;
+                stockpostingCentrat.UnitId = 0;
+                stockpostingCentrat.BatchId = 0;
+                stockpostingCentrat.Rate = 0;
+                stockpostingCentrat.DetailsId = 0;
+                stockpostingCentrat.InvoiceNo = productId.ToString();
+                stockpostingCentrat.VoucherNo = productId.ToString();
+                stockpostingCentrat.VoucherTypeId = 0;
+                stockpostingCentrat.AgainstInvoiceNo = String.Empty;
+                stockpostingCentrat.AgainstVoucherNo = String.Empty;
+                stockpostingCentrat.AgainstVoucherTypeId = 0;
+                stockpostingCentrat.WarehouseId = 1;
+                stockpostingCentrat.StockCalculate = "MixingPakanCentrat";
+                stockpostingCentrat.CompanyId = 1;
+                stockpostingCentrat.FinancialYearId = 2;
+                stockpostingCentrat.AddedDate = DateTime.Now;
+
+                _db.StockPosting.Add(stockpostingCentrat);
+            }
+
+            StockPosting stockpostingJagung = new StockPosting();
+            stockpostingJagung.Date = DateTime.Now;
+            stockpostingJagung.ProductId = 13;
+            stockpostingJagung.InwardQty = 0;
+            stockpostingJagung.OutwardQty = item.Jagung;
+            stockpostingJagung.UnitId = 0;
+            stockpostingJagung.BatchId = 0;
+            stockpostingJagung.Rate = 0;
+            stockpostingJagung.DetailsId = 0;
+            stockpostingJagung.InvoiceNo = "13";
+            stockpostingJagung.VoucherNo = "13";
+            stockpostingJagung.VoucherTypeId = 0;
+            stockpostingJagung.AgainstInvoiceNo = String.Empty;
+            stockpostingJagung.AgainstVoucherNo = String.Empty;
+            stockpostingJagung.AgainstVoucherTypeId = 0;
+            stockpostingJagung.WarehouseId = 1;
+            stockpostingJagung.StockCalculate = "MixingPakanJagung";
+            stockpostingJagung.CompanyId = 1;
+            stockpostingJagung.FinancialYearId = 2;
+            stockpostingJagung.AddedDate = DateTime.Now;
+
+            _db.StockPosting.Add(stockpostingJagung);
+
+            StockPosting stockpostingKatul = new StockPosting();
+            stockpostingJagung.Date = DateTime.Now;
+            stockpostingJagung.ProductId = 29;
+            stockpostingJagung.InwardQty = 0;
+            stockpostingJagung.OutwardQty = item.Jagung;
+            stockpostingJagung.UnitId = 0;
+            stockpostingJagung.BatchId = 0;
+            stockpostingJagung.Rate = 0;
+            stockpostingJagung.DetailsId = 0;
+            stockpostingJagung.InvoiceNo = "29";
+            stockpostingJagung.VoucherNo = "29";
+            stockpostingJagung.VoucherTypeId = 0;
+            stockpostingJagung.AgainstInvoiceNo = String.Empty;
+            stockpostingJagung.AgainstVoucherNo = String.Empty;
+            stockpostingJagung.AgainstVoucherTypeId = 0;
+            stockpostingJagung.WarehouseId = 1;
+            stockpostingJagung.StockCalculate = "MixingPakanKatul";
+            stockpostingJagung.CompanyId = 1;
+            stockpostingJagung.FinancialYearId = 2;
+            stockpostingJagung.AddedDate = DateTime.Now;
+
+            _db.StockPosting.Add(stockpostingJagung);
+
+            checklistPakan.Centrat = item.Centrat;
+            checklistPakan.Jagung = item.Jagung;
+            checklistPakan.Katul = item.Katul;
+            checklistPakan.JenisCentrat = item.Key;
+            checklistPakan.DateCreated = DateTime.Now;
+            checklistPakan.CreatedBy = 63;
+            checklistPakan.VerifiedBy = modelEmployee.EmployeeId;
+            checklistPakan.VerifiedOn = DateTime.Now;
+            _db.ChecklistPakan.Add(checklistPakan);
+        }
+
+        await _db.SaveChangesAsync();
+
+        Snackbar.Add("Data berhasil disimpan", Severity.Success);
+    }
+
+    private async Task LoadRecording()
+    {
+        isProcessing = true;
+        GroupByConcentrate = new List<IGrouping<string, DailyRecording>>();
+        CentratTotalPakan = new Dictionary<string, decimal>();
+        MixingPakan = new Dictionary<string, List<Mixing>>();
+        MixingItemsList = new List<MixingItems>();
+
+        var recording = await _db.DailyRecording.OrderBy(x => Convert.ToInt32(x.CageNumber)).Where(x => x.RecordDate == dtFromDate.Date && !string.IsNullOrEmpty(x.ConcentrateType)).ToListAsync();
+        if (recording.Count > 0)
+        {
+            GroupByConcentrate = recording.GroupBy(x => x.ConcentrateType).ToList();
+
+            foreach (var group in GroupByConcentrate)
+            {
+                int totalPakan = Convert.ToInt32(group.Sum(x => x.FoodNeededTodayKg));
+                CentratTotalPakan.Add(group.Key, totalPakan);
+
+                int number = totalPakan;
+                int divisor = 1000;
+
+                // Quotient
+                int quotient = number / divisor;
+
+                // Remainder
+                int remainder = number % divisor;
+
+                List<Mixing> mixings = new List<Mixing>();
+                for (int i = 1; i <= quotient; i++)
+                {
+                    decimal dJagung = (decimal)((decimal)50 / (decimal)100) * (decimal)divisor;
+                    decimal dKatul = (decimal)((decimal)15 / (decimal)100) * (decimal)divisor;
+                    decimal dCentrat = (decimal)((decimal)35 / (decimal)100) * (decimal)divisor;
+
+                    int jagung = Convert.ToInt32(dJagung);
+                    int katul = Convert.ToInt32(dKatul);
+                    int centrat = Convert.ToInt32(dCentrat);
+
+                    var newMixing = new Mixing();
+                    newMixing.TotalMixing = divisor;
+                    newMixing.MixingNo = i;
+                    newMixing.Centrat = centrat;
+                    newMixing.Jagung = jagung;
+                    newMixing.Katul = katul;
+                    mixings.Add(newMixing);
+                }
+
+                if (remainder > 0)
+                {
+                    decimal dJagung = (decimal)((decimal)50 / (decimal)100) * (decimal)remainder;
+                    decimal dKatul = (decimal)((decimal)15 / (decimal)100) * (decimal)remainder;
+                    decimal dCentrat = (decimal)((decimal)35 / (decimal)100) * (decimal)remainder;
+
+                    int jagung = Convert.ToInt32(dJagung);
+                    int katul = Convert.ToInt32(dKatul);
+                    int centrat = Convert.ToInt32(dCentrat);
+
+                    var newMixing = new Mixing();
+                    newMixing.TotalMixing = remainder;
+                    newMixing.MixingNo = quotient + 1;
+                    newMixing.Centrat = centrat;
+                    newMixing.Jagung = jagung;
+                    newMixing.Katul = katul;
+                    mixings.Add(newMixing);
+                }
+
+                MixingItemsList.Add(new MixingItems
+                {
+                    Key = group.Key,
+                    Centrat = mixings.Sum(x => x.Centrat),
+                    Jagung = mixings.Sum(x => x.Jagung),
+                    Katul = mixings.Sum(x => x.Katul)
+                });
+
+                MixingPakan.Add(group.Key, mixings);
+            }
+        }
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+
+        dtFromDate = DateTime.Now;
+
+        await LoadRecording();
+    }
+
+    public class Mixing
+    {
+        public int MixingNo { get; set; }
+        public int TotalMixing { get; set; }
+        public int Jagung { get; set; }
+        public int Katul { get; set; }
+        public int Centrat { get; set; }
+    }
+
+    public class MixingItems
+    {
+        public string Key { get; set; }
+        public int Jagung { get; set; }
+        public int Katul { get; set; }
+        public int Centrat { get; set; }
+        public bool IsSelected { get; set; }
+    }
+}    

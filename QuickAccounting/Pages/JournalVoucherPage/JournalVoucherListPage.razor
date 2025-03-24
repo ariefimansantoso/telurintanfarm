@@ -108,8 +108,8 @@
 	IList<JournalMasterView> listModel;
 	JournalMaster vardelete = new JournalMaster();
 	private string searchString1 = "";
-	DateTime dtFromDate = DateTime.UtcNow.AddDays(-7);
-	DateTime dtToDate = DateTime.UtcNow;
+	DateTime dtFromDate = DateTime.Now.AddDays(-7);
+	DateTime dtToDate = DateTime.Now;
 	string strVoucherNo = string.Empty;
 	string strMenu = "Accounting";
 	private bool isLoading = true;

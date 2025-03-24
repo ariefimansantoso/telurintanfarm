@@ -107,8 +107,8 @@
     IList<SalaryVoucherDetailsView> listModel;
     IList<SalaryVoucherMasterView> listSalaryMonth;
     IList<EmployeeView> listEmployee;
-    DateTime dtFromDate = DateTime.UtcNow.AddDays(-1);
-    DateTime dtToDate = DateTime.UtcNow;
+    DateTime dtFromDate = DateTime.Now.AddDays(-1);
+    DateTime dtToDate = DateTime.Now;
     int intEmployeeId = 0;
     string stringSalaryMonth = "All";
     string strMenu = "Human Resources";
