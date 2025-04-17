@@ -116,6 +116,7 @@
                                             
                                             <th style="text-align:center;">Jenis</th>
                                             <th style="text-align:center;">Berat</th>
+                                            <th></th>
                                         </tr>                                        
                                     </thead>
                                     <tbody>
@@ -132,6 +133,9 @@
                                                 @{
                                                     totalKG = totalKG + record.TotalDitimbang;
                                                 }
+                                                <td>
+                                                    <a @onclick="( () => { OpenDeleteDialog(record.ID); } )" class="btn btn-danger" style="color:#fff !important; font-size:12px !important;">HAPUS</a>
+                                                </td>
                                             </tr>
                                         }
                                         <tr>
@@ -166,6 +170,14 @@
         </div>
     </div>    
 </div>
+@if (DeleteDialogOpen)
+{
+    <ModalDialog Title="Hapus Timbangan"
+                 Text="Apakah anda yakin anda ingin menghapus timbangan ini?"
+                 OnClose="@OnDeleteDialogClose"
+                 DialogType="ModalDialog.ModalDialogType.Delete">
+    </ModalDialog>
+}
 @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
@@ -185,11 +197,56 @@
     private UserMaster modelUser;
     private Employee modelEmployee;
     string currentUserRole = "User";
+    public bool DeleteDialogOpen { get; set; }
+    int SelectedItemId = 0;
 
     private List<StockGudang> StockGudangs = new List<StockGudang>();
 
     bool isProcessing;
     bool IsValid = true;
+
+    private void OpenDeleteDialog(int id)
+    {
+        SelectedItemId = id;
+
+        DeleteDialogOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task OnDeleteDialogClose(bool accepted)
+    {
+        if (accepted)
+        {
+            DeleteTimbangan();
+        }
+
+        DeleteDialogOpen = false;
+        StateHasChanged();
+
+        navigation.NavigateTo("/app/eggverification", true);
+    }
+
+    private async Task DeleteTimbangan()
+    {        
+        try
+        {            
+            var eggPickup = await _db.StockGudang.FirstOrDefaultAsync(x => x.ID == SelectedItemId);
+            if (eggPickup != null)
+            {
+                _db.StockGudang.Remove(eggPickup);
+                await _db.SaveChangesAsync();
+            }
+        }
+        catch (DbUpdateException ex)
+        {
+            Console.WriteLine($"Database Update Exception: {ex.InnerException?.Message}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Terjadi kesalahan pada system. Tolong di screenshot: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
 
     private async Task OnTimbanganChanged(ChangeEventArgs e)
     {
