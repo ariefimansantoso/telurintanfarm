@@ -12,6 +12,10 @@ namespace QuickAccounting.Repository.Interface
 			int perfectEggCount, decimal perfectEggKg, int brokenEggCount, decimal brokenEggKg, int telurPutihButir, decimal telurPutihKG,
 			int totalEggCount, decimal totalEggKg, int modifiedBy);
 
+		Task<bool> SaveHenStartPopulationAsync(string cageNumber, DateTime recordDate, string strainName,
+			int populationStart, int populationEnd, int deadHenCount, int unproductiveHenCount,
+			int sickHenCount, int newHenCount, int moveOutHenCount, int modifiedBy, bool periodeStart, bool periodeEnd, decimal henAgeWeeks, decimal henAgeDays);
+
         Task<bool> SaveFoodIntakeAsync(string cageNumber, string strainName, DateTime recordDate, string concentrateType, decimal foodIntakePerHen, decimal remainingFoodKg, decimal foodNeededTodayKg, decimal actualFoodNeededKG, decimal saldoFoodKG, decimal foodIntakeDeviation, int modifiedBy);
 		Task<bool> SaveHenDayDataAsync(string cageNumber, string strainName, DateTime recordDate, decimal henAgeWeeks, decimal henAgeDays, decimal actualHenDay, decimal standardHenDay, decimal dailyHenDayDifference, decimal actualEggMassKg, decimal standardEggMassKg, decimal eggMassDeviation, decimal actualEggWeightG, decimal standardEggWeightG, decimal eggWeightDeviation, decimal feedConversionRatio, int modifiedBy);
 		Task<bool> SaveHenPopulationAsync(string cageNumber, DateTime recordDate, string strainName,

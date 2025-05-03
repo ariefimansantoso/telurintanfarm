@@ -1,0 +1,538 @@
+﻿@page "/app/setperiodekandang"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject ApplicationDbContext _db
+@inject IExcelService _excelService
+@attribute [Authorize]
+
+<PageTitle>Set Periode Kandang</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
+    }
+
+    .table thead th {
+        color: #637381;
+        padding: 2px !important;
+        font-size: 14px !important;
+        white-space: nowrap;
+        border: 1px solid #979797 !important;
+    }
+</style>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Set Periode Kandang</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Nomor Kandang</label>
+                        <div class="row">
+                            <div class="col-lg col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnCageChanged">
+                                    <option value="TIDAK">PILIH NO KANDANG</option>
+                                    <option value="ALL">SEMUA KANDANG</option>
+                                    @foreach (var kandangItem in CageList)
+                                    {
+                                        <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                   
+            <div class="row">
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Dari Tanggal
+					<input type="date" @bind="@dtFromDate" class="form-control" />
+				</div>
+			</div>
+			<div class="col-lg col-sm-6 col-12">
+				<div class="form-group">
+					Ke Tanggal
+					<input type="date" @bind="@dtToDate" class="form-control" />
+				</div>
+			</div>				
+			<div class="col-lg-1 col-sm-6 col-12">
+				<div class="form-group" style="margin-top:20px;">
+                        <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+                        <a class="btn btn-filters ms-auto" @onclick="()=>DownloadExcel()"><img src="assets/img/icons/download.svg" alt="img" /></a>
+				</div>
+			</div>
+		</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (DailyRecordings != null && DailyRecordings.Count > 0)
+            {
+                
+                    AllKandang = new List<ReportAllKandang>();                        
+                    
+                    <div class="table-responsive table-scrollable">
+                        <table class="table table-striped">
+                            <thead>                                
+                                <tr>
+                                    <th>KDG</th>
+                                    <th>Strain</th>
+
+                                    <th>Awal</th>
+                                    <th>Mati</th>
+                                    <th>Afkir</th>
+                                    <th>S-</th>
+                                    <th>S+</th>
+                                    <th>P-</th>
+                                    <th>P+</th>
+                                    <th>Sisa</th>
+
+                                    <th>PAKAN</th>
+                                    <th>PAKAI</th>
+                                    <th>FI</th>
+
+                                    <th>UTUH</th>
+                                    <th>Kg</th>
+                                    <th>PUTIH</th>
+                                    <th>Kg</th>
+                                    <th>BENTES</th>
+                                    <th>Kg</th>
+                                    <th>Total BTR</th>
+                                    <th>Total Kg</th>
+                                    <th>Kum BTR</th>
+                                    <th>KWM KG</th>
+
+                                    <th>%HD</th>
+                                    <th>+/- HD</th>
+                                    <th>HH (BTR)</th>
+                                    <th>HH (KG)</th>
+                                    <th>EM</th>
+                                    <th>Grbt</th>
+                                    <th>FCR</th>
+
+                                    <th>Nama</th>
+                                    <th>Pakai</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var grouped = DailyRecordings.GroupBy(x => x.CageNumber).ToList();
+                                }
+
+                                @foreach (var group in grouped)
+                                {
+                                    var strain = group.First().StrainName;
+                                    var jumlahRecord = group.Count();
+                                    var reportKandangItem = new ReportAllKandang();
+                                    reportKandangItem.Kandang = group.Key;
+                                    reportKandangItem.Strain = strain;
+                                    reportKandangItem.Awal = group.Sum(x => x.PopulationStart).ToString();
+                                    reportKandangItem.Mati = group.Sum(x => x.DeadHenCount).ToString();
+                                    reportKandangItem.Afkir = group.Sum(x => x.UnproductiveHenCount).ToString();
+                                    reportKandangItem.SMinus = "0";
+                                    reportKandangItem.SPlus = "0";
+                                    reportKandangItem.PMinus = group.Sum(x => x.MoveOutHenCount).ToString();
+                                    reportKandangItem.PPlus = group.Sum(x => x.MoveInHenCount).ToString();
+                                    reportKandangItem.Sisa = group.Sum(x => x.PopulationEnd).ToString();
+                                    reportKandangItem.PAKAN = group.First().ConcentrateType.ToString();
+                                    reportKandangItem.PAKAI = group.Sum(x => x.FoodNeededTodayKg).ToString();
+                                    reportKandangItem.FI = (group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2");
+                                    reportKandangItem.UTUH = group.Sum(x => x.PerfectEggCount).ToString();
+                                    reportKandangItem.UtuhKg    = group.Sum(x => x.PerfectEggKg).ToString();
+                                    reportKandangItem.PUTIH     = group.Sum(x => x.TelurPutihButir).ToString();
+                                    reportKandangItem.PutihKg   = group.Sum(x => x.TelurPutihKG).ToString();
+                                    reportKandangItem.BENTES    = group.Sum(x => x.BrokenEggCount).ToString();
+                                    reportKandangItem.BentesKg  = group.Sum(x => x.BrokenEggKg).ToString();
+                                    reportKandangItem.TotalBTR = group.Sum(x => x.TotalEggCount).ToString();
+                                    reportKandangItem.TotalKG = group.Sum(x => x.TotalEggKg).ToString();
+                                    reportKandangItem.KumBTR = "0";
+                                    reportKandangItem.KWMKG = "0";                                    
+                                    reportKandangItem.HHBTR = "0";
+                                    reportKandangItem.HHKG = "0";
+                                    reportKandangItem.Nama = "";
+                                    reportKandangItem.PakaiVoV = "0";
+                                    <tr>
+                                        <td>@group.Key</td>
+                                        <td>@strain</td>                                       
+
+                                        <td>@group.Sum(x => x.PopulationStart)</td>
+                                        <td>@group.Sum(x => x.DeadHenCount)</td>
+                                        <td>@group.Sum(x => x.UnproductiveHenCount)</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>@group.Sum(x => x.MoveOutHenCount)</td>
+                                        <td>@group.Sum(x => x.MoveInHenCount)</td>
+                                        <td>@group.Sum(x => x.PopulationEnd)</td>
+                                      
+                                        <td>@group.First().ConcentrateType</td>
+                                        <td>@group.Sum(x => x.FoodNeededTodayKg)</td>
+                                        <td>
+                                            @((group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2"))                                           
+                                        </td>
+
+                                        <td>@group.Sum(x => x.PerfectEggCount)</td>
+                                        <td>@group.Sum(x => x.PerfectEggKg)</td>
+                                        <td>@group.Sum(x => x.TelurPutihButir)</td>
+                                        <td>@group.Sum(x => x.TelurPutihKG)</td>
+                                        <td>@group.Sum(x => x.BrokenEggCount)</td>
+                                        <td>@group.Sum(x => x.BrokenEggKg)</td>
+                                        <td>@group.Sum(x => x.TotalEggCount)</td>
+                                        <td>@group.Sum(x => x.TotalEggKg)</td>
+                                        <td></td>
+                                        <td></td>
+
+                                        <td>
+                                            @{
+                                                decimal hd = 0;
+                                                try
+                                                {
+                                                    hd = (group.Sum(x => x.TotalEggCount) / group.Sum(x => x.PopulationStart)) * 100;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    hd = (group.Sum(x => x.ActualHenDay) / (decimal)group.Count());
+                                                }
+                                                reportKandangItem.PersenHD = hd.ToString("N2");
+                                            }
+                                            @hd.ToString("N2")                                            
+                                        </td>
+                                        <td>
+                                            @{
+                                                decimal hdd = 0;
+                                                hdd = (group.Sum(x => x.DailyHenDayDifference) / (decimal)group.Count());
+                                                reportKandangItem.DevHD = hdd.ToString("N2");
+                                            }
+                                            @hdd.ToString("N2")                                           
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>
+                                            @{
+                                                decimal em = 0;
+                                                try
+                                                {
+                                                    em = (group.Sum(x => x.TotalEggKg) / group.Sum(x => x.PopulationEnd)) * 1000;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    em = (group.Sum(x => x.ActualEggMassKg) / (decimal)group.Count());
+                                                    reportKandangItem.EM = em.ToString("N2");
+                                                }
+                                            }
+                                            @em.ToString("N2")                                            
+                                        </td>
+                                        <td>
+                                            @{
+                                                decimal ew = 0;
+                                                try
+                                                {
+                                                    ew = (group.Sum(x => x.TotalEggKg) / group.Sum(x => x.TotalEggCount)) * 1000;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    ew = (group.Sum(x => x.ActualEggWeightG) / (decimal)group.Count());
+                                                    reportKandangItem.Grbt = ew.ToString("N2");
+                                                }
+                                            }
+                                            @ew.ToString("N2")                                            
+                                        </td>
+                                        <td>
+                                            @{
+                                                decimal fcr = 0;
+                                                try
+                                                {
+                                                    fcr = group.Sum(x => x.FoodNeededTodayKg) / group.Sum(x => x.TotalEggKg);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    fcr = (group.Sum(x => x.FeedConversionRatio) / (decimal)group.Count());
+                                                    reportKandangItem.FCR = fcr.ToString("N2");
+                                                }
+                                            }
+                                            @fcr.ToString("N2")                                            
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    AllKandang.Add(reportKandangItem);
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                
+            }
+            else
+            {
+                <p>Data belum ada.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    window.JS = {
+        SaveAs: function (fileName, byteBase64) {
+            byteBase64 = byteBase64.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Convert base64 string to byte array
+            const byteCharacters = atob(byteBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            // Create a link element and trigger the download
+            const link = document.createElement('a');
+            const url = window.URL.createObjectURL(blob);
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            link.remove();
+        }
+    };
+</script>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Laporan Recording";
+
+    string SelectedNoKandang = "";
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
+    private List<DailyRecording> PagedData = new List<DailyRecording>();
+
+    private int CurrentPage = 1;
+    private int PageSize = 10;
+    private int TotalItems => DailyRecordings.Count; 
+    DateTime dtFromDate;
+    DateTime dtToDate;
+    private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
+    private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
+    public ChartOptions Options = new ChartOptions();
+    public List<ChartSeries> Series = new List<ChartSeries>();
+    private int SeriesIndex = -1;
+    bool ChartDataLoaded = false;
+
+    bool isProcessing;
+
+    List<ReportAllKandang> AllKandang = new List<ReportAllKandang>();
+    List<ReportPerKandang> PerKandang = new List<ReportPerKandang>();
+
+    private async Task DownloadExcel()
+    {
+        isProcessing = true;
+
+        var year = DateTime.Now.Year;
+        var month = DateTime.Now.Month;
+        var fileName = "Laporan_Recording.xlsx";
+        byte[] excelData;
+        if (SelectedNoKandang == "ALL")
+        {
+            excelData = _excelService.ExportListToExcel(AllKandang, "Sheet1");
+        }
+        else
+        {
+            excelData = _excelService.ExportListToExcel(PerKandang, "Sheet1");
+        }
+        var base64String = Convert.ToBase64String(excelData);
+        base64String = base64String.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64String);
+
+        isProcessing = false;
+    }
+
+    private async Task LoadRecording()
+    {
+        isProcessing = true;
+        DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang, dtFromDate, dtToDate);        
+
+        if (SelectedNoKandang != "ALL")
+        {
+            DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
+            await GetGraphData();
+        }
+        else
+        {
+            DailyRecordings = DailyRecordings.OrderBy(x => Convert.ToInt32(x.CageNumber)).ToList();
+        }
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        dtFromDate = new DateTime(now.Year, now.Month, 1);
+        int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
+        dtToDate = new DateTime(now.Year, now.Month, lastDay);
+
+        // Simulate fetching data from a service
+        CageList = await _kandang.GetAll();
+
+        UpdatePagedData();
+    }
+
+    private async Task GetGraphData()
+    {               
+        Series = new List<ChartSeries>();
+        ChartSeries series = new ChartSeries();
+        series.Name = "+/- HD";
+        series.Data = DailyRecordings.Select(record => Convert.ToDouble(record.ActualHenDay)).ToArray();
+        Series.Add(series);
+
+        series = new ChartSeries();
+        series.Name = "EW(gr)";
+        series.Data = DailyRecordings.Select(record => Convert.ToDouble(record.ActualEggWeightG)).ToArray();
+        Series.Add(series);
+
+        // Map strainData to chart data
+        XAxisLabels = DailyRecordings
+            // Select every 4th record
+            .Select(record => record.HenAgeWeeks.ToString())
+            .ToArray();
+        yAxisValues = DailyRecordings.Select(record => record.ActualHenDay).ToList();
+
+        Options.YAxisTicks = 20;       
+
+        if(DailyRecordings.Count > 0)
+        {
+            ChartDataLoaded = true;
+        }
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {        
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            StateHasChanged();
+        }
+    }
+
+    private void HandlePageChange(int pageNumber)
+    {
+        CurrentPage = pageNumber;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        PagedData = DailyRecordings
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+    }
+
+    public class ReportAllKandang
+    {
+        public string Kandang { get; set; }
+        public string Strain { get; set; }
+       
+        public string Awal { get; set; }
+        public string Mati { get; set; }
+        public string Afkir { get; set; }
+        public string SMinus { get; set; }
+        public string SPlus { get; set; }
+        public string PMinus { get; set; }
+        public string PPlus { get; set; }
+        public string Sisa { get; set; }
+        public string PAKAN { get; set; }
+        public string PAKAI { get; set; }
+        public string FI { get; set; }
+        public string UTUH { get; set; }
+        public string UtuhKg { get; set; }
+        public string PUTIH { get; set; }
+        public string PutihKg { get; set; }
+        public string BENTES { get; set; }
+        public string BentesKg { get; set; }
+        public string TotalBTR { get; set; }
+        public string TotalKG { get; set; }
+        public string KumBTR { get; set; }
+        public string KWMKG { get; set; }
+        public string PersenHD { get; set; }
+        public string DevHD { get; set; }
+        public string HHBTR { get; set; }
+        public string HHKG { get; set; }
+        public string EM { get; set; }
+        public string Grbt { get; set; }
+        public string FCR { get; set; }
+        public string Nama { get; set; }
+        public string PakaiVoV { get; set; }
+    }
+
+    public class ReportPerKandang
+    {
+        public string Tanggal { get; set; }
+        public string Minggu { get; set; }
+        public string Hari { get; set; }
+        public string Awal { get; set; }
+        public string Mati { get; set; }
+        public string Afkir { get; set; }
+        public string SMinus { get; set; }
+        public string SPlus { get; set; }
+        public string PMinus { get; set; }
+        public string PPlus { get; set; }
+        public string Sisa { get; set; }
+        public string PAKAN { get; set; }
+        public string PAKAI { get; set; }
+        public string FI { get; set; }
+        public string UTUH { get; set; }
+        public string UtuhKg { get; set; }
+        public string PUTIH { get; set; }
+        public string PutihKg { get; set; }
+        public string BENTES { get; set; }
+        public string BentesKg { get; set; }
+        public string TotalBTR { get; set; }
+        public string TotalKG { get; set; }
+        public string KumBTR { get; set; }
+        public string KWMKG { get; set; }
+        public string PersenHD { get; set; }
+        public string DevHD { get; set; }
+        public string HHBTR { get; set; }
+        public string HHKG { get; set; }
+        public string EM { get; set; }
+        public string Grbt { get; set; }
+        public string FCR { get; set; }
+        public string Nama { get; set; }
+        public string PakaiVoV { get; set; }
+    }
+}

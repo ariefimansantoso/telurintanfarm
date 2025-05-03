@@ -1,0 +1,230 @@
+﻿@page "/app/downloadsalesreports"
+@inject IHRServices _hr
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@using System.Security.Claims
+@using Microsoft.Data.SqlClient;
+@using OfficeOpenXml;
+@using QuickAccounting.Constants;
+@using System.Data;
+@using System.Text;
+
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject SqlService SqlService
+@attribute [Authorize]
+
+<PageTitle>Sales Report</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Download Laporan Sales</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+                                             
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Tanggal Mulai</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <RadzenDatePicker @bind-Value=@TanggalMulai DateFormat="d" Class="w-100" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label>Tanggal Berakhir</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <RadzenDatePicker @bind-Value=@TanggalAkhir DateFormat="d" Class="w-100" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    <br /> <br />
+                    <div class="row">
+                        <div class="col-lg-12" style="text-align: center !important;">
+                            <input type="button" @onclick="@(e => Save())" class="btn btn-submit me-2" value="Simpan" />
+                        </div>
+                    </div>               
+            
+        </div>
+    </div>
+    <!-- /product list -->
+</div>
+
+<script>
+    window.JS = {
+        SaveAs: function (fileName, byteBase64) {
+            byteBase64 = byteBase64.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Convert base64 string to byte array
+            const byteCharacters = atob(byteBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            // Create a link element and trigger the download
+            const link = document.createElement('a');
+            const url = window.URL.createObjectURL(blob);
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            link.remove();
+        }
+    };
+</script>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    Penalty master = new Penalty();
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+
+    private DateTime? TanggalMulai;
+    private DateTime? TanggalAkhir;
+
+    Employee SelectedEmployee = null;
+    List<Employee> DaftarKaryawan = new List<Employee>();
+
+    string strMenu = "Download Laporan Sales";
+
+    private bool FormSubmitted;
+
+    private async Task<bool> CheckPermission()
+    {
+        //CheckPriviliagee
+        var authState = await authenticationState;
+        var strRole = authState.User;
+        string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        if (strShow.ShowAction == true)
+        {
+            return true;
+        }
+        else
+        {
+            return false;            
+        }
+    }    
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authorized = await CheckPermission();
+        if(!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+        } 
+
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        //CheckPriviliagee        
+        await LoadData();
+
+        StateHasChanged();
+    }
+
+    private async Task LoadData()
+    {                
+        TanggalMulai = null;
+        TanggalAkhir = null;
+        FormSubmitted = false;
+
+        StateHasChanged();
+    }
+
+    private async Task Save()
+    {
+        if (TanggalMulai.HasValue == false || TanggalAkhir.HasValue == false)
+        {
+            Snackbar.Add("Anda belum mengisi tanggal mulai dan tanggal akhir. Keduanya wajib diisi.", Severity.Error);
+            return;
+        }
+
+        string tglMulaiTahun = TanggalMulai.Value.Year.ToString();
+        int tglMulaiBulan = TanggalMulai.Value.Month;
+        string strTglMulaiBulan = tglMulaiBulan.ToString();
+        if(tglMulaiBulan < 10)
+        {
+            strTglMulaiBulan = "0" + strTglMulaiBulan;
+        }
+        int tglMulaiHari = TanggalMulai.Value.Day;
+        string strTglMulaiHari = tglMulaiHari.ToString();
+        if (tglMulaiHari < 10)
+        {
+            strTglMulaiHari = "0" + strTglMulaiHari;
+        }
+
+        string tglAkhirTahun = TanggalAkhir.Value.Year.ToString();
+        int tglAkhirBulan = TanggalAkhir.Value.Month;
+        string strTglAkhirBulan = tglAkhirBulan.ToString();
+        if (tglAkhirBulan < 10)
+        {
+            strTglAkhirBulan = "0" + strTglAkhirBulan;
+        }
+        int tglAkhirHari = TanggalAkhir.Value.Day;
+        string strTglAkhirHari = tglAkhirHari.ToString();
+        if (tglAkhirHari < 10)
+        {
+            strTglAkhirHari = "0" + strTglAkhirHari;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.Append("SELECT");
+        sb.Append("    sm.Date,");
+        sb.Append("    p.ProductName,");
+        sb.Append("    p.Narration,");
+        sb.Append("    al.LedgerName,");
+        sb.Append("    sd.Qty,");
+        sb.Append("    sd.Rate,");
+        sb.Append("    sd.NetAmount ");
+        sb.Append("FROM SalesDetails sd ");
+        sb.Append("JOIN SalesMaster sm ON sd.SalesMasterId = sm.SalesMasterId ");
+        sb.Append("JOIN Product p ON sd.ProductId = p.ProductId ");
+        sb.Append("JOIN AccountLedger al ON sm.LedgerId = al.LedgerId ");
+        sb.Append("WHERE sm.Date BETWEEN '" + tglMulaiTahun + "-" + strTglMulaiBulan + "-" + strTglMulaiHari + " 00:00:00' AND '" + tglAkhirTahun + "-" + strTglAkhirBulan + "-" + strTglAkhirHari + " 23:59:59' ");
+        sb.Append("order by sm.Date");
+
+        var result = await SqlService.ExecuteSqlAsync(sb.ToString());
+        var excelBytes = ExportToExcel(result);
+
+        var fileName = "Sales_" + tglMulaiTahun + "-" + strTglMulaiBulan + "-" + strTglMulaiHari + "____" + tglAkhirTahun + "-" + strTglAkhirBulan + "-" + strTglAkhirHari + ".xlsx";        
+        var base64String = Convert.ToBase64String(excelBytes);
+        base64String = base64String.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64String);
+
+    }
+
+    public byte[] ExportToExcel(DataTable dataTable)
+    {
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Results");
+        worksheet.Cells["A1"].LoadFromDataTable(dataTable, true, OfficeOpenXml.Table.TableStyles.Medium1);
+        return package.GetAsByteArray();
+    }
+
+}

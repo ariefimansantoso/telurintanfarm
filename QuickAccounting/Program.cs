@@ -72,6 +72,7 @@ builder.Services.AddTransient<IDailyRecordingService, DailyRecordingService>();
 builder.Services.AddTransient<IKandangService, KandangService>();
 builder.Services.AddTransient<IDailyEggPickupService, DailyEggPickupService>();
 builder.Services.AddTransient<PdfService>();
+builder.Services.AddTransient<SqlService>();
 builder.Services.AddTransient<DataAccess>();
 builder.Services.AddTransient<DatabaseConnection>();
 builder.Services.AddTransient<IAuditLogService, AuditLogService>();

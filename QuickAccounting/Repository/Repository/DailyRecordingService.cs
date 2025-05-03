@@ -60,9 +60,17 @@ namespace QuickAccounting.Repository.Repository
 				record.MoveInHenCount = newHenCount;
 				record.MoveOutHenCount = moveOutHenCount;
 
-				record.ActualHenDay = (decimal)record.TotalEggCount / (decimal)populationStart;
+				if (populationStart > 0)
+				{
+					record.ActualHenDay = (decimal)record.TotalEggCount / (decimal)populationStart;
+				}
+
 				record.ActualEggMassKg = record.ActualHenDay * (record.TotalEggKg / 1000) / 100;
-				record.ActualEggWeightG = record.TotalEggKg / record.TotalEggCount;
+
+				if (record.TotalEggCount > 0)
+				{
+					record.ActualEggWeightG = record.TotalEggKg / record.TotalEggCount;
+				}
 
                 record.ModifiedBy = modifiedBy;
 				record.ModifiedDate = DateTime.Now;
@@ -77,13 +85,101 @@ namespace QuickAccounting.Repository.Repository
 				return true;
 			}
 			else
-			{
-				return false;
+			{				
+                return false;
 			}
 		}
 
-		// Save Food Intake Data
-		public async Task<bool> SaveFoodIntakeAsync(string cageNumber, string strainName, DateTime recordDate,
+        public async Task<bool> SaveHenStartPopulationAsync(string cageNumber, DateTime recordDate, string strainName,
+            int populationStart, int populationEnd, int deadHenCount, int unproductiveHenCount,
+            int sickHenCount, int newHenCount, int moveOutHenCount, int modifiedBy, bool periodeStart, bool periodeEnd, decimal henAgeWeeks, decimal henAgeDays)
+        {
+            cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+            var record = await _context.DailyRecording
+                .FirstOrDefaultAsync(r => r.CageNumber == cageNumber && r.RecordDate == recordDate && r.StrainName == strainName);
+
+            if (record != null)
+            {
+
+                record.HenAgeWeeks = henAgeWeeks;
+                record.HenAgeDays = henAgeDays;
+                record.PopulationStart = populationStart;
+                record.PopulationEnd = populationEnd;
+                record.DeadHenCount = deadHenCount;
+                record.UnproductiveHenCount = unproductiveHenCount;
+                record.SickHenCount = sickHenCount;
+                record.MoveInHenCount = newHenCount;
+                record.MoveOutHenCount = moveOutHenCount;
+
+                if (populationStart > 0)
+                {
+                    record.ActualHenDay = (decimal)record.TotalEggCount / (decimal)populationStart;
+                }
+
+                record.ActualEggMassKg = record.ActualHenDay * (record.TotalEggKg / 1000) / 100;
+
+                if (record.TotalEggCount > 0)
+                {
+                    record.ActualEggWeightG = record.TotalEggKg / record.TotalEggCount;
+                }
+
+                record.ModifiedBy = modifiedBy;
+                record.ModifiedDate = DateTime.Now;
+
+                record.PeriodeStart = periodeStart;
+                record.PeriodeEnd = periodeEnd;
+
+                _context.DailyRecording.Update(record);
+
+                await _context.SaveChangesAsync();
+
+                return true;
+            }
+            else
+            {
+                record = new DailyRecording();
+                record.CageNumber = cageNumber;
+                record.RecordDate = recordDate;
+                record.StrainName = strainName;
+                record.HenAgeWeeks = henAgeWeeks;
+				record.HenAgeDays = henAgeDays;
+                record.PopulationStart = populationStart;
+                record.PopulationEnd = populationEnd;
+                record.DeadHenCount = deadHenCount;
+                record.UnproductiveHenCount = unproductiveHenCount;
+                record.SickHenCount = sickHenCount;
+                record.MoveInHenCount = newHenCount;
+                record.MoveOutHenCount = moveOutHenCount;
+
+                if (populationStart > 0)
+                {
+                    record.ActualHenDay = (decimal)record.TotalEggCount / (decimal)populationStart;
+                }
+
+                record.ActualEggMassKg = record.ActualHenDay * (record.TotalEggKg / 1000) / 100;
+
+                if (record.TotalEggCount > 0)
+                {
+                    record.ActualEggWeightG = record.TotalEggKg / record.TotalEggCount;
+                }
+
+                record.ModifiedBy = modifiedBy;
+                record.ModifiedDate = DateTime.Now;
+
+                record.PeriodeStart = periodeStart;
+                record.PeriodeEnd = false;
+                record.GroupName = "";
+
+                _context.DailyRecording.Add(record);
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+        }
+
+        // Save Food Intake Data
+        public async Task<bool> SaveFoodIntakeAsync(string cageNumber, string strainName, DateTime recordDate,
 			string concentrateType, decimal foodIntakePerHen, decimal remainingFoodKg, decimal foodNeededTodayKg,
 			decimal actualFoodNeededKG, decimal saldoFoodKG, decimal foodIntakeDeviation, int modifiedBy)
 		{

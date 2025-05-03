@@ -275,11 +275,11 @@
         if (e.Value.ToString() != "TIDAK")
         {
             SelectedNoKandang = e.Value.ToString();
-            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
-            RecordDate = CurrentRecording.RecordDate;
-            StrainName = CurrentRecording.StrainName;
-            PopulationCount = CurrentRecording.PopulationEnd;
-            PopulationEndCount = CurrentRecording.PopulationEnd;
+            // CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
+            // RecordDate = CurrentRecording.RecordDate;
+            // StrainName = CurrentRecording.StrainName;
+            // PopulationCount = CurrentRecording.PopulationEnd;
+            // PopulationEndCount = CurrentRecording.PopulationEnd;
             StateHasChanged();
         }
     }
@@ -322,23 +322,23 @@
             return;
         }
 
-        // Check if there is a PeriodeStart = true before this record
-        bool hasStartBefore = _db.DailyRecording.Any(r =>
-            r.CageNumber == SelectedNoKandang &&
-            r.StrainName == StrainName &&
-            r.PeriodeStart == true &&
-            r.RecordDate < RecordDate
-        );
+        // // Check if there is a PeriodeStart = true before this record
+        // bool hasStartBefore = _db.DailyRecording.Any(r =>
+        //     r.CageNumber == SelectedNoKandang &&
+        //     r.StrainName == StrainName &&
+        //     r.PeriodeStart == true &&
+        //     r.RecordDate < RecordDate
+        // );
 
-        if (!hasStartBefore)
-        {
-            Snackbar.Add("Tidak bisa memulai Periode Baru karena Periode sebelumnya belum berakhir.", Severity.Error);
-            return;
-        }
+        // if (!hasStartBefore)
+        // {
+        //     Snackbar.Add("Tidak bisa memulai Periode Baru karena Periode sebelumnya belum berakhir.", Severity.Error);
+        //     return;
+        // }
 
-        var result = await _recording.SaveHenPopulationAsync(SelectedNoKandang,
+        var result = await _recording.SaveHenStartPopulationAsync(SelectedNoKandang,
             TodaysDate, StrainName, PopulationCount, PopulationEndCount, DeadCount, UnproductiveCount, SickCount,
-            MoveInCount, MoveOutCount, modelEmployee.EmployeeId, true, false);
+            MoveInCount, MoveOutCount, modelEmployee.EmployeeId, true, false, (decimal)StartingWeek, (decimal)StartingDays);
 
         if (result)
         {

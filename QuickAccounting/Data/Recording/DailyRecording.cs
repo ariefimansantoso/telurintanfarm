@@ -46,6 +46,7 @@ namespace QuickAccounting.Data.Recording
 		public DateTime ModifiedDate { get; set; }                    // Date and time of the last modification
         public bool PeriodeStart { get; set; }
         public bool PeriodeEnd { get; set; }
+        public string GroupName { get; set; } = "";
     }
 
 	public class DailyRecordingVOV
