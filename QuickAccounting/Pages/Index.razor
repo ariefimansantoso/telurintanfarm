@@ -42,25 +42,19 @@
 <div class="content">
 	<div class="row">
 			<div class="col-12">
-				<div class="dash-widget" style="background-color:#ff0000;">					
-					<div class="dash-widgetcontent">
-						
+				@if (_pengumuman != null && _pengumuman.PengumumanContent != "<p><br></p>")
+				{
+					<div class="dash-widget" style="background-color:#ff0000;">					
+						<div class="dash-widgetcontent">
+
 							<h2 style="color:#fff !important;">PENGUMUMAN</h2>
 							<p class="counters" style="color:#fff !important; font-weight:bold;">
-								Kepada Yth.<br />
-								Seluruh Karyawan PT Telur Intan Farm<br /><br />
-
-								Dengan ini kami informasikan bahwa pembayaran gaji bulan April 2025 akan dilakukan pada:<br />
-								Tanggal: <strong>30 April 2025</strong>
-								<br /><br />
-								Terima kasih atas perhatian dan kerja samanya.
-								<br /><br /><br />
-								Hormat kami,<br />
-								Manajemen PT Telur Intan Farm
+								@((MarkupString)_pengumuman.PengumumanContent)
 							</p>						
+						</div>
 					</div>
-				</div>
-			</div>
+				}
+		</div>
 	</div>
 	@if (modelEmployee.EmployeeId != 5)
 	{
@@ -1227,6 +1221,7 @@
 	bool ChartDataLoaded = false;
 	/* Kode baru */
 
+	QuickAccounting.Data.Pengumuman _pengumuman;
 	int TotalPopulasi = 0;
 	decimal RataRataHD, RataRataFI, RataRataFCR = 0;
 
@@ -1616,6 +1611,8 @@
 		CurrentPhotoUrl = "img/user.png";
 		await LoadProfilePhoto();
 		ChartDataLoaded = true;
+
+		_pengumuman = _db.Pengumuman.FirstOrDefault(x => x.ID == 1);
 
 		string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Dashboard.";
         await _audit.LogAsync(LogTypes.LogInfo, "Dashboard", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);

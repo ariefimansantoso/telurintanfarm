@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="telurint_sqlserver" Class="TelurIntanDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Table Name="telurint_sqluser.DailyRecording" Member="DailyRecordings">
+    <Type Name="DailyRecording">
+      <Column Name="CageNumber" Type="System.String" DbType="NVarChar(50) NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="StrainName" Type="System.String" DbType="NVarChar(250) NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="RecordDate" Type="System.DateTime" DbType="Date NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="HenAgeWeeks" Type="System.Decimal" DbType="Decimal(5,2) NOT NULL" CanBeNull="false" />
+      <Column Name="HenAgeDays" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="PopulationStart" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="DeadHenCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="UnproductiveHenCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="SickHenCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="MoveOutHenCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="MoveInHenCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="PopulationEnd" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="ConcentrateType" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="ActualFoodNeededKG" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="SaldoFoodKG" Type="System.Decimal" DbType="Decimal(18,0)" CanBeNull="true" />
+      <Column Name="FoodNeededTodayKg" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="RemainingFoodKg" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="FoodIntakePerHen" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="FoodIntakeDeviation" Type="System.Decimal" DbType="Decimal(18,2)" CanBeNull="true" />
+      <Column Name="PerfectEggCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="PerfectEggKg" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="BrokenEggCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="BrokenEggKg" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="TotalEggCount" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="TotalEggKg" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="ActualHenDay" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="StandardHenDay" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="DailyHenDayDifference" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="ActualEggMassKg" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="StandardEggMassKg" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="EggMassDeviation" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="ActualEggWeightG" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="StandardEggWeightG" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="EggWeightDeviation" Type="System.Decimal" DbType="Decimal(10,2)" CanBeNull="true" />
+      <Column Name="FeedConversionRatio" Type="System.Decimal" DbType="Decimal(10,4)" CanBeNull="true" />
+      <Column Name="ModifiedBy" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="ModifiedDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="TelurPutihButir" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="TelurPutihKG" Type="System.Decimal" DbType="Decimal(18,2)" CanBeNull="true" />
+      <Column Name="PeriodeStart" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+      <Column Name="PeriodeEnd" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+      <Column Name="GroupName" Type="System.String" DbType="NVarChar(250)" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="telurint_sqluser.AuditLog" Member="AuditLogs">
+    <Type Name="AuditLog">
+      <Column Name="ID" Type="System.Int64" DbType="BigInt NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="EmployeeName" Type="System.String" DbType="NVarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="CreatedDate" Type="System.DateTime" DbType="DateTime2 NOT NULL" CanBeNull="false" />
+      <Column Name="ActionType" Type="System.String" DbType="NVarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="ActionDescription" Type="System.String" DbType="NVarChar(MAX) NOT NULL" CanBeNull="false" />
+      <Column Name="EmployeeID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="LogType" Type="System.String" DbType="NVarChar(50) NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+</Database>

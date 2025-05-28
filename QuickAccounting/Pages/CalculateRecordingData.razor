@@ -11,7 +11,7 @@
     string status = "Not Yet";
     protected async override void OnInitialized()
     {
-        var now = new DateTime(2025,2,1,0,0,0);
+        var now = new DateTime(2025,5,16,0,0,0);
         var dateNow = DateTime.Now.Date;
 
         var daysDifference = (dateNow - now).Days;
@@ -41,6 +41,10 @@
 
         foreach (var record in todayRecords)
         {
+            if(record.CageNumber == "5")
+            {
+                var x = 0;
+            }
             record.FoodNeededTodayKg = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
             record.ActualFoodNeededKG = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
 

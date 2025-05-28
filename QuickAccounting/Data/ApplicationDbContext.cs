@@ -102,5 +102,7 @@ namespace QuickAccounting.Data
         public DbSet<ChecklistPakanItem> ChecklistPakan { get; set; }
         public DbSet<RecordNota> RecordNota { get; set; }
         public DbSet<MutasiStockTelurHarian> MutasiStockTelurHarian { get; set; }
-    }
+		
+		public DbSet<Pengumuman> Pengumuman { get; set; }
+	}
 }

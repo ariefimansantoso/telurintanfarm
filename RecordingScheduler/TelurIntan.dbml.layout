@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ordesignerObjectsDiagram dslVersion="1.0.0.0" absoluteBounds="0, 0, 11, 12" name="TelurIntan">
+  <DataContextMoniker Name="/TelurIntanDataContext" />
+  <nestedChildShapes>
+    <classShape Id="d3d7a94c-e17d-45e8-8633-a0c3cd0a61f2" absoluteBounds="1.75, 2.875, 2, 8.8860498046875">
+      <DataClassMoniker Name="/TelurIntanDataContext/DailyRecording" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3f10627e-3723-4ca7-8206-cce46e167a7b" absoluteBounds="1.7650000000000001, 3.335, 1.9700000000000002, 8.3260498046875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="751bea67-de4c-4289-a63d-0b288df26951" absoluteBounds="5.25, 3, 2, 2.1554996744791666">
+      <DataClassMoniker Name="/TelurIntanDataContext/AuditLog" />
+      <nestedChildShapes>
+        <elementListCompartment Id="7b406468-a189-4d64-8806-fa62cc75c220" absoluteBounds="5.265, 3.46, 1.9700000000000002, 1.5954996744791665" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+  </nestedChildShapes>
+</ordesignerObjectsDiagram>

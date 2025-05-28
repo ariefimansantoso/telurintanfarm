@@ -45,6 +45,11 @@
             if (todayRecords != null)
             {
                 todayRecords.FoodIntakePerHen = record.FoodIntakePerHen;
+                todayRecords.StrainName = record.StrainName;
+                if(string.IsNullOrEmpty(todayRecords.StrainName))
+                {
+                    todayRecords.StrainName = "";
+                }
             }
             else
             {
@@ -85,6 +90,12 @@
                         ModifiedBy = modifiedBy,
                         ModifiedDate = DateTime.Now
                     };
+
+
+                if (string.IsNullOrEmpty(newRecord.StrainName))
+                {
+                    newRecord.StrainName = "";
+                }
 
                 auditMessage = "Schedule Task LoadRecordingData is adding: " + _audit.SerializeObjectToString(newRecord);
                 _audit.LogAsync(LogTypes.LogInfo, "LoadRecordingData", auditMessage, -99, "System");
