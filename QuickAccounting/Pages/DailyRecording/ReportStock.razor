@@ -84,6 +84,7 @@
                                             <th style="text-align:left;">Nett Kandang</th>
                                             <th style="text-align:left;">Bruto Kandang</th>
                                             <th style="text-align:left;">Bruto Gudang Picking</th>
+                                            <th style="text-align:left;">Selisih Bruto</th>
                                             <th style="text-align:left;">Utuh</th>
                                             <th style="text-align:left;">Putih</th>
                                             <th style="text-align:left;">Bentes</th>
@@ -109,6 +110,7 @@
                                             <td style="text-align:left !important;">@reportStock.NettKandang</td>
                                             <td style="text-align:left !important;">@reportStock.BrutoKandang</td>
                                                 <td style="text-align:left !important;">@reportStock.TotalStockGudang</td>
+                                                <td style="text-align:left !important;">@(reportStock.TotalStockGudang - reportStock.BrutoKandang)</td>
                                             <td style="text-align:left !important;">@reportStock.Utuh</td>
                                                 <td style="text-align:left !important;">@reportStock.Putih</td>
                                                 <td style="text-align:left !important;">@reportStock.Bentes</td>

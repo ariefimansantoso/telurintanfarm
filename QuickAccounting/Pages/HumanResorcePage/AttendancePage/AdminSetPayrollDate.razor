@@ -89,6 +89,7 @@
                                             <th style="text-align:center;">Tanggal Akhir</th>
                                             <th style="text-align:center;">Tanggal Gajian</th>
                                             <th>Nama Periode</th>
+                                            <th></th>
                                         </tr>                                        
                                     </thead>
                                     <tbody>
@@ -100,6 +101,12 @@
                                                 <td style="text-align:left;">@record.RealPayrollDate.ToString("dd/MM/yyyy")</td>
                                                 <td style="text-align:left;">
                                                     @record.PayrollPeriode
+                                                </td>
+                                                <td>
+                                                    @if(DateTime.Now.Date < record.RealPayrollDate.Date)
+                                                    {
+                                                        <a @onclick="( () => { OpenDeleteDialog(record.ID); } )" class="btn btn-danger" style="color:#fff !important; font-size:12px !important;">HAPUS</a>
+                                                    }
                                                 </td>
                                             </tr>
                                         }                                       
@@ -118,7 +125,14 @@
         </div>
     </div>    
 </div>
-
+@if (DeleteDialogOpen)
+{
+    <ModalDialog Title="Hapus Tanggal Payroll"
+                 Text="Apakah anda yakin anda ingin menghapus tanggal payroll ini?"
+                 OnClose="@OnDeleteDialogClose"
+                 DialogType="ModalDialog.ModalDialogType.Delete">
+    </ModalDialog>
+}
 @code {
     [CascadingParameter]
     public Task<AuthenticationState> authenticationState { get; set; }
@@ -134,6 +148,50 @@
     bool IsValid = true;
     DateTime SelectedDate;
     string NamaPeriode = "";
+    public bool DeleteDialogOpen { get; set; }
+    int SelectedItemId = 0;
+
+    private void OpenDeleteDialog(int id)
+    {
+        SelectedItemId = id;
+
+        DeleteDialogOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task OnDeleteDialogClose(bool accepted)
+    {
+        if (accepted)
+        {
+            DeleteTanggalPayroll();
+        }
+
+        DeleteDialogOpen = false;
+        StateHasChanged();
+
+        navigation.NavigateTo("/app/adminsetpayroll", true);
+    }
+
+    private async Task DeleteTanggalPayroll()
+    {
+        try
+        {
+            var eggPickup = await _db.PayrollCutoff.FirstOrDefaultAsync(x => x.ID == SelectedItemId);
+            if (eggPickup != null)
+            {
+                _db.PayrollCutoff.Remove(eggPickup);
+                await _db.SaveChangesAsync();
+            }
+        }
+        catch (DbUpdateException ex)
+        {
+            Console.WriteLine($"Database Update Exception: {ex.InnerException?.Message}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Terjadi kesalahan pada system. Tolong di screenshot: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
 
     private async Task Save()   
     {

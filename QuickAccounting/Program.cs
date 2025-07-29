@@ -75,6 +75,7 @@ builder.Services.AddTransient<PdfService>();
 builder.Services.AddTransient<SqlService>();
 builder.Services.AddTransient<DataAccess>();
 builder.Services.AddTransient<DatabaseConnection>();
+builder.Services.AddHttpClient<OpenAiService>();
 builder.Services.AddTransient<IAuditLogService, AuditLogService>();
 builder.Services.AddTransient<IStartingStockDate, StartingStockDate>();
 

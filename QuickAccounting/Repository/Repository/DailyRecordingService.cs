@@ -129,6 +129,7 @@ namespace QuickAccounting.Repository.Repository
 
                 record.PeriodeStart = periodeStart;
                 record.PeriodeEnd = periodeEnd;
+                record.ConcentrateType = "";	
 
                 _context.DailyRecording.Update(record);
 
@@ -170,6 +171,7 @@ namespace QuickAccounting.Repository.Repository
                 record.PeriodeStart = periodeStart;
                 record.PeriodeEnd = false;
                 record.GroupName = "";
+				record.ConcentrateType = "";
 
                 _context.DailyRecording.Add(record);
 
@@ -475,4 +477,14 @@ namespace QuickAccounting.Repository.Repository
 		}
 
 	}
+
+    public class WeeklyProductionSummary
+    {
+        public int WeekNumber { get; set; }
+        public decimal AverageHenDayActual { get; set; }
+        public decimal AverageFIActual { get; set; }
+        public decimal AverageEggMass { get; set; }
+        public decimal AverageGrBt { get; set; }
+    }
+
 }

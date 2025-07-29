@@ -306,22 +306,22 @@
             return;
         }
 
-        if (PeriodeEnd)
-        {
-            // Check if there is a PeriodeStart = true before this record
-            bool hasStartBefore = _db.DailyRecording.Any(r =>
-                r.CageNumber == SelectedNoKandang &&
-                r.StrainName == StrainName &&
-                r.PeriodeStart == true &&
-                r.RecordDate < RecordDate
-            );
+        // if (PeriodeEnd)
+        // {
+        //     // Check if there is a PeriodeStart = true before this record
+        //     bool hasStartBefore = _db.DailyRecording.Any(r =>
+        //         r.CageNumber == SelectedNoKandang &&
+        //         r.StrainName == StrainName &&
+        //         r.PeriodeStart == true &&
+        //         r.RecordDate < RecordDate
+        //     );
 
-            if (!hasStartBefore)
-            {
-                Snackbar.Add("Tidak bisa set Berakhir Periode karena belum ada Awal Periode.", Severity.Error);
-                return;
-            }
-        }
+        //     if (!hasStartBefore)
+        //     {
+        //         Snackbar.Add("Tidak bisa set Berakhir Periode karena belum ada Awal Periode.", Severity.Error);
+        //         return;
+        //     }
+        // }
 
         var result = await _recording.SaveHenPopulationAsync(SelectedNoKandang,
             TodaysDate, StrainName, PopulationCount, PopulationEndCount, DeadCount, UnproductiveCount, SickCount,
@@ -329,6 +329,14 @@
 
         if (result)
         {
+            LogPopulasiAnakKandang logAnakKandang = new LogPopulasiAnakKandang();
+            logAnakKandang.EmployeeID = modelEmployee.EmployeeId;
+            logAnakKandang.RecordDate = TodaysDate;
+            logAnakKandang.CageNumber = Convert.ToInt32(SelectedNoKandang).ToString();
+            logAnakKandang.CreatedDate = DateTime.Now;
+            _db.LogPopulasiAnakKandang.Add(logAnakKandang);
+            await _db.SaveChangesAsync();
+
             Snackbar.Add("Populasi data telah tersimpan.", Severity.Success);
             FormSubmitted = true;
             StateHasChanged();

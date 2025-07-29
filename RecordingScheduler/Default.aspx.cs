@@ -24,7 +24,7 @@ namespace RecordingScheduler
         {
             string auditMessage = "Schedule Task LoadRecordingData is running: " + recordDate.ToString("dd/MM/yyyy hh:mm");
             AuditLog auditLog = new AuditLog();
-            auditLog.ActionType = "LoadRecordingData";
+            auditLog.ActionType = "NEWLoadRecordingData";
             auditLog.ActionDescription = auditMessage;
             auditLog.CreatedDate = DateTime.Now;
             auditLog.LogType = LogTypes.LogInfo;
@@ -43,7 +43,9 @@ namespace RecordingScheduler
                     r.PopulationEnd,
                     r.StrainName,
                     r.FoodIntakePerHen,
-                    r.FoodNeededTodayKg
+                    r.FoodNeededTodayKg,
+                    r.HenAgeDays,
+                    r.ConcentrateType
                 })
                 .ToList();
 
@@ -96,6 +98,15 @@ namespace RecordingScheduler
                         StandardEggWeightG = 0,
                         EggWeightDeviation = 0,
                         FeedConversionRatio = 0,
+                        HenAgeDays = record.HenAgeDays + 1,
+                        SaldoFoodKG = 0,
+                        FoodIntakeDeviation = 0,
+                        TelurPutihButir = 0,
+                        TelurPutihKG = 0,
+                        PeriodeStart = false,
+                        PeriodeEnd = false,
+                        GroupName = "",
+                        ConcentrateType = string.IsNullOrEmpty(record.ConcentrateType) ? "" : record.ConcentrateType,
                         HenAgeWeeks = 0, // Age should be updated later
                         ModifiedBy = modifiedBy,
                         ModifiedDate = DateTime.Now

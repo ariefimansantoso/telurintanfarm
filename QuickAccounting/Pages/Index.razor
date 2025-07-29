@@ -1,5 +1,16 @@
 ﻿@page "/app/dashboard"
 @using System.Globalization
+@using ChartJs.Blazor.Common;
+@using ChartJs.Blazor.Common.Axes;
+@using ChartJs.Blazor.Common.Axes.Ticks;
+@using ChartJs.Blazor.Common.Enums;
+@using ChartJs.Blazor.Common.Handlers;
+@using ChartJs.Blazor.Common.Time;
+@using ChartJs.Blazor.Util;
+@using ChartJs.Blazor.Interop;
+@using ChartJs.Blazor;
+@using ChartJs.Blazor.LineChart;
+@using System.Drawing;
 @inject IJournalVoucher _voucher
 @inject IPaymentIn _paymentin
 @inject IInventoryReport report
@@ -20,10 +31,12 @@
 @inject ApplicationDbContext _db
 @inject IAuditLogService _audit
 @inject IStartingStockDate _stockDate;
+@inject IKandangService _kandang
 
 @using QuickAccounting.Components
 @using QuickAccounting.Constants;
 @using QuickAccounting.Data.Recording
+@using QuickAccounting.Helpers;
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
 <style type="text/css">
@@ -56,6 +69,109 @@
 				}
 		</div>
 	</div>
+	@if (modelEmployee.EmployeeId == 5 || modelEmployee.EmployeeId == 6)
+	{
+		<div class="row">
+			<div class="container-fluid">
+				<div class="col-md-12">
+					<div class="brand-text float-left mt-4">
+						<h3>Laporan Recording<span></span> </h3>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">	
+			<div class="col-sm-12 col-12">
+				<div class="form-group">
+					<label>Pilih Kandang</label>
+					<div class="row">
+						<div class="col-lg col-sm-12 col-12">
+							<select class="form-control" @onchange="SelectedKandangChange">
+								@foreach (var karyawan in CageList)
+								{
+									<option value="@karyawan.NoKandang">@karyawan.NoKandang</option>
+								}
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="cust-col-20 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@TanggalCheckin.ToString("dd-MM-yyyy")</span></h5>
+						<h6>Check-in</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-20 col-sm-6 col-12">
+				<div class="dash-widget dash1">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@Math.Floor(UmurMinggu)</span></h5>
+						<h6>Umur (Minggu)</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-20 col-sm-6 col-12">
+				<div class="dash-widget dash2">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@GraphStrainName</span></h5>
+						<h6>Strain</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-20 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@GraphHD.ToString("F2", new CultureInfo("id-ID"))</span></h5>
+						<h6>HD</h6>
+					</div>
+				</div>
+			</div>
+			<div class="cust-col-20 col-sm-6 col-12">
+				<div class="dash-widget dash3">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@GraphFCR.ToString("F2", new CultureInfo("id-ID"))</span></h5>
+						<h6>FCR</h6>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-sm-12 col-12">
+				<div class="card flex-fill">
+					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
+						<h5 class="card-title mb-0">Grafik Performa</h5>
+					</div>
+					<div class="card-body">
+						@if (ChartDataLoaded)
+						{
+							<Chart Config="_config" @ref="_chart" @key="_chartKey"></Chart>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+
 	@if (modelEmployee.EmployeeId != 5)
 	{
 		<div class="row">
@@ -160,7 +276,7 @@
 						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@string.Format("{0:n0}", StockTelurParahSekali) KG</span></h5>
+						<h5><span class="counters">@StockTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah Sekali</h6>
 					</div>
 				</div>
@@ -559,53 +675,7 @@
 					</div>
 				</div>
 			</div>
-		</div>		
-
-		<div class="row">	
-			<div class="col-lg col-sm-12 col-12">
-				<div class="form-group">
-                    <label>Pilih Strain</label>
-                    <div class="row">
-                        <div class="col-lg col-sm-12 col-12">
-                            <select class="form-control" @onchange="SelectedStrainChange">
-								@foreach (var karyawan in DaftarStrain)
-                                {
-                                    <option value="@karyawan">@karyawan</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-				</div>
-			</div>		
-
-			 <div class="col-lg-6 col-sm-12 col-12 d-flex">
-				<div class="card flex-fill">
-					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
-						<h5 class="card-title mb-0">Grafik Performa</h5>
-					</div>
-					<div class="card-body">
-						@if(ChartDataLoaded) 
-						{
-							<MudChart ChartType="ChartType.Line" ChartOptions="@Options" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
-						}
-					</div>
-				</div>
-			</div>
-			@* <div class="col-lg-6 col-sm-12 col-12 d-flex">
-				<div class="card flex-fill">
-					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
-						<h5 class="card-title mb-0">Top 10 Product</h5>
-					</div>
-					<div class="card-body">
-						<RadzenChart>
-							<RadzenPieSeries Data="@listProduct" Title="Product" CategoryProperty="ProductName" ValueProperty="Qty">
-								<RadzenSeriesDataLabels Visible="@showDataLabels" />
-							</RadzenPieSeries>
-						</RadzenChart>
-					</div>
-				</div>
-			</div> *@
-		</div>
+		</div>				
 
 		<div class="row">
 			<div class="container-fluid">
@@ -1192,7 +1262,7 @@
 	</ModalDialog>
 }
 @code{
-		/* Kode baru */
+	/* Kode baru */
 	private bool AdaPerijinan;
 	string currentUserRole = "User";
 	List<dynamic> unapprovedPerijinan;
@@ -1211,8 +1281,8 @@
 	List<dynamic> PartaiTransferList;
 	List<dynamic> PartaiKGList;
 	private List<QuickAccounting.Data.Recording.DailyRecording> StrainData;
-	List<string> DaftarStrain;
-	string SelectedStrain;
+	List<string> DaftarKandang;
+	string SelectedKandang;
 	private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
 	private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
 	public ChartOptions Options = new ChartOptions();
@@ -1307,6 +1377,244 @@
 	List<DailyAttendanceMaster> todayAttendances;
 
 	public string CurrentPhotoUrl { get; set; }
+
+	private List<Kandang> CageList = new List<Kandang>();
+	private LineConfig _config;
+	private Chart _chart;
+	private string _chartKey = Guid.NewGuid().ToString();
+	private DateTime TanggalCheckin;
+	private string GraphStrainName;
+	private decimal UmurMinggu;
+	private decimal GraphHD;
+	private decimal GraphFCR;
+
+	private async Task InitChart()
+    {
+		var cageNumber = Helper.ConvertCageNumber(SelectedKandang);
+		var resultForTable = new List<QuickAccounting.Data.Recording.DailyRecording>();
+
+		var dataForTable = _db.DailyRecording
+			.Where(r => r.CageNumber == cageNumber)
+			.OrderByDescending(r => r.RecordDate)
+			.ToList(); // Load into memory to simulate window functions
+
+		int rowNumberForTable = 1;
+		int runningSumForTable = 0;
+
+		foreach (var row in dataForTable)
+		{
+			if (row.PopulationStart <= 0)
+				runningSumForTable += 1;
+
+			if (runningSumForTable == 0)
+				resultForTable.Add(row);
+
+			rowNumberForTable++;
+		}
+
+		if(resultForTable.Count > 5) 
+		{
+			TanggalCheckin = resultForTable[resultForTable.Count - 1].RecordDate;
+			GraphStrainName = resultForTable.Where(x => !string.IsNullOrEmpty(x.StrainName)).Select(x => x.StrainName).First();
+			UmurMinggu = resultForTable[2].HenAgeWeeks;
+			GraphHD = resultForTable[2].ActualHenDay;
+			GraphFCR = resultForTable[2].FeedConversionRatio;
+		}
+
+		var weeklyAverages = resultForTable
+            .GroupBy(r => (int)Math.Floor(r.HenAgeWeeks)) // Group by full week
+            .Select(g => new WeeklyProductionSummary
+                {
+                    WeekNumber = g.Key,
+                    AverageHenDayActual = g.Average(r => r.ActualHenDay),
+                    AverageFIActual = g.Average(r => r.FoodIntakePerHen),
+                    AverageEggMass = g.Average(r => r.ActualEggMassKg),
+                    AverageGrBt = g.Average(r => r.ActualEggWeightG)
+                })
+            .OrderByDescending(x => x.WeekNumber)
+            .ToList();
+
+        var fullData = Enumerable.Range(16, 85) // 100 - 16 + 1 = 85 weeks
+            .Select(week =>
+            {
+                var existing = weeklyAverages.FirstOrDefault(d => d.WeekNumber == week);
+                return new WeeklyProductionSummary
+                    {
+                        WeekNumber = week,
+                        AverageHenDayActual = existing?.AverageHenDayActual ?? 0,
+                        AverageFIActual = existing?.AverageFIActual ?? 0,
+                        AverageEggMass = existing?.AverageEggMass ?? 0,
+                        AverageGrBt = existing?.AverageGrBt ?? 0
+                    };
+            })
+            .OrderBy(d => d.WeekNumber)
+            .ToList();
+
+        _config = new LineConfig
+            {
+                Options = new LineOptions
+                {
+                    Responsive = true,                    
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "Laporan Recording"
+                    },
+                    Tooltips = new Tooltips
+                    {
+                        Mode = InteractionMode.Nearest,
+                        Intersect = true
+                    },
+                    Hover = new Hover
+                    {
+                        Mode = InteractionMode.Nearest,
+                        Intersect = true
+                    },
+                    Scales = new Scales
+                    {
+                        XAxes = new List<CartesianAxis>
+                        {
+                            new CategoryAxis
+                            {
+                                ScaleLabel = new ScaleLabel
+                                {
+                                    LabelString = "Month"
+                                }
+                            }
+                        },
+                        YAxes = new List<CartesianAxis>
+                        {
+                            new LinearCartesianAxis
+                            {
+                                ScaleLabel = new ScaleLabel
+                                {
+                                    LabelString = "Value"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        _chartKey = Guid.NewGuid().ToString();
+
+        var standardData = _db.StandardData.ToList();
+        var weeks = standardData.Select(x => x.Weeks).ToList();
+
+        foreach (var week in weeks)
+        {
+            _config.Data.Labels.Add(week.ToString());
+        }
+
+        var fiStandard = standardData.Select(x => x.FI_Standard).ToList();
+        var hdStd = standardData.Select(x => x.HD_Standard).ToList();
+        var emassStandard = standardData.Select(x => x.EMass_Standard).ToList();
+        var grbtStd = standardData.Select(x => x.GrBt_Standard).ToList();
+
+        LineDataset<decimal> dataset1 = new LineDataset<decimal>(fiStandard)
+            {
+                Label = "FI",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightBlue),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightBlue),
+                Fill = FillingMode.Disabled               
+            };
+        dataset1.PointRadius = 0;
+
+        LineDataset<decimal> HD = new LineDataset<decimal>(hdStd)
+            {
+                Label = "HD",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightPink),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightPink),
+                Fill = FillingMode.Disabled
+            };
+        HD.PointRadius = 0;
+
+        LineDataset<decimal> Emass = new LineDataset<decimal>(emassStandard)
+            {
+                Label = "E Mass",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Yellow),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Yellow),
+                Fill = FillingMode.Disabled
+            };
+        Emass.PointRadius = 0;
+
+        LineDataset<decimal> grbt = new LineDataset<decimal>(grbtStd)
+            {
+                Label = "GrBt",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightGreen),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightGreen),
+                Fill = FillingMode.Disabled
+            };
+        grbt.PointRadius = 0;
+
+        _config.Data.Datasets.Add(dataset1);
+        _config.Data.Datasets.Add(HD);
+        _config.Data.Datasets.Add(Emass);
+        _config.Data.Datasets.Add(grbt);
+
+        // WeekNumber = week,
+        // AverageHenDayActual = existing?.AverageHenDayActual ?? 0,
+        // AverageFIActual = existing?.AverageFIActual ?? 0,
+        // AverageEggMass = existing?.AverageEggMass ?? 0,
+        // AverageGrBt
+
+		var hdReal = fullData.Select(x => (decimal)x.AverageHenDayActual).ToList();
+
+        // load chart recording
+        LineDataset<decimal> HDReal = new LineDataset<decimal>(hdReal)
+            {
+                Label = "HD Real",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Red),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Red),
+                Fill = FillingMode.Disabled               
+            };
+        HDReal.PointRadius = 0;
+
+        var fiReal = fullData.Select(x => (decimal)x.AverageFIActual).ToList();
+
+        // load chart recording
+        LineDataset<decimal> FIReal = new LineDataset<decimal>(fiReal)
+            {
+                Label = "FI Real",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Blue),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Blue),
+                Fill = FillingMode.Disabled               
+            };
+        FIReal.PointRadius = 0;
+
+        var emReal = fullData.Select(x => (decimal)x.AverageEggMass).ToList();
+
+        // load chart recording
+        LineDataset<decimal> EMReal = new LineDataset<decimal>(emReal)
+            {
+                Label = "EM Real",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Orange),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Orange),
+                Fill = FillingMode.Disabled               
+            };
+        EMReal.PointRadius = 0;
+
+		var grBt = fullData.Select(x => (decimal)x.AverageGrBt).ToList();
+
+        // load chart recording
+        LineDataset<decimal> GrBtReal = new LineDataset<decimal>(grBt)
+            {
+                Label = "GrBt Real",
+                BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Green),
+                BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Green),
+                Fill = FillingMode.Disabled
+            };
+        GrBtReal.PointRadius = 0;
+
+        _config.Data.Datasets.Add(HDReal);
+        _config.Data.Datasets.Add(FIReal);
+        _config.Data.Datasets.Add(EMReal);
+        _config.Data.Datasets.Add(GrBtReal);
+
+
+		
+
+        ChartDataLoaded = true;
+    }
 
 	private void OpenApproveDialog(int id)
 	{
@@ -1411,36 +1719,38 @@
 		}
 	}
 
-	private async Task GetStrainGraphData()
-	{
-		var now = DateTime.Now;
-		var currentMonth = now.Month;
-		DateTime from = new DateTime(2024, 1, 1, 0, 0, 0);
-		DateTime to = new DateTime(2024, 7, 31, 23,59,59);
-		StrainData = await _recording.GetDailyRecordingStrain(SelectedStrain, from, to);
+	// private async Task GetStrainGraphData()
+	// {
+	// 	var now = DateTime.Now;
+	// 	var currentMonth = now.Month;
+	// 	DateTime from = new DateTime(2024, 1, 1, 0, 0, 0);
+	// 	DateTime to = new DateTime(2024, 7, 31, 23,59,59);
+	// 	StrainData = await _recording.GetDailyRecordingStrain(SelectedStrain, from, to);
 
-		Series = new List<ChartSeries>();
-		ChartSeries series = new ChartSeries();
-		series.Name = "+/- HD";
-		series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualHenDay)).ToArray();
-		Series.Add(series);
+	// 	Series = new List<ChartSeries>();
+	// 	ChartSeries series = new ChartSeries();
+	// 	series.Name = "+/- HD";
+	// 	series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualHenDay)).ToArray();
+	// 	Series.Add(series);
 
-		series = new ChartSeries();
-		series.Name = "EW(gr)";
-		series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualEggWeightG)).ToArray();
-		Series.Add(series);
+	// 	series = new ChartSeries();
+	// 	series.Name = "EW(gr)";
+	// 	series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualEggWeightG)).ToArray();
+	// 	Series.Add(series);
 
-		// Map strainData to chart data
-		XAxisLabels = StrainData.Select(record => record.HenAgeWeeks.ToString()).ToArray();
-		yAxisValues = StrainData.Select(record => record.ActualHenDay).ToList();
+	// 	// Map strainData to chart data
+	// 	XAxisLabels = StrainData.Select(record => record.HenAgeWeeks.ToString()).ToArray();
+	// 	yAxisValues = StrainData.Select(record => record.ActualHenDay).ToList();
 
-		Options.YAxisTicks = 20;
-	}
+	// 	Options.YAxisTicks = 20;
+	// }
 
-	private async Task SelectedStrainChange(ChangeEventArgs e)
+	private async Task SelectedKandangChange(ChangeEventArgs e)
 	{        
-		SelectedStrain = e.Value.ToString();
-		await GetStrainGraphData();
+		SelectedKandang = e.Value.ToString();
+		var cageNumber = Helper.ConvertCageNumber(SelectedKandang);
+
+		await InitChart();
 	}
 
 	private void LoadDataStock()
@@ -1530,11 +1840,12 @@
 
 		JobDescAvailable = !string.IsNullOrEmpty(modelEmployee.JobDesc);
 		SOPAvailable = !string.IsNullOrEmpty(modelEmployee.SOP);
+		
+        CageList = await _kandang.GetAll();
+		SelectedKandang = CageList.FirstOrDefault().NoKandang;
 
-		DaftarStrain = await _recording.GetStrainNameList();
-		SelectedStrain = DaftarStrain.FirstOrDefault();
-
-		await GetStrainGraphData();
+		//await GetStrainGraphData();
+		await InitChart();
 
 		listProduct = await report.GetTopProduct();
 		DateTime today = DateTime.Now;

@@ -1,0 +1,174 @@
+﻿@page "/app/setanakkandang"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@attribute [Authorize]
+
+<PageTitle>Set Anak Kandang</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        font-weight: bold !important;
+        font-size: 24px !important;        
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Set Anak Kandang</h4>
+            <p>Tambahkan nomor kandang menggunakan koma tanpa spasi apabila lebih dari satu kandang, contoh: 3,14,15</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: left !important;">
+                        @if(employeeUnderSupervisor.Count > 0) 
+                        {
+                            foreach(var employee in employeeUnderSupervisor) 
+                            {
+                               <table>
+                                   <tr>
+                                        <td style="width:200px; padding: 10px 0px;">@employee.EmployeeName</td>
+                                        <td><input type="text" class="form-control" @bind="employee.NomorKandang" /></td>
+                                   </tr>
+                               </table>
+                            }
+                        }
+                    </div>
+                </div>
+            </div> 
+          
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;">Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Set Anak Kandang";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+
+    bool isProcessing;
+
+    List<TempEmployeeKandang> employeeUnderSupervisor = new List<TempEmployeeKandang>();
+
+    public class TempEmployeeKandang
+    {
+        public int EmployeeID { get; set; }
+        public string EmployeeName { get; set; }
+        public string NomorKandang { get; set; }
+    }
+
+    private async Task LoadData()
+    {        
+        employeeUnderSupervisor = await _db.Employee.Where(x => x.SupervisorID == 15 || x.SupervisorID == 17).Select(x => new TempEmployeeKandang
+        {
+            EmployeeID = x.EmployeeId,
+            EmployeeName = x.EmployeeName,
+            NomorKandang = ""
+        }).OrderBy(x => x.EmployeeName).ToListAsync();
+
+        foreach (var empl in employeeUnderSupervisor)
+        {
+            var existingRecord = _db.EmployeeKandang
+                .SingleOrDefault(x => x.EmployeeID == empl.EmployeeID);
+
+            if (existingRecord != null)
+            {
+                if(!string.IsNullOrEmpty(existingRecord.NomorKandang))
+                {
+                    empl.NomorKandang = existingRecord.NomorKandang;
+                }
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task Save()
+    {
+        foreach (var employee in employeeUnderSupervisor)
+        {
+            // Check if the record already exists in EmployeeKandang
+            var existingRecord = _db.EmployeeKandang
+                .SingleOrDefault(x => x.EmployeeID == employee.EmployeeID);
+
+            if (existingRecord != null)
+            {
+                // Update the existing record
+                existingRecord.NomorKandang = employee.NomorKandang;
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(employee.NomorKandang))
+                {
+                    // Insert a new record if not found
+                    var newEmployeeKandang = new EmployeeKandang
+                        {
+                            EmployeeID = employee.EmployeeID,
+                            NomorKandang = employee.NomorKandang
+                        };
+                    _db.EmployeeKandang.Add(newEmployeeKandang);
+                }
+            }
+        }
+
+        // Submit changes to the database
+        await _db.SaveChangesAsync();
+
+        Snackbar.Add("Data telah berhasil disimpan.", Severity.Success);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        if (modelEmployee.EmployeeId == 15 || modelEmployee.EmployeeId == 17 || modelEmployee.EmployeeId == 5 || modelEmployee.EmployeeId == 6)
+        {
+
+            await LoadData();
+        }
+        else
+        {
+            Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
+            navigation.NavigateTo("/app/dashboard");
+        }
+    }
+}    

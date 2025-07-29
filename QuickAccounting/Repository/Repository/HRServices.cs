@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NPOI.SS.Formula.Functions;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
 using QuickAccounting.Data;
 using QuickAccounting.Data.HrPayroll;
@@ -25,9 +26,12 @@ namespace QuickAccounting.Repository.Repository
         {
             var employeeUnderSupervisor = _context.Employee.Where(x => x.SupervisorID == supervisorID).Select(x => x.EmployeeId).ToList();
 
+			DateTime today = DateTime.Now.Date;
+			DateTime fiveDaysAgo = today.AddDays(-5);
+
 			var perijinanWithName = (from p in _context.Perijinan
 									 join em in _context.Employee on p.EmployeeID equals em.EmployeeId
-									 where p.ForDate >= DateTime.Now.Date && employeeUnderSupervisor.Contains(p.EmployeeID)
+									 where p.ForDate >= fiveDaysAgo && employeeUnderSupervisor.Contains(p.EmployeeID)
 									 orderby p.ForDate ascending
 									 select new
 									 {
@@ -49,10 +53,12 @@ namespace QuickAccounting.Repository.Repository
 		}
 
         public List<dynamic> GetListPerijinanByEmployeeID(int employeeID)
-        {
+		{
+			DateTime today = DateTime.Now.Date;
+			DateTime fiveDaysAgo = today.AddDays(-5);
 			var perijinanWithName = (from p in _context.Perijinan
 									 join em in _context.Employee on p.EmployeeID equals em.EmployeeId                                     
-									 where p.ForDate >= DateTime.Now.Date && p.EmployeeID == employeeID
+									 where p.ForDate >= fiveDaysAgo && p.EmployeeID == employeeID
 									 orderby p.ForDate ascending
 									 select new
 									 {
@@ -75,10 +81,13 @@ namespace QuickAccounting.Repository.Repository
 
 		public List<dynamic> GetPerijinanUnApproved()
         {
-            var perijinanWithName = (from p in _context.Perijinan
+			DateTime today = DateTime.Now.Date;
+			DateTime fiveDaysAgo = today.AddDays(-5);
+
+			var perijinanWithName = (from p in _context.Perijinan
                                      join em in _context.Employee on p.EmployeeID equals em.EmployeeId
-                                     where p.ForDate >= DateTime.Now.Date
-                                     orderby p.ForDate ascending
+                                     where p.ForDate >= fiveDaysAgo
+									 orderby p.ForDate ascending
                                      select new 
                                      {
 										 ID = p.ID,

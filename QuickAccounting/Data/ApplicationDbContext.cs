@@ -7,6 +7,7 @@ using QuickAccounting.Data.Inventory;
 using QuickAccounting.Data.Recording;
 using QuickAccounting.Data.Setting;
 using System.Reflection.Emit;
+using static QuickAccounting.Pages.DailyRecording.SetAnakKandang;
 
 namespace QuickAccounting.Data
 {
@@ -104,5 +105,9 @@ namespace QuickAccounting.Data
         public DbSet<MutasiStockTelurHarian> MutasiStockTelurHarian { get; set; }
 		
 		public DbSet<Pengumuman> Pengumuman { get; set; }
+        public DbSet<StandardData> StandardData { get; set; }
+        public DbSet<EmployeeKandang> EmployeeKandang { get; set; }
+		
+		public DbSet<LogPopulasiAnakKandang> LogPopulasiAnakKandang { get; set; }
 	}
 }

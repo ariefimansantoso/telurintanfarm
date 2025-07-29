@@ -14,6 +14,7 @@
 @inject IDailyRecordingService _recording
 @inject IKandangService _kandang
 @inject IDailyEggPickupService _egg
+@inject IGeneralSetting _setting
 @attribute [Authorize]
 
 <PageTitle>Form Recording Produksi Telur</PageTitle>
@@ -288,6 +289,8 @@
     private UserMaster modelUser;
     private Employee modelEmployee;
 
+    GeneralSetting setting = new GeneralSetting();
+    private decimal maxTimbangan = 13;
     private void SetTodaysDate()
     {
         var today = DateTime.Now;
@@ -318,6 +321,9 @@
 
             // Fetch cage numbers, can be populated dynamically from a service or DB
             CageList = await _kandang.GetAll();
+
+            setting = await _setting.GetbyId(1);
+            maxTimbangan = setting.MaxTimbangan;
         }
         else
         {
@@ -578,26 +584,32 @@
 
     private async Task Calculate()
     {
-        int numberOfTray = (int)Math.Ceiling((double)TelurUtuhButir / 30);
-        decimal beratTray = (decimal.Parse(SelectedTray) / (decimal)100) * (decimal)numberOfTray;
+        int numberOfTray = 0;
+        decimal beratTray = 0;
         decimal beratTelur = 0;
         if (UtuhVisible)
         {
+            numberOfTray = (int)Math.Ceiling((double)TelurUtuhButir / 30);
+            beratTray = (decimal.Parse(SelectedTray) / (decimal)100) * (decimal)numberOfTray;
             TelurUtuhActualKG = TelurUtuhKG - beratTray;
             beratTelur = TelurUtuhActualKG;
         }
         else if (BentesVisible)
         {
+            numberOfTray = (int)Math.Ceiling((double)TelurBentesButir / 30);
+            beratTray = (decimal.Parse(SelectedTray) / (decimal)100) * (decimal)numberOfTray;
             TelurBentesActualKG = TelurBentesKG - beratTray;
             beratTelur = TelurBentesActualKG;
         }
         else if (PutihVisible)
         {
+            numberOfTray = (int)Math.Ceiling((double)TelurPutihButir / 30);
+            beratTray = (decimal.Parse(SelectedTray) / (decimal)100) * (decimal)numberOfTray;
             TelurPutihActualKG = TelurPutihKG - beratTray;
             beratTelur = TelurPutihActualKG;
         }
 
-        if (beratTelur > 20)
+        if (beratTelur > maxTimbangan)
         {
             IsValid = false;
             Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);

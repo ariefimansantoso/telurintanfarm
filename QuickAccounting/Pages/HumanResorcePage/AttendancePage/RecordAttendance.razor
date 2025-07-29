@@ -6,6 +6,7 @@
 @inject IEmployee _employee
 @using System.Security.Claims
 @using System.Text;
+@using QuickAccounting.Helpers;
 @inject IWebHostEnvironment _hostingEnvironment
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
@@ -311,6 +312,31 @@
         string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
         string fileName = await UploadFile(userFolder);
 
+        if (WaktuAbsensi == "Absensi Pulang")
+        {
+            var employeeInKandang = _db.EmployeeKandang.Where(x => x.EmployeeID == modelEmployee.EmployeeId).FirstOrDefault();
+            if (employeeInKandang != null && !string.IsNullOrEmpty(employeeInKandang.NomorKandang))
+            {
+                var nomorKandang = employeeInKandang.NomorKandang.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                foreach(var nk in nomorKandang)
+                {
+                    var cageNumber = Helper.ConvertCageNumber(nk);
+                    var alreadyInput = _db.LogPopulasiAnakKandang.Where(x => x.EmployeeID == modelEmployee.EmployeeId && x.RecordDate == DateTime.Today && x.CageNumber == cageNumber)
+                                                .FirstOrDefault();
+
+                    if(alreadyInput == null)
+                    {
+                        // belum input populasi.
+                        auditMessage.AppendLine("Error belum input Populasi.");
+                        await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                        Snackbar.Add("Anda belum input Populasi.", Severity.Error);
+                        return;
+                    }
+                }
+            }
+        }
+        
         if (PhotoSelfie == string.Empty)
         {
             auditMessage.AppendLine("Error belum upload foto absen.");
@@ -332,8 +358,6 @@
         master.AttendanceStatus = "ALPHA";        
 
         master.PhotoSelfie = fileName;
-
-        auditMessage.AppendLine("Error belum upload foto absen.");
 
         var result = await _attendance.Save(master);
 

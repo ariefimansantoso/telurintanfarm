@@ -90,6 +90,91 @@
 			</div>
 		</div>
 	</div>
+	<div class="row">
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Utuh</span></h5>
+					<h6>Utuh</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash1">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Putih</span></h5>
+					<h6>Putih</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash2">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Bentes</span></h5>
+					<h6>Bentes</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash3">
+				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Parah</span></h5>
+					<h6>Parah</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash3">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@PS</span></h5>
+					<h6>PS</h6>
+				</div>
+			</div>
+		</div>
+
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Rusak</span></h5>
+					<h6>Rusak</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash1">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Susut</span></h5>
+					<h6>Susut</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash2">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Afkir</span></h5>
+					<h6>Afkir</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class=" col-sm-6 col-12">
+			<div class="dash-widget dash3">
+
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Peti</span></h5>
+					<h6>Peti</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash3">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@Lainnya</span></h5>
+					<h6>Lainnya</h6>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="card">
 		<div class="card-body">			
 			<div class="table-responsive table-scrollable">
@@ -163,6 +248,18 @@
 
 	List<RecordNota> ListNota = new List<RecordNota>();
 	bool isProcessing = true;
+
+	public decimal Utuh = 0;
+	public decimal Putih = 0;
+	public decimal Bentes = 0;
+	public decimal Parah = 0;
+	public decimal PS = 0;
+	public decimal Rusak = 0;
+	public decimal Susut = 0;
+	public decimal Afkir = 0;
+	public decimal Peti = 0;
+	public decimal Lainnya = 0;
+
 	protected override async Task OnInitializedAsync()
 	{
 		//CheckPriviliagee
@@ -198,6 +295,49 @@
 		ListNota = await _db.RecordNota.Where(x => x.DateCreated.Date == DateTime.Now.Date).ToListAsync();
 		ListNota = ListNota.OrderByDescending(x => Convert.ToInt32(x.NomorNota)).ToList();
 
+		foreach(var nota in ListNota)
+		{
+			if (nota.JenisTelur == "UTUH")
+			{
+				Utuh = Utuh + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "PUTIH")
+			{
+				Putih = Putih + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "BENTES")
+			{
+				Bentes = Bentes + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "PARAH")
+			{
+				Parah = Parah + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "PS")
+			{
+				PS = PS + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "RUSAK")
+			{
+				Rusak = Rusak + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "SUSUT")
+			{
+				Susut = Susut + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "AFKIR")
+			{
+				Afkir = Afkir + nota.BeratTelur;
+			}
+			else if (nota.JenisTelur == "PETI")
+			{
+				Peti = Peti + nota.BeratTelur;
+			}
+			else
+			{
+				Lainnya = Lainnya + nota.BeratTelur;
+			}
+		}
 		isProcessing = false;
 
 		StateHasChanged();
@@ -253,7 +393,7 @@
 				id = "";
 			}
 		}
-		
+
 		isProcessing = false;
 
 		StateHasChanged();
@@ -268,48 +408,58 @@
 		{
 			auditMessage = "Nomor nota: " + nomorNota;
 			await _audit.LogAsync(LogTypes.LogInfo, "Scan Picking", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
-			
+
 			foreach(ProductView pv in productDetails)
 			{
 				if (pv.ProductCode.StartsWith("TA-"))
 				{
 					JenisTelurSelected = "UTUH";
+					Utuh = Utuh + pv.Qty;
 				}
 				else if (pv.ProductId == 7)
 				{
 					JenisTelurSelected = "PUTIH";
+					Putih = Putih + pv.Qty;
 				}
 				else if (pv.ProductId == 16)
 				{
 					JenisTelurSelected = "BENTES";
+					Bentes = Bentes + pv.Qty;
 				}
 				else if (pv.ProductId == 17)
 				{
 					JenisTelurSelected = "PARAH";
+					Parah = Parah + pv.Qty;
 				}
 				else if (pv.ProductId == 19)
 				{
 					JenisTelurSelected = "PS";
+					PS = PS + pv.Qty;
 				}
 				else if (pv.ProductId == 106)
 				{
 					JenisTelurSelected = "RUSAK";
+					Rusak = Rusak + pv.Qty;
 				}
 				else if (pv.ProductId == 124)
 				{
 					JenisTelurSelected = "SUSUT";
+					Susut = Susut + pv.Qty;
 				}
 				else if ((new List<int>() { 15, 24, 25, 79 }).Contains(pv.ProductId))
 				{
 					JenisTelurSelected = "AFKIR";
+					Afkir = Afkir + pv.Qty;
 				}
 				else if ((new List<int>() { 10, 11 }).Contains(pv.ProductId))
 				{
 					JenisTelurSelected = "PETI";
+					Peti = Peti + pv.Qty;
 				}
 				else
 				{
 					JenisTelurSelected = "LAINNYA";
+					Lainnya = Lainnya + pv.Qty;
 				}
 				RecordNota recordNota = new RecordNota();
 				recordNota.BeratTelur = pv.Qty;

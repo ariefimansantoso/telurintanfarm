@@ -4,6 +4,16 @@
 @using QuickAccounting.Data.Recording;
 @using System.Transactions;
 @using System.Globalization;
+@using ChartJs.Blazor.Common;
+@using ChartJs.Blazor.Common.Axes;
+@using ChartJs.Blazor.Common.Axes.Ticks;
+@using ChartJs.Blazor.Common.Enums;
+@using ChartJs.Blazor.Common.Handlers;
+@using ChartJs.Blazor.Common.Time;
+@using ChartJs.Blazor.Util;
+@using ChartJs.Blazor.Interop;
+@using ChartJs.Blazor;
+@using ChartJs.Blazor.LineChart;
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @inject IUser _user
@@ -94,6 +104,8 @@
         <div class="card-body">
             @if (ChartDataLoaded)
             {
+                <Chart Config="_config" @ref="_chart" @key="_chartKey"></Chart>
+
                 <MudChart ChartType="ChartType.Bar" ChartOptions="@Options" Style="width: 100%;" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
             }
         </div>
@@ -221,6 +233,10 @@
     bool ChartDataLoaded = false;
     int RataRataMati = 1000;
     bool isProcessing;
+
+    private LineConfig _config;
+    private Chart _chart;
+    private string _chartKey = Guid.NewGuid().ToString();
 
     private async Task LoadRecording()
     {

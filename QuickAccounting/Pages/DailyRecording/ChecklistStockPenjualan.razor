@@ -168,6 +168,11 @@
                         continue;
                     }
 
+                    if (dbRecord.CreatedBy == modelEmployee.EmployeeId)
+                    {
+                        throw new Exception("Tidak boleh memverifikasi Stok Penjualan sendiri.");
+                    }
+
                     dbRecord.VerifiedBy = record.IsVerified ? modelEmployee.EmployeeId : -99; // Update VerifiedBy
                     dbRecord.IsVerified = record.IsVerified;
                     if (record.IsVerified)

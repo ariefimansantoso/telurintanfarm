@@ -14,6 +14,7 @@ namespace QuickAccounting.Data.Setting
         public string Discount { get; set; }
         public string VatOnPurchase { get; set; }
         public string VatOnSales { get; set; }
+        public decimal MaxTimbangan { get; set; }
 
-    }
+	}
 }
