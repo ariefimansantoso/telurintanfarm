@@ -8,7 +8,7 @@ namespace QuickAccounting.Services
 	public class OpenAiService
 	{
 		private readonly HttpClient _httpClient;
-		private readonly string _apiKey = "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";
+		private readonly string _apiKey = "";
 		private readonly string _apiUrl = "https://api.openai.com/v1/chat/completions";
 
 		public OpenAiService(HttpClient httpClient)

@@ -24,6 +24,8 @@
 @inject IUser _userManage
 @inject IHRServices _hr
 @inject IEmployee _employee
+@inject IPricingService _pricing
+@inject IProduct _product
 @inject IJSRuntime JSRuntime
 @inject NavigationManager navigation
 @inject IAttendance _attendance
@@ -170,7 +172,56 @@
 				</div>
 			</div>
 		</div>
+	
+		
+	
 	}
+
+
+	@if(modelEmployee.EmployeeId == 5)
+	{
+		<div class="row">
+			<div class="col-lg-12 col-sm-12 col-12">
+				<div class="dash-widget" style="padding: 0px 20px 0px 20px !important;">
+					<div class="dash-widgetcontent">
+						<h5 id="h5Tanggal" style="font-size: 36px;padding: 0px 0px;margin: 0px 0px;"></h5>
+					</div>
+				</div>
+			</div>
+		</div>
+		var productGroup = productPrices.GroupBy(x => x.GroupName).ToList();
+		<div class="row">
+			@for (int q = 0; q < productGroup.Count; q++)
+			{
+				for (int i = 0; i < productGroup[q].Count(); i += 2)
+				{
+					var items = productGroup[q].Skip(i).Take(2).ToList();
+
+
+					@for (int z = 0; z < items.Count; z++)
+					{
+						//if (i == 2 && z == 1) continue;
+						//if (i == 4 && z == 0) continue;
+						if (items[z].ProductId != 2 && items[z].ProductId != 6)
+						{
+							<div class="col-lg-6 col-sm-6 col-12">
+								<div class="dash-widget" style="padding: 15px 15px 0px 15px !important;">
+									<div class="dash-widgetcontent">
+										<h6 style="font-size: 24px;line-height: 2px;padding-top: 20px;">@items[z].Narration</h6>
+										<h5 style="font-size: 58px;line-height: 90px;padding: 0px 0px;margin: 0px 0px;height: fit-content;"><span class="counters">@string.Format("{0:n0}", items[z].SalesRate)</span></h5>
+									</div>
+								</div>
+							</div>
+						}
+					}
+
+
+				}
+
+			}
+		</div>
+	}
+
 
 	@if (modelEmployee.EmployeeId != 5)
 	{
@@ -1261,6 +1312,31 @@
 				 DialogType="ModalDialog.ModalDialogType.Reject">
 	</ModalDialog>
 }
+<script type="text/javascript">
+	$(document).ready(function () {
+		document.getElementById('toggle_btn').click();
+
+		window.setTimeout(function () {
+			console.log("reload");
+			window.location.reload();
+		}, 60000);
+
+		setInterval(time, 1000);
+	});
+
+	function time() {
+		var d = new Date();
+		var day = d.getDate();
+		var month = d.toLocaleString('id-ID', { month: 'long' });;
+		var year = d.getFullYear();
+		var s = d.getSeconds();
+		var m = d.getMinutes();
+		var h = d.getHours();
+		var span = document.getElementById('h5Tanggal');
+		span.textContent = day + " " + month + " " + year + " " +
+			("0" + h).substr(-2) + ":" + ("0" + m).substr(-2) + ":" + ("0" + s).substr(-2);
+	}
+</script>
 @code{
 	/* Kode baru */
 	private bool AdaPerijinan;
@@ -1387,6 +1463,19 @@
 	private decimal UmurMinggu;
 	private decimal GraphHD;
 	private decimal GraphFCR;
+
+	public List<ProductView> productPrices;
+
+	private bool isLoading = true;
+	private bool _render;
+
+	private async Task LoadDataPrices()
+	{
+		productPrices = await _product.GetAll();
+		productPrices = productPrices.OrderBy(z => z.QueueNumber).Take(10).ToList();
+		isLoading = false;
+		StateHasChanged();
+	}
 
 	private async Task InitChart()
     {
@@ -1846,6 +1935,9 @@
 
 		//await GetStrainGraphData();
 		await InitChart();
+
+		await LoadDataPrices();
+		_render = true;
 
 		listProduct = await report.GetTopProduct();
 		DateTime today = DateTime.Now;

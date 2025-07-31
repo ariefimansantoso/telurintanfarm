@@ -420,6 +420,26 @@
                                         if(startHour == "") startHour = attendanceItem.StartTime.ToString("HH:mm");
                                         endHour = attendanceItem.EndTime.ToString("HH:mm");
                                     }
+
+                                    if (adaIjin.Count > 0)
+                                    {                                        
+                                        keterangan = adaIjin[0].SubmittedFor;
+                                        switch (keterangan)
+                                        {
+                                            case "LIBUR":
+                                                trStyle = "background-color:#4e56c7; color:#fff !important; font-weight:bold !important;";
+                                                break;
+                                            case "IJIN":
+                                                trStyle = "background-color:#4e56c7; color:#fff !important; font-weight:bold !important;";
+                                                break;
+                                            case "SAKIT":
+                                                trStyle = "background-color:#fce808; color:#000 !important; font-weight:bold !important;";
+                                                break;
+                                            case "SETENGAH HARI":
+                                                trStyle = "background-color:#b2d613; color:#000 !important; font-weight:bold !important;";
+                                                break;
+                                        }
+                                    }
                                 }
                                 else
                                 {

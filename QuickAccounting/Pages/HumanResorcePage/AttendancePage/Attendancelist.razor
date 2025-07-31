@@ -5,6 +5,10 @@
 @using System.Security.Claims
 @using Microsoft.EntityFrameworkCore;
 @using QuickAccounting.Components
+@using DocumentFormat.OpenXml.Packaging;
+@using DocumentFormat.OpenXml.Wordprocessing;
+@using System.Globalization;
+@using Text = DocumentFormat.OpenXml.Wordprocessing.Text;
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @inject IUser _user
@@ -105,7 +109,7 @@
                                 @((MarkupString)"&nbsp;&nbsp;")
                                 <input type="button" class="btn btn-primary" @onclick="(e => ExportList())" value="Payroll Excel Bank" />
                                 @((MarkupString)"&nbsp;&nbsp;")
-                                <a class="btn btn-primary" href="#">Unduh Payroll Word</a>
+                                <input type="button" class="btn btn-primary" @onclick="(e => GeneratePayrollWord())" value="Unduh Payroll Word" />
                             </div>
                         </div>
                     </div>
@@ -552,6 +556,8 @@
     string strMenu = "Admin - Laporan Absensi dan Gaji Karyawan";
     bool payrollAlreadyProcessed = false;
 
+    string templatePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "templates", "payroll_template.docx");
+
     protected override async Task OnInitializedAsync()
     {
         //CheckPriviliagee
@@ -638,6 +644,136 @@
 
         isProcessing = false;
         StateHasChanged();
+    }
+
+    private async Task GeneratePayrollWord() 
+    {
+        isProcessing = true;
+
+        // Copy template to output
+        byte[] byteArray = File.ReadAllBytes(templatePath);
+        using MemoryStream memStream = new MemoryStream();
+        memStream.Write(byteArray, 0, byteArray.Length);
+
+        using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(memStream, true))
+        {
+            var body = wordDoc.MainDocumentPart.Document.Body;
+
+            // Replace [MONTHYEAR] and [DATE]
+            string bulanTahun = DateTime.Now.ToString("MMMM yyyy", new CultureInfo("id-ID")).ToUpper();
+            string tanggal = DateTime.Now.ToString("dd-MM-yyyy");
+
+            foreach (var text in body.Descendants<Text>())
+            {
+                if (text.Text.Contains("[MONTHYEAR]"))
+                    text.Text = text.Text.Replace("[MONTHYEAR]", bulanTahun);
+
+                if (text.Text.Contains("[DATE]"))
+                    text.Text = text.Text.Replace("[DATE]", tanggal);
+            }
+
+            // Find the first table
+            Table payrollTable = body.Elements<Table>()
+                        .FirstOrDefault(t => t.Elements<TableRow>().FirstOrDefault()?.Elements<TableCell>().Count() == 4);
+            if (payrollTable == null)
+            {
+                Console.WriteLine("Payroll table with 4 columns not found.");
+                return;
+            }
+
+            // Assume first row is header
+            TableRow headerRow = payrollTable.Elements<TableRow>().First();
+            List<TableCell> headerCells = headerRow.Elements<TableCell>().ToList();
+
+            decimal totalSalary = 0;
+
+            foreach (var item in payrollExcel)
+            {
+                TableRow newRow = new TableRow();
+
+                newRow.Append(
+                    CloneStyledCell(headerCells, 0, item.No.ToString()),
+                    CloneStyledCell(headerCells, 1, item.Karyawan),
+                    CloneStyledCell(headerCells, 2, item.Rekening),
+                    CloneStyledCell(headerCells, 3, item.Gaji.ToString("N0", new CultureInfo("id-ID")))
+                );
+
+                totalSalary = totalSalary + item.Gaji;
+                payrollTable.AppendChild(newRow);
+            }
+
+            TableRow row = new TableRow();
+
+            row.Append(
+                CloneStyledCell(headerCells, 0, ""),
+                CloneStyledCell(headerCells, 1, ""),
+                CloneStyledCell(headerCells, 2, "Total:"),
+                CloneStyledCell(headerCells, 3, totalSalary.ToString("N0", new CultureInfo("id-ID")))
+            );
+            payrollTable.AppendChild(row);
+
+            wordDoc.MainDocumentPart.Document.Save();
+        }
+
+        byte[] resultBytes = memStream.ToArray();
+
+        var year = DateTime.Now.Year;
+        var month = DateTime.Now.Month;
+        var fileName = "Payroll_" + year + "_" + month + ".docx";
+        var base64String = Convert.ToBase64String(resultBytes);
+        base64String = base64String.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64String);
+
+        isProcessing = false;
+    }
+
+    static TableCell CloneStyledCell(List<TableCell> headerCells, int index, string newText)
+    {
+        var templateCell = headerCells[index];
+        var newCell = (TableCell)templateCell.CloneNode(true); // Deep clone
+
+        // 1. Remove background shading from TableCellProperties
+        var cellProperties = newCell.GetFirstChild<TableCellProperties>();
+        if (cellProperties != null)
+        {
+            var shading = cellProperties.Elements<Shading>().FirstOrDefault();
+            if (shading != null)
+            {
+                shading.Remove(); // remove background color
+            }
+        }
+
+        // 2. Remove all existing text
+        foreach (var text in newCell.Descendants<Text>())
+        {
+            text.Text = "";
+        }
+
+        // 3. Add new text into the first run
+        var firstRun = newCell.Descendants<Run>().FirstOrDefault();
+        if (firstRun != null)
+        {
+            firstRun.RemoveAllChildren<Text>();
+            firstRun.AppendChild(new Text(newText));
+        }
+        else
+        {
+            newCell.Append(new Paragraph(new Run(new Text(newText))));
+        }
+
+        return newCell;
+    }
+
+    static TableCell CreateCell(string text)
+    {
+        return new TableCell(
+            new Paragraph(
+                new Run(
+                    new Text(text)
+                )
+            )
+        );
     }
 
     private async Task ExportList()
