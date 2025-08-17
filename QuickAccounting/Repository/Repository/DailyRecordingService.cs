@@ -202,7 +202,10 @@ namespace QuickAccounting.Repository.Repository
 				record.ModifiedBy = modifiedBy;
 				record.ModifiedDate = DateTime.Now;
 
-				record.FeedConversionRatio = foodNeededTodayKg / record.TotalEggKg;
+				if (record.TotalEggKg > 0)
+				{
+					record.FeedConversionRatio = foodNeededTodayKg / record.TotalEggKg;
+				}
 
                 _context.DailyRecording.Update(record);
 				await _context.SaveChangesAsync();

@@ -336,6 +336,11 @@
         //     return;
         // }
 
+        if(PopulationCount > 0)
+        {
+            PopulationEndCount = PopulationCount;
+        }
+
         var result = await _recording.SaveHenStartPopulationAsync(SelectedNoKandang,
             TodaysDate, StrainName, PopulationCount, PopulationEndCount, DeadCount, UnproductiveCount, SickCount,
             MoveInCount, MoveOutCount, modelEmployee.EmployeeId, true, false, (decimal)StartingWeek, (decimal)StartingDays);

@@ -218,7 +218,7 @@
     private async Task LoadRecording()
     {
         DailyEggPickups = await _db.DailyEggPickup.Where(x => 
-                                                    x.CageNumber == SelectedNoKandang && x.RecordDate >= dtFromDate && x.RecordDate < dtToDate).ToListAsync();
+                                                    x.CageNumber == SelectedNoKandang && x.RecordDate >= dtFromDate && x.RecordDate <= dtToDate).ToListAsync();
         StateHasChanged();
     }
 
