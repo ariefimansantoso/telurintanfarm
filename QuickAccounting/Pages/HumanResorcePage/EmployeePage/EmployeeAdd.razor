@@ -54,7 +54,7 @@
 								</div>
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
-							<label>Salary Package</label>
+										<label>Salary Package</label>
 										<select class="form-control" @bind="model.DefaultPackageId">
 											<option value="0">Choose</option>
 											@if(listPackage !=null)
@@ -66,6 +66,21 @@
 											}
 							</select>
 							<ValidationMessage For="@(() => model.DefaultPackageId)" />
+									</div>
+								</div>
+								<div class="col-lg-4 col-sm-6 col-12">
+									<div class="form-group">
+									<label>Pilih Username/Login</label>
+									@* <select class="form-control" @bind="model.SelectedUserId">
+										<option value="0">Choose</option>
+										@if (listUsernames != null)
+										{
+											@foreach (var item in listUsernames)
+											{
+												<option value="@item.UserId">@item.UserName</option>
+											}
+										}
+									</select> *@
 									</div>
 								</div>
 					<div class="col-lg-8 col-sm-6 col-12">
@@ -219,8 +234,14 @@
 			model.Tunjangan = 0;
 			model.Lembur = 0;
 			model.OldEmployeeId = -99;
+			model.BirthPlace = "";
+			model.NIK = "0";
+			model.ID_BPJS_KES = "0";
+			model.ID_BPJS_TK = "0";
+			model.BankAccount = "";
 
-		    var result = await _employee.Save(model);
+
+			var result = await _employee.Save(model);
 				if (result > 0)
 				{
 					Snackbar.Add("Save Successfully.", Severity.Success);

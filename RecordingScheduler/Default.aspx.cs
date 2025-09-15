@@ -65,70 +65,84 @@ namespace RecordingScheduler
                 }
                 else
                 {
-                    // Initialize the record for today using the previous day's population
-                    var newRecord = new DailyRecording
+                    if (record.PopulationEnd >= 0)
                     {
-                        CageNumber = record.CageNumber,
-                        RecordDate = recordDate,
-                        StrainName = record.StrainName,
-                        PopulationStart = record.PopulationEnd,
-                        PopulationEnd = record.PopulationEnd, // Initial population is the same at the start and end of the day
-                        DeadHenCount = 0,
-                        UnproductiveHenCount = 0,
-                        SickHenCount = 0,
-                        MoveInHenCount = 0,
-                        MoveOutHenCount = 0,
-                        FoodIntakePerHen = record.FoodIntakePerHen,
-                        RemainingFoodKg = 0,
-                        FoodNeededTodayKg = record.PopulationEnd * record.FoodIntakePerHen,
-                        ActualFoodNeededKG = record.PopulationEnd * record.FoodIntakePerHen,
-                        PerfectEggCount = 0,
-                        PerfectEggKg = 0,
-                        BrokenEggCount = 0,
-                        BrokenEggKg = 0,
-                        TotalEggCount = 0,
-                        TotalEggKg = 0,
-                        ActualHenDay = 0,
-                        StandardHenDay = 0,
-                        DailyHenDayDifference = 0,
-                        ActualEggMassKg = 0,
-                        StandardEggMassKg = 0,
-                        EggMassDeviation = 0,
-                        ActualEggWeightG = 0,
-                        StandardEggWeightG = 0,
-                        EggWeightDeviation = 0,
-                        FeedConversionRatio = 0,
-                        HenAgeDays = record.HenAgeDays + 1,
-                        SaldoFoodKG = 0,
-                        FoodIntakeDeviation = 0,
-                        TelurPutihButir = 0,
-                        TelurPutihKG = 0,
-                        PeriodeStart = false,
-                        PeriodeEnd = false,
-                        GroupName = "",
-                        ConcentrateType = string.IsNullOrEmpty(record.ConcentrateType) ? "" : record.ConcentrateType,
-                        HenAgeWeeks = 0, // Age should be updated later
-                        ModifiedBy = modifiedBy,
-                        ModifiedDate = DateTime.Now
-                    };
+                        // Initialize the record for today using the previous day's population
+                        var newRecord = new DailyRecording
+                        {
+                            CageNumber = record.CageNumber,
+                            RecordDate = recordDate,
+                            StrainName = record.StrainName,
+                            PopulationStart = record.PopulationEnd,
+                            PopulationEnd = record.PopulationEnd, // Initial population is the same at the start and end of the day
+                            DeadHenCount = 0,
+                            UnproductiveHenCount = 0,
+                            SickHenCount = 0,
+                            MoveInHenCount = 0,
+                            MoveOutHenCount = 0,
+                            FoodIntakePerHen = record.FoodIntakePerHen,
+                            RemainingFoodKg = 0,
+                            FoodNeededTodayKg = record.PopulationEnd * record.FoodIntakePerHen,
+                            ActualFoodNeededKG = record.PopulationEnd * record.FoodIntakePerHen,
+                            PerfectEggCount = 0,
+                            PerfectEggKg = 0,
+                            BrokenEggCount = 0,
+                            BrokenEggKg = 0,
+                            TotalEggCount = 0,
+                            TotalEggKg = 0,
+                            ActualHenDay = 0,
+                            StandardHenDay = 0,
+                            DailyHenDayDifference = 0,
+                            ActualEggMassKg = 0,
+                            StandardEggMassKg = 0,
+                            EggMassDeviation = 0,
+                            ActualEggWeightG = 0,
+                            StandardEggWeightG = 0,
+                            EggWeightDeviation = 0,
+                            FeedConversionRatio = 0,
+                            HenAgeDays = record.HenAgeDays + 1,
+                            SaldoFoodKG = 0,
+                            FoodIntakeDeviation = 0,
+                            TelurPutihButir = 0,
+                            TelurPutihKG = 0,
+                            PeriodeStart = false,
+                            PeriodeEnd = false,
+                            GroupName = "",
+                            ConcentrateType = string.IsNullOrEmpty(record.ConcentrateType) ? "" : record.ConcentrateType,
+                            HenAgeWeeks = 0, // Age should be updated later
+                            ModifiedBy = modifiedBy,
+                            ModifiedDate = DateTime.Now
+                        };
 
+                        if (string.IsNullOrEmpty(newRecord.StrainName))
+                        {
+                            newRecord.StrainName = "";
+                        }
 
-                    if (string.IsNullOrEmpty(newRecord.StrainName))
-                    {
-                        newRecord.StrainName = "";
+                        auditMessage = "Schedule Task LoadRecordingData is adding: " + SerializeObjectToString(newRecord);
+                        AuditLog auditLog2 = new AuditLog();
+                        auditLog2.ActionType = "LoadRecordingData";
+                        auditLog2.ActionDescription = auditMessage;
+                        auditLog2.CreatedDate = DateTime.Now;
+                        auditLog2.LogType = LogTypes.LogInfo;
+                        auditLog2.EmployeeID = -99;
+                        auditLog2.EmployeeName = "System";
+                        _context.AuditLogs.InsertOnSubmit(auditLog2);
+
+                        _context.DailyRecordings.InsertOnSubmit(newRecord);
                     }
-
-                    auditMessage = "Schedule Task LoadRecordingData is adding: " + SerializeObjectToString(newRecord);
-                    AuditLog auditLog2 = new AuditLog();
-                    auditLog2.ActionType = "LoadRecordingData";
-                    auditLog2.ActionDescription = auditMessage;
-                    auditLog2.CreatedDate = DateTime.Now;
-                    auditLog2.LogType = LogTypes.LogInfo;
-                    auditLog2.EmployeeID = -99;
-                    auditLog2.EmployeeName = "System";
-                    _context.AuditLogs.InsertOnSubmit(auditLog2);
-
-                    _context.DailyRecordings.InsertOnSubmit(newRecord);
+                    else
+                    {
+                        auditMessage = "Schedule Task LoadRecordingData is adding: 0 record, masa akhir / afkir";
+                        AuditLog auditLog2 = new AuditLog();
+                        auditLog2.ActionType = "LoadRecordingData";
+                        auditLog2.ActionDescription = auditMessage;
+                        auditLog2.CreatedDate = DateTime.Now;
+                        auditLog2.LogType = LogTypes.LogInfo;
+                        auditLog2.EmployeeID = -99;
+                        auditLog2.EmployeeName = "System";
+                        _context.AuditLogs.InsertOnSubmit(auditLog2);
+                    }
                 }
             }
 

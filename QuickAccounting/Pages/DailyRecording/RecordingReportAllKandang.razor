@@ -743,9 +743,9 @@
 
     private async Task AnalyzeData(dynamic recordings)
     {
-        loading = true;
+        isProcessing = true;
         analysisResult = await _aiService.AnalyzeFarmDataAsync(recordings);
-        loading = false;
+        isProcessing = false;
     }
 
     private async Task DownloadExcel()

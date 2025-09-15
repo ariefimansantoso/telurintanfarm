@@ -187,7 +187,7 @@
                         .Select(record => (int)(record.Date.TimeOfDay - new TimeSpan(16, 15, 0)).TotalMinutes) // Get minutes difference
                         .Sum();
 
-                    rpLembur = (SelectedEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur;
+                    rpLembur = (SelectedEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur * 2;
 
                     hariDinasLuar = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("DINAS")).Count();
 

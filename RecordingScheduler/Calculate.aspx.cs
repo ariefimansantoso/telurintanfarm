@@ -14,7 +14,7 @@ namespace RecordingScheduler
         string status = "Not Yet";
         protected void Page_Load(object sender, EventArgs e)
         {
-            var now = DateTime.Now.AddDays(-2);
+            var now = new DateTime(2025, 7, 1); // DateTime.Now.AddDays(-2);
             var dateNow = DateTime.Now;
 
             var daysDifference = (dateNow - now).Days;
