@@ -148,7 +148,7 @@
                                 }
 
                                 @foreach (var group in grouped)
-                                {
+                                {                                    
                                     var strain = group.First().StrainName;
                                     var jumlahRecord = group.Count();
                                     var reportKandangItem = new ReportAllKandang();
@@ -382,7 +382,7 @@
     private async Task LoadRecording()
     {
         isProcessing = true;
-        DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang, dtFromDate, dtToDate);        
+        DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang);//, dtFromDate, dtToDate);        
 
         if (SelectedNoKandang != "ALL")
         {

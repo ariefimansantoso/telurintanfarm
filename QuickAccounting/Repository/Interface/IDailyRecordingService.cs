@@ -4,8 +4,8 @@ namespace QuickAccounting.Repository.Interface
 {
 	public interface IDailyRecordingService
 	{
+		Task<List<DailyRecording>> GetRecordingsByKandang(string cageNumber); //, DateTime from, DateTime to);
 		Task<List<DailyRecording>> GetRecordingsByKandang(string cageNumber, DateTime from, DateTime to);
-
         Task<DailyRecording> GetDailyRecordForTodayForConsoleAsync(string cageNumber, DateTime recordDate);
 		Task InitiateDailyRecordingAsync(string cageNumber, string strainName, DateTime recordDate, int modifiedBy);
 		Task<bool> SaveEggProductionAsync(string cageNumber, string strainName, DateTime recordDate,
@@ -27,5 +27,7 @@ namespace QuickAccounting.Repository.Interface
 		Task<DailyRecording> GetDailyRecordForTodayForFormAsync(string cageNumber, DateTime recordDate, int modifiedBy);
 		Task<bool> UpdateRecording(DailyRecording recording);
 		Task<DailyRecording> GetForUpdate(string cageNumber, DateTime recordDate);
+        Task<List<DailyRecording>> GetMortality5OrBelowPercent(string cageNumber, DateTime from, DateTime to);
+		Task<List<DailyRecording>> GetMortality5OrAbovePercent(string cageNumber, DateTime from, DateTime to);
     }
 }

@@ -1,5 +1,6 @@
 ﻿@page "/app/employeeedit/{id}"
 @inject IEmployee _employee
+@inject IUser _user
 @inject IDesignation _designation
 @inject ISalaryPackage _salaryPackage
 @inject IJSRuntime JSRuntime
@@ -66,6 +67,38 @@
 								}
 							</select>
 							<ValidationMessage For="@(() => model.DefaultPackageId)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+									<div class="form-group">
+									<label>Username/Login</label>
+										<select disabled="disabled" class="form-control" @bind="model.UserID">
+										<option value="0">Pilih</option>
+										@if (listUsernames != null)
+										{
+											@foreach (var item in listUsernames)
+											{
+												<option value="@item.UserId">@item.UserName</option>
+											}
+										}
+									</select>
+							<ValidationMessage For="@(() => model.UserID)" />
+									</div>
+								</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>Pilih Supervisor</label>
+							<select class="form-control" @bind="model.SupervisorID">
+								<option value="0">Pilih</option>
+								@if (listSupervisors != null)
+								{
+									@foreach (var item in listSupervisors)
+									{
+										<option value="@item.EmployeeId">@item.EmployeeName</option>
+									}
+								}
+							</select>
+							<ValidationMessage For="@(() => model.SupervisorID)" />
 						</div>
 					</div>
 					<div class="col-lg-8 col-sm-6 col-12">
@@ -214,6 +247,9 @@
 	IList<DesignationView> listDesignation;
 	IList<SalaryPackage> listPackage;
 	string strMenu = "Human Resources";	
+	
+	List<UserView> listUsernames = new List<UserView>();
+	List<Employee> listSupervisors = new List<Employee>();
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -237,7 +273,9 @@
 	{
 		model = await _employee.GetbyId(Convert.ToInt32(id));
 		listDesignation = await _designation.GetAll();
-		listPackage = await _salaryPackage.GetAll();		
+		listPackage = await _salaryPackage.GetAll();
+		listUsernames = await _user.GetAll();
+		listSupervisors = await _employee.GetSupervisors();		
 
 		StateHasChanged();
 	}

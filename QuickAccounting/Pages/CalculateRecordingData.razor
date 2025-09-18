@@ -6,27 +6,32 @@
 @inject IAuditLogService _audit
 
 @using QuickAccounting.Data.Recording
+
+<Loader IsLoading="isProcessing"></Loader>
 <h1>@status</h1>
 @code{
     string status = "Not Yet";
+    bool isProcessing = true;
     protected async override void OnInitialized()
     {
-        var now = new DateTime(2025,5,16,0,0,0);
+        var now = DateTime.Now.AddDays(-1);
         var dateNow = DateTime.Now.Date;
 
         var daysDifference = (dateNow - now).Days;
         string auditMessage = "Schedule Task CalculateRecordingData is running: " + DateTime.Now.ToString("dd/MM/yyyy hh:mm");
         await _audit.LogAsync(LogTypes.LogInfo, "CalculateRecordingData", auditMessage, -99, "System");
 
-        for (int i = 1; i <= daysDifference; i++)
+        for (int i = 0; i <= daysDifference; i++)
         {
             CalculateDailyRecording(now, 5);
             now = now.AddDays(1);
             status = "Done " + i;
-
         }
 
         status = "COMPLETED";
+
+        isProcessing = false;
+        StateHasChanged();
     }
 
     protected void CalculateDailyRecording(DateTime recordDate, int modifiedBy)
@@ -40,13 +45,14 @@
         _audit.LogAsync(LogTypes.LogInfo, "CalculateRecordingData", auditMessage, -99, "System");
 
         foreach (var record in todayRecords)
-        {
-            if(record.CageNumber == "5")
-            {
-                var x = 0;
-            }
+        {            
             record.FoodNeededTodayKg = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
             record.ActualFoodNeededKG = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
+
+            if(record.HenAgeWeeks == 0)
+            {
+                record.HenAgeWeeks = record.HenAgeDays / 7;
+            }
 
             if (record.PopulationStart > 0 && record.TotalEggCount > 0)
             {
@@ -63,7 +69,8 @@
                 record.ActualEggMassKg = record.TotalEggKg / (decimal)record.PopulationStart * (decimal)1000;
             }
 
-            if (record.TotalEggCount > 0) {
+            if (record.TotalEggCount > 0)
+            {
                 record.ActualEggWeightG = (record.TotalEggKg / record.TotalEggCount) * 1000;
             }
 

@@ -16,5 +16,6 @@ namespace QuickAccounting.Repository.Interface
         Task<UserMaster> GetbyId(int id);
         Task<UserMaster> UserProfile(string email);
         Task<bool> Delete(int id);
+        Task<List<UserView>> GetUnassigned();
     }
 }

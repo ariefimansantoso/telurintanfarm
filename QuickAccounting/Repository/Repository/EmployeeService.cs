@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.InkML;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using QuickAccounting.Data;
 using QuickAccounting.Data.HrPayroll;
@@ -117,6 +118,24 @@ namespace QuickAccounting.Repository.Repository
         public async Task<List<Employee>> GetAllEmployees()
         {
             return await _context.Employee.Where(x => x.DesignationId == 1 && x.isActive).ToListAsync();
+        }
+
+        public async Task<List<Employee>> GetSupervisors()
+        {
+            var result = from e in _context.Employee
+                         join u in _context.UserMaster on e.UserID equals u.UserId
+                         where u.RoleId == 15 || e.EmployeeId == 6
+                         select e;
+
+            return await result.ToListAsync();
+        }
+
+        public async Task<int> GetLastEmployeeCode()
+        {
+            var maxCode = await _context.Employee
+                            .MaxAsync(e => Convert.ToInt32(e.EmployeeCode));
+
+            return maxCode;
         }
 
         public async Task<Employee> GetbyId(int id)

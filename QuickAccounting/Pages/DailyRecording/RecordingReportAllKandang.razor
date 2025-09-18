@@ -118,8 +118,6 @@
                 @if(ChartDataLoaded) 
 	            {
                     <Chart Config="_config" @ref="_chart" @key="_chartKey"></Chart>
-
-                    @* <MudChart ChartType="ChartType.Line" ChartOptions="@Options" Style="width: 100%;" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" /> *@
                 }
             </div>
         </div>
@@ -361,32 +359,57 @@
                                     var grouped = DailyRecordings.GroupBy(x => x.CageNumber).ToList();
                                 }
 
-                                @foreach (var group in grouped)
+
+                                @foreach (var itemGroup in grouped)
                                 {
+                                    var group = itemGroup.OrderByDescending(x => x.RecordDate).ToList();
                                     var strain = group.First().StrainName;
                                     var jumlahRecord = group.Count();
                                     var reportKandangItem = new ReportAllKandang();
-                                    reportKandangItem.Kandang = group.Key;
+
+                                    var populationStart = group.Select(x => x.PopulationStart).FirstOrDefault();
+                                    var deadHenCount = group.Select(x => x.DeadHenCount).FirstOrDefault();
+                                    var unproductiveHenCount = group.Select(x => x.UnproductiveHenCount).FirstOrDefault();
+                                    var pMinus = group.Select(x => x.MoveOutHenCount).FirstOrDefault();
+                                    var pPlus = group.Select(x => x.MoveInHenCount).FirstOrDefault();
+                                    var populationEnd = group.Select(x => x.PopulationEnd).FirstOrDefault();
+                                    var foodNeededTodayKg = group.Select(x => x.FoodNeededTodayKg).FirstOrDefault();
+                                    var foodIntakePerHen = group.Select(x => x.FoodIntakePerHen).FirstOrDefault();
+                                    var perfectEggCount = group.Select(x => x.PerfectEggCount).FirstOrDefault();
+                                    var perfectEggKg = group.Select(x => x.PerfectEggKg).FirstOrDefault();
+                                    var telurPutihButir = group.Select(x => x.TelurPutihButir).FirstOrDefault();
+                                    var telurPutihKG = group.Select(x => x.TelurPutihKG).FirstOrDefault();
+                                    var brokenEggCount = group.Select(x => x.BrokenEggCount).FirstOrDefault();
+                                    var brokenEggKg = group.Select(x => x.BrokenEggKg).FirstOrDefault();
+                                    var totalEggCount = group.Select(x => x.TotalEggCount).FirstOrDefault();
+                                    var totalEggKg = group.Select(x => x.TotalEggKg).FirstOrDefault();
+                                    var actualHenDay = group.Select(x => x.ActualHenDay).FirstOrDefault();
+                                    var dailyHenDayDifference = group.Select(x => x.DailyHenDayDifference).FirstOrDefault();
+                                    var actualEggMassKG = group.Select(x => x.ActualEggMassKg).FirstOrDefault();
+                                    var actualWeightGram = group.Select(x => x.ActualEggWeightG).FirstOrDefault();
+                                    var feedConversionRatio = group.Select(x => x.FeedConversionRatio).FirstOrDefault();
+
+                                    reportKandangItem.Kandang = itemGroup.Key;
                                     reportKandangItem.Strain = strain;
-                                    reportKandangItem.Awal = group.Sum(x => x.PopulationStart).ToString();
-                                    reportKandangItem.Mati = group.Sum(x => x.DeadHenCount).ToString();
-                                    reportKandangItem.Afkir = group.Sum(x => x.UnproductiveHenCount).ToString();
+                                    reportKandangItem.Awal = populationStart.ToString();
+                                    reportKandangItem.Mati = deadHenCount.ToString();
+                                    reportKandangItem.Afkir = unproductiveHenCount.ToString();
                                     reportKandangItem.SMinus = "0";
                                     reportKandangItem.SPlus = "0";
-                                    reportKandangItem.PMinus = group.Sum(x => x.MoveOutHenCount).ToString();
-                                    reportKandangItem.PPlus = group.Sum(x => x.MoveInHenCount).ToString();
-                                    reportKandangItem.Sisa = group.Sum(x => x.PopulationEnd).ToString();
+                                    reportKandangItem.PMinus = pMinus.ToString();
+                                    reportKandangItem.PPlus = pPlus.ToString();
+                                    reportKandangItem.Sisa = populationEnd.ToString();
                                     reportKandangItem.PAKAN = group.First().ConcentrateType.ToString();
-                                    reportKandangItem.PAKAI = group.Sum(x => x.FoodNeededTodayKg).ToString();
-                                    reportKandangItem.FI = (group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2");
-                                    reportKandangItem.UTUH = group.Sum(x => x.PerfectEggCount).ToString();
-                                    reportKandangItem.UtuhKg    = group.Sum(x => x.PerfectEggKg).ToString();
-                                    reportKandangItem.PUTIH     = group.Sum(x => x.TelurPutihButir).ToString();
-                                    reportKandangItem.PutihKg   = group.Sum(x => x.TelurPutihKG).ToString();
-                                    reportKandangItem.BENTES    = group.Sum(x => x.BrokenEggCount).ToString();
-                                    reportKandangItem.BentesKg  = group.Sum(x => x.BrokenEggKg).ToString();
-                                    reportKandangItem.TotalBTR = group.Sum(x => x.TotalEggCount).ToString();
-                                    reportKandangItem.TotalKG = group.Sum(x => x.TotalEggKg).ToString();
+                                    reportKandangItem.PAKAI = foodNeededTodayKg.ToString();
+                                    reportKandangItem.FI = (foodIntakePerHen).ToString("N2");
+                                    reportKandangItem.UTUH = perfectEggCount.ToString();
+                                    reportKandangItem.UtuhKg = perfectEggKg.ToString();
+                                    reportKandangItem.PUTIH = telurPutihButir.ToString();
+                                    reportKandangItem.PutihKg = telurPutihKG.ToString();
+                                    reportKandangItem.BENTES = brokenEggCount.ToString();
+                                    reportKandangItem.BentesKg = brokenEggKg.ToString();
+                                    reportKandangItem.TotalBTR = totalEggCount.ToString();
+                                    reportKandangItem.TotalKG = totalEggKg.ToString();
                                     reportKandangItem.KumBTR = "0";
                                     reportKandangItem.KWMKG = "0";                                    
                                     reportKandangItem.HHBTR = "0";
@@ -394,32 +417,32 @@
                                     reportKandangItem.Nama = "";
                                     reportKandangItem.PakaiVoV = "0";
                                     <tr>
-                                        <td>@group.Key</td>
-                                        <td>@strain</td>                                       
+                                        <td>@itemGroup.Key</td>
+                                        <td>@strain</td>
 
-                                        <td>@group.Sum(x => x.PopulationStart)</td>
-                                        <td>@group.Sum(x => x.DeadHenCount)</td>
-                                        <td>@group.Sum(x => x.UnproductiveHenCount)</td>
+                                        <td>@populationStart</td>
+                                        <td>@deadHenCount</td>
+                                        <td>@unproductiveHenCount</td>
                                         <td></td>
                                         <td></td>
-                                        <td>@group.Sum(x => x.MoveOutHenCount)</td>
-                                        <td>@group.Sum(x => x.MoveInHenCount)</td>
-                                        <td>@group.Sum(x => x.PopulationEnd)</td>
+                                        <td>@pMinus</td>
+                                        <td>@pPlus</td>
+                                        <td>@populationEnd</td>
                                       
                                         <td>@group.First().ConcentrateType</td>
-                                        <td>@group.Sum(x => x.FoodNeededTodayKg)</td>
+                                        <td>@foodNeededTodayKg</td>
                                         <td>
-                                            @((group.Sum(x => x.FoodIntakePerHen) / jumlahRecord).ToString("N2"))                                           
+                                            @((foodIntakePerHen).ToString("N0"))
                                         </td>
 
-                                        <td>@group.Sum(x => x.PerfectEggCount)</td>
-                                        <td>@group.Sum(x => x.PerfectEggKg)</td>
-                                        <td>@group.Sum(x => x.TelurPutihButir)</td>
-                                        <td>@group.Sum(x => x.TelurPutihKG)</td>
-                                        <td>@group.Sum(x => x.BrokenEggCount)</td>
-                                        <td>@group.Sum(x => x.BrokenEggKg)</td>
-                                        <td>@group.Sum(x => x.TotalEggCount)</td>
-                                        <td>@group.Sum(x => x.TotalEggKg)</td>
+                                        <td>@perfectEggCount</td>
+                                        <td>@perfectEggKg</td>
+                                        <td>@telurPutihButir</td>
+                                        <td>@telurPutihKG</td>
+                                        <td>@brokenEggCount</td>
+                                        <td>@brokenEggKg</td>
+                                        <td>@totalEggCount</td>
+                                        <td>@totalEggKg</td>
                                         <td></td>
                                         <td></td>
 
@@ -428,11 +451,11 @@
                                                 decimal hd = 0;
                                                 try
                                                 {
-                                                    hd = ((decimal)group.Sum(x => x.TotalEggCount) / (decimal)group.Sum(x => x.PopulationStart)) * (decimal)100;
+                                                    hd = ((decimal)totalEggCount / (decimal)populationStart) * (decimal)100;
                                                 }
                                                 catch (Exception ex)
                                                 {
-                                                    hd = ((decimal)group.Sum(x => x.ActualHenDay) / (decimal)group.Count());
+                                                    hd = ((decimal)actualHenDay / (decimal)group.Count());
                                                 }
                                                 reportKandangItem.PersenHD = hd.ToString("N2");
                                             }
@@ -441,7 +464,7 @@
                                         <td>
                                             @{
                                                 decimal hdd = 0;
-                                                hdd = ((decimal)group.Sum(x => x.DailyHenDayDifference) / (decimal)group.Count());
+                                                hdd = ((decimal)dailyHenDayDifference / (decimal)group.Count());
                                                 reportKandangItem.DevHD = hdd.ToString("N2");
                                             }
                                             @hdd.ToString("N2")                                           
@@ -453,11 +476,11 @@
                                                 decimal em = 0;
                                                 try
                                                 {
-                                                    em = (group.Sum(x => x.TotalEggKg) / group.Sum(x => x.PopulationEnd)) * 1000;
+                                                    em = (totalEggKg / populationEnd) * 1000;
                                                 }
                                                 catch (Exception ex)
                                                 {
-                                                    em = (group.Sum(x => x.ActualEggMassKg) / (decimal)group.Count());
+                                                    em = (actualEggMassKG / (decimal)group.Count());
                                                     reportKandangItem.EM = em.ToString("N2");
                                                 }
                                             }
@@ -468,11 +491,11 @@
                                                 decimal ew = 0;
                                                 try
                                                 {
-                                                    ew = (group.Sum(x => x.TotalEggKg) / group.Sum(x => x.TotalEggCount)) * 1000;
+                                                    ew = (totalEggKg / totalEggCount) * 1000;
                                                 }
                                                 catch (Exception ex)
                                                 {
-                                                    ew = (group.Sum(x => x.ActualEggWeightG) / (decimal)group.Count());
+                                                    ew = (actualWeightGram / (decimal)group.Count());
                                                     reportKandangItem.Grbt = ew.ToString("N2");
                                                 }
                                             }
@@ -483,11 +506,11 @@
                                                 decimal fcr = 0;
                                                 try
                                                 {
-                                                    fcr = group.Sum(x => x.FoodNeededTodayKg) / group.Sum(x => x.TotalEggKg);
+                                                    fcr = foodNeededTodayKg / totalEggKg;
                                                 }
                                                 catch (Exception ex)
                                                 {
-                                                    fcr = (group.Sum(x => x.FeedConversionRatio) / (decimal)group.Count());
+                                                    fcr = (feedConversionRatio / (decimal)group.Count());
                                                     reportKandangItem.FCR = fcr.ToString("N2");
                                                 }
                                             }
@@ -507,6 +530,7 @@
             {
                 <p>Data belum ada.</p>
             }
+
         </div>
     </div>
 </div>
@@ -794,35 +818,36 @@
     private async Task LoadRecording()
     {
         isProcessing = true;
-        //DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang, dtFromDate, dtToDate);
-        var cageNumber = Helper.ConvertCageNumber(SelectedNoKandang);
-        var resultForTable = new List<DailyRecording>();
-
-        var dataForTable = _db.DailyRecording
-            .Where(r => r.CageNumber == cageNumber)
-            .OrderByDescending(r => r.RecordDate)
-            .ToList(); // Load into memory to simulate window functions
-
-        int rowNumberForTable = 1;
-        int runningSumForTable = 0;
-
-        foreach (var row in dataForTable)
-        {
-            if (row.PopulationStart <= 0)
-                runningSumForTable += 1;
-
-            if (runningSumForTable == 0)
-                resultForTable.Add(row);
-
-            rowNumberForTable++;
-        }
-
-        DailyRecordings = resultForTable;
+        StateHasChanged();                
 
         if (SelectedNoKandang != "ALL")
         {
             try
             {
+                var cageNumber = Helper.ConvertCageNumber(SelectedNoKandang);
+                var resultForTable = new List<DailyRecording>();
+
+                var dataForTable = _db.DailyRecording
+                    .Where(r => r.CageNumber == cageNumber)
+                    .OrderByDescending(r => r.RecordDate)
+                    .ToList(); // Load into memory to simulate window functions
+
+                int rowNumberForTable = 1;
+                int runningSumForTable = 0;
+
+                foreach (var row in dataForTable)
+                {
+                    if (row.PopulationStart <= 0)
+                        runningSumForTable += 1;
+
+                    if (runningSumForTable == 0)
+                        resultForTable.Add(row);
+
+                    rowNumberForTable++;
+                }
+
+                DailyRecordings = resultForTable;
+
                 var orderedData = _db.DailyRecording
                     .Where(r => r.CageNumber == cageNumber)
                     .OrderByDescending(r => r.RecordDate)
@@ -883,6 +908,7 @@
         }
         else
         {
+            DailyRecordings = await _recording.GetRecordingsByKandang("ALL"); //, dtFromDate, dtToDate);
             DailyRecordings = DailyRecordings.OrderBy(x => Convert.ToInt32(x.CageNumber)).ToList();
         }
 

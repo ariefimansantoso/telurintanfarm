@@ -16,5 +16,7 @@ namespace QuickAccounting.Repository.Interface
         Task<List<Employee>> GetAllEmployeeActive();
         Task<List<Employee>> GetAllEmployees();
         Task<List<Employee>> GetAllEmployeeActiveBySupervisorID(int supervisorID);
+        Task<List<Employee>> GetSupervisors();
+        Task<int> GetLastEmployeeCode();
     }
 }

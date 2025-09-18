@@ -4,6 +4,7 @@
 @using QuickAccounting.Data.Recording;
 @using System.Transactions;
 @using System.Globalization;
+@using System.Drawing
 @using ChartJs.Blazor.Common;
 @using ChartJs.Blazor.Common.Axes;
 @using ChartJs.Blazor.Common.Axes.Ticks;
@@ -14,6 +15,7 @@
 @using ChartJs.Blazor.Interop;
 @using ChartJs.Blazor;
 @using ChartJs.Blazor.LineChart;
+@using ChartJs.Blazor.BarChart;
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @inject IUser _user
@@ -105,22 +107,21 @@
             @if (ChartDataLoaded)
             {
                 <Chart Config="_config" @ref="_chart" @key="_chartKey"></Chart>
-
-                @* <MudChart ChartType="ChartType.Bar" ChartOptions="@Options" Style="width: 100%;" ChartSeries="@Series" @bind-SelectedIndex="SeriesIndex" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" /> *@
             }
         </div>
     </div>
 
     <div class="card">
         <div class="card-body">
-            @if (DailyRecordings != null && DailyRecordings.Count > 0)
+            @if (ReportItems5Percent != null && ReportItems5Percent.Count > 0)
             {
                 if (SelectedNoKandang != "ALL") 
                 {                                                               
                     <div class="table-responsive table-scrollable">
                         <h3>
                             Kandang: @DailyRecordings[0].CageNumber<br />
-                            Strain: @DailyRecordings[0].StrainName
+                            Strain: @DailyRecordings[0].StrainName<br />
+                            Table Kematian Ayam 5% Kebawah
                         </h3>
                         <table class="table table-striped">
                             <thead>                                
@@ -135,7 +136,7 @@
                                     var totalKematian = 0;
                                     var totalPopulasi = 0;
                                 }
-                                @foreach (var record in ReportItems)
+                                @foreach (var record in ReportItems5Percent)
                                 {
                                     <tr>
                                         <td>@record.MonthLabel</td>
@@ -163,7 +164,12 @@
                 }
                 else
                 {
-                    <div class="table-responsive table-scrollable">                        
+                    <div class="table-responsive table-scrollable">
+                        <h3>
+                            Kandang: @DailyRecordings[0].CageNumber<br />
+                            Strain: @DailyRecordings[0].StrainName<br />
+                            Table Kematian Ayam 5% Kebawah
+                        </h3>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
@@ -177,7 +183,7 @@
                                     var totalKematianAll = 0;
                                     var totalPopulasiAll = 0;
                                 }
-                                @foreach (var record in ReportItems)
+                                @foreach (var record in ReportItems5Percent)
                                 {
                                     <tr>
                                         <td>@record.MonthLabel</td>
@@ -206,7 +212,109 @@
             }
             else
             {
-                <p>Data belum ada.</p>
+                <p>Data 5% belum ada.</p>
+            }
+
+            @if (ReportItemsAbove5Percent != null && ReportItemsAbove5Percent.Count > 0)
+            {
+                if (SelectedNoKandang != "ALL")
+                {
+                    <div class="table-responsive table-scrollable">
+                        <h3>
+                            Kandang: @DailyRecordings[0].CageNumber<br />
+                            Strain: @DailyRecordings[0].StrainName<br />
+                            Table Kematian Ayam 5% Keatas
+                        </h3>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Bulan</th>
+                                    <th>Mati</th>
+                                    <th>Populasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var totalKematian = 0;
+                                    var totalPopulasi = 0;
+                                }
+                                @foreach (var record in ReportItemsAbove5Percent)
+                                {
+                                    <tr>
+                                        <td>@record.MonthLabel</td>
+                                        <td>@record.TotalDeadHenCount</td>
+                                        <td>@record.TotalPopulasi</td>
+                                    </tr>
+                                    totalKematian = totalKematian + record.TotalDeadHenCount;
+                                    totalPopulasi = totalPopulasi + record.TotalPopulasi;
+                                }
+                                @{
+                                    decimal ratarataKematian = 0;
+                                    if (totalPopulasi > 0)
+                                    {
+                                        ratarataKematian = (((decimal)totalKematian / (decimal)totalPopulasi) * (decimal)100);
+                                    }
+                                }
+                                <tr>
+                                    <td><b>TOTAL</b></td>
+                                    <td>@totalKematian</td>
+                                    <td>@ratarataKematian.ToString("N2") %</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive table-scrollable">
+                        <h3>
+                            Kandang: @DailyRecordings[0].CageNumber<br />
+                            Strain: @DailyRecordings[0].StrainName<br />
+                            Table Kematian Ayam 5% Keatas
+                        </h3>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Bulan</th>
+                                    <th>Mati</th>
+                                    <th>Populasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    var totalKematianAll = 0;
+                                    var totalPopulasiAll = 0;
+                                }
+                                @foreach (var record in ReportItemsAbove5Percent)
+                                {
+                                    <tr>
+                                        <td>@record.MonthLabel</td>
+                                        <td>@record.TotalDeadHenCount</td>
+                                        <td>@record.TotalPopulasi</td>
+                                    </tr>
+                                    totalKematianAll = totalKematianAll + record.TotalDeadHenCount;
+                                    totalPopulasiAll = totalPopulasiAll + record.TotalPopulasi;
+                                }
+                                @{
+                                    decimal ratarataKematianAll = 0;
+                                    if (totalPopulasiAll > 0)
+                                    {
+                                        ratarataKematianAll = (((decimal)totalKematianAll / (decimal)totalPopulasiAll) * (decimal)100);
+                                    }
+                                }
+                                <tr>
+                                    <td><b>TOTAL</b></td>
+                                    <td>@totalKematianAll</td>
+                                    <td>@ratarataKematianAll.ToString("N2") %</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>Data 5% keatas belum ada.</p>
             }
         </div>
     </div>
@@ -221,58 +329,77 @@
     private UserMaster modelUser;
     private Employee modelEmployee;
     private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings5OrBelowPercent = new List<DailyRecording>();
     private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
-    private List<ReportItem> ReportItems = new List<ReportItem>();
+    private List<ReportItem> ReportItems5Percent = new List<ReportItem>();
+    private List<ReportItem> ReportItemsAbove5Percent = new List<ReportItem>();
     DateTime dtFromDate;
     DateTime dtToDate;
     private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
     private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
-    public ChartOptions Options = new ChartOptions();
-    public List<ChartSeries> Series = new List<ChartSeries>();
-    private int SeriesIndex = -1;
+    // public ChartOptions Options = new ChartOptions();
+    // public List<ChartSeries> Series = new List<ChartSeries>();
+    // private int SeriesIndex = -1;
     bool ChartDataLoaded = false;
-    int RataRataMati = 1000;
+    int RataRataMati = 0;
+    int RataRataMatiAbove5Percent = 0;
     bool isProcessing;
 
-    private LineConfig _config;
+    private BarConfig _config;
     private Chart _chart;
     private string _chartKey = Guid.NewGuid().ToString();
 
     private async Task LoadRecording()
     {
         isProcessing = true;
-        
-        DailyRecordings = await _recording.GetRecordingsByKandang(SelectedNoKandang, dtFromDate, dtToDate);        
 
-        if (SelectedNoKandang != "ALL")
+        DailyRecordings5OrBelowPercent = await _recording.GetMortality5OrBelowPercent(SelectedNoKandang, dtFromDate, dtToDate);
+        DailyRecordings = await _recording.GetMortality5OrAbovePercent(SelectedNoKandang, dtFromDate, dtToDate);
+
+        DailyRecordings5OrBelowPercent = DailyRecordings5OrBelowPercent.OrderBy(x => x.RecordDate).ToList();
+        ReportItems5Percent = DailyRecordings5OrBelowPercent
+                        .GroupBy(record => new { record.RecordDate.Year, record.RecordDate.Month })
+                        .Select(group => new ReportItem
+                        {
+                            MonthLabel = new DateTime(group.Key.Year, group.Key.Month, 1).ToString("MMM yyyy"),
+                            TotalDeadHenCount = group.Sum(record => record.DeadHenCount),
+                            TotalPopulasi = group.Where(record => record.RecordDate == new DateTime(group.Key.Year, group.Key.Month, 1)).Sum(record => record.PopulationEnd)
+                        })
+                        .ToList();
+
+        DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
+        ReportItemsAbove5Percent = DailyRecordings
+                        .GroupBy(record => new { record.RecordDate.Year, record.RecordDate.Month })
+                        .Select(group => new ReportItem
+                        {
+                            MonthLabel = new DateTime(group.Key.Year, group.Key.Month, 1).ToString("MMM yyyy"),
+                            TotalDeadHenCount = group.Sum(record => record.DeadHenCount),
+                            TotalPopulasi = group.Where(record => record.RecordDate == new DateTime(group.Key.Year, group.Key.Month, 1)).Sum(record => record.PopulationEnd)
+                        })
+                        .ToList();
+
+        if (ReportItems5Percent.Count > 0 || ReportItemsAbove5Percent.Count > 0)
         {
-            DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
-            ReportItems = DailyRecordings
-                            .GroupBy(record => new { record.RecordDate.Year, record.RecordDate.Month })
-                            .Select(group => new ReportItem
-                                {
-                                    MonthLabel = new DateTime(group.Key.Year, group.Key.Month, 1).ToString("MMM yyyy"),
-                                    TotalDeadHenCount = group.Sum(record => record.DeadHenCount),
-                                    TotalPopulasi = group.Where(record => record.RecordDate == new DateTime(group.Key.Year, group.Key.Month, 1)).Sum(record => record.PopulationEnd)
-                                })
-                            .ToList();
-            RataRataMati = ReportItems.Sum(x => x.TotalDeadHenCount) / ReportItems.Count;
-            await GetGraphData();
-        }
-        else
-        {
-            DailyRecordings = DailyRecordings.OrderBy(x => x.RecordDate).ToList();
-            ReportItems = DailyRecordings
-                            .GroupBy(record => new { record.RecordDate.Year, record.RecordDate.Month })
-                            .Select(group => new ReportItem
-                                {
-                                    MonthLabel = new DateTime(group.Key.Year, group.Key.Month, 1).ToString("MMM yyyy"),
-                                    TotalDeadHenCount = group.Sum(record => record.DeadHenCount),
-                                    TotalPopulasi = group.Where(record => record.RecordDate == new DateTime(group.Key.Year, group.Key.Month, 1)).Sum(record => record.PopulationEnd)
-                                })
-                            .ToList();
-            RataRataMati = ReportItems.Sum(x => x.TotalDeadHenCount) / ReportItems.Count;
-            await GetGraphDataAll();
+            if (ReportItems5Percent.Count > 0)
+            {
+                RataRataMati = ReportItems5Percent.Sum(x => x.TotalDeadHenCount) / ReportItems5Percent.Count;
+            }
+
+            if (ReportItemsAbove5Percent.Count > 0)
+            {
+                RataRataMatiAbove5Percent = ReportItemsAbove5Percent.Sum(x => x.TotalDeadHenCount) / ReportItemsAbove5Percent.Count;
+            }
+
+            _chartKey = Guid.NewGuid().ToString();
+
+            if (SelectedNoKandang != "ALL")
+            {                
+                await GetGraphData();
+            }
+            else
+            {                
+                await GetGraphDataAll();
+            }
         }
 
         isProcessing = false;
@@ -292,47 +419,95 @@
     }
 
     private async Task GetGraphData()
-    {               
-        Series = new List<ChartSeries>();
-        ChartSeries series = new ChartSeries();
-        series.Name = "Mati";
-        series.Data = ReportItems.Select(record => Convert.ToDouble(record.TotalDeadHenCount)).ToArray();
-        Series.Add(series);
-
-        // Map strainData to chart data
-        XAxisLabels = ReportItems
-            .Select(record => record.MonthLabel) // Monthly format
-            .ToArray();
-        yAxisValues = ReportItems.Select(record => (decimal)record.TotalDeadHenCount).ToList();
-
-        Options.YAxisTicks = RataRataMati;
-
-        if(DailyRecordings.Count > 0)
+    {                       
+        _config = new BarConfig
         {
-            ChartDataLoaded = true;
+            Options = new BarOptions
+            {
+                Responsive = true,
+                Legend = new Legend
+                {
+                    Position = ChartJs.Blazor.Common.Enums.Position.Top
+                },
+                Title = new OptionsTitle
+                {
+                    Display = true,
+                    Text = "Grafik Kematian Ayam"
+                }
+            }
+        };
+
+        IDataset<int> dataset1 = new BarDataset<int>(ReportItems5Percent.Select(record => (int)record.TotalDeadHenCount).ToList())
+        {
+            Label = "5% Kandang " + SelectedNoKandang,
+            BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(128, System.Drawing.Color.FromArgb(255, 99, 132))),
+            BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(255, 99, 132)),
+            BorderWidth = 1
+        };
+
+        IDataset<int> dataset2 = new BarDataset<int>(ReportItemsAbove5Percent.Select(record => (int)record.TotalDeadHenCount).ToList())
+        {
+            Label = "Diatas 5% Kandang " + SelectedNoKandang,
+            BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(128, System.Drawing.Color.FromArgb(3, 15, 252))),
+            BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(3, 15, 252)),
+            BorderWidth = 1
+        };
+
+        foreach (var label in ReportItems5Percent.Select(record => record.MonthLabel))
+        {
+            _config.Data.Labels.Add(label);
         }
+
+        _config.Data.Datasets.Add(dataset1);
+        _config.Data.Datasets.Add(dataset2);
+        
+        ChartDataLoaded = true;
     }
 
     private async Task GetGraphDataAll()
-    {
-        Series = new List<ChartSeries>();
-        ChartSeries series = new ChartSeries();
-        series.Name = "Mati";
-        series.Data = ReportItems.Select(record => Convert.ToDouble(record.TotalDeadHenCount)).ToArray();
-        Series.Add(series);
-
-        // Map strainData to chart data
-        XAxisLabels = ReportItems
-            .Select(record => record.MonthLabel) // Monthly format
-            .ToArray();
-        yAxisValues = ReportItems.Select(record => (decimal)record.TotalDeadHenCount).ToList();
-
-        Options.YAxisTicks = RataRataMati;
-
-        if (DailyRecordings.Count > 0)
+    {        
+        _config = new BarConfig
         {
-            ChartDataLoaded = true;
+            Options = new BarOptions
+            {
+                Responsive = true,
+                Legend = new Legend
+                {
+                    Position = ChartJs.Blazor.Common.Enums.Position.Top
+                },
+                Title = new OptionsTitle
+                {
+                    Display = true,
+                    Text = "Grafik Kematian Ayam"
+                }
+            }
+        };
+
+        IDataset<int> dataset1 = new BarDataset<int>(ReportItems5Percent.Select(record => (int)record.TotalDeadHenCount).ToList())
+        {
+            Label = "5% Kandang " + SelectedNoKandang,
+            BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(128, System.Drawing.Color.FromArgb(255, 99, 132))),
+            BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(255, 99, 132)),
+            BorderWidth = 1
+        };
+
+        IDataset<int> dataset2 = new BarDataset<int>(ReportItemsAbove5Percent.Select(record => (int)record.TotalDeadHenCount).ToList())
+        {
+            Label = "Diatas 5% Kandang " + SelectedNoKandang,
+            BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(128, System.Drawing.Color.FromArgb(3, 15, 252))),
+            BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.FromArgb(3, 15, 252)),
+            BorderWidth = 1
+        };
+
+        foreach (var label in ReportItems5Percent.Select(record => record.MonthLabel))
+        {
+            _config.Data.Labels.Add(label);
         }
+        
+        _config.Data.Datasets.Add(dataset1);
+        _config.Data.Datasets.Add(dataset2);
+
+        ChartDataLoaded = true;
     }
 
     private async Task OnCageChanged(ChangeEventArgs e)
