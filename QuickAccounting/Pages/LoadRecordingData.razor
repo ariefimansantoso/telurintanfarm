@@ -33,7 +33,9 @@
                 r.PopulationEnd,
                 r.StrainName,
                 r.FoodIntakePerHen,
-                r.FoodNeededTodayKg
+                r.FoodNeededTodayKg,
+                r.HenAgeDays,
+                r.ConcentrateType
             })
             .ToList();
 
@@ -68,8 +70,8 @@
                         MoveOutHenCount = 0,
                         FoodIntakePerHen = record.FoodIntakePerHen,
                         RemainingFoodKg = 0,
-                        FoodNeededTodayKg = record.PopulationEnd * record.FoodIntakePerHen,
-                        ActualFoodNeededKG = record.PopulationEnd * record.FoodIntakePerHen,
+                        FoodNeededTodayKg = (record.PopulationEnd * record.FoodIntakePerHen) / 1000,
+                        ActualFoodNeededKG = (record.PopulationEnd * record.FoodIntakePerHen) / 1000,
                         PerfectEggCount = 0,
                         PerfectEggKg = 0,
                         BrokenEggCount = 0,
@@ -86,6 +88,15 @@
                         StandardEggWeightG = 0,
                         EggWeightDeviation = 0,
                         FeedConversionRatio = 0,
+                        HenAgeDays = record.HenAgeDays + 1,
+                        SaldoFoodKG = 0,
+                        FoodIntakeDeviation = 0,
+                        TelurPutihButir = 0,
+                        TelurPutihKG = 0,
+                        PeriodeStart = false,
+                        PeriodeEnd = false,
+                        GroupName = "",
+                        ConcentrateType = string.IsNullOrEmpty(record.ConcentrateType) ? "" : record.ConcentrateType,
                         HenAgeWeeks = 0, // Age should be updated later
                         ModifiedBy = modifiedBy,
                         ModifiedDate = DateTime.Now

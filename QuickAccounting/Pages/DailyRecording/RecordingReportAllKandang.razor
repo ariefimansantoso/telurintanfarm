@@ -827,10 +827,10 @@
                 var cageNumber = Helper.ConvertCageNumber(SelectedNoKandang);
                 var resultForTable = new List<DailyRecording>();
 
-                var dataForTable = _db.DailyRecording
+                var dataForTable = await _db.DailyRecording
                     .Where(r => r.CageNumber == cageNumber)
                     .OrderByDescending(r => r.RecordDate)
-                    .ToList(); // Load into memory to simulate window functions
+                    .ToListAsync(); // Load into memory to simulate window functions
 
                 int rowNumberForTable = 1;
                 int runningSumForTable = 0;
@@ -848,10 +848,10 @@
 
                 DailyRecordings = resultForTable;
 
-                var orderedData = _db.DailyRecording
+                var orderedData = await _db.DailyRecording
                     .Where(r => r.CageNumber == cageNumber)
                     .OrderByDescending(r => r.RecordDate)
-                    .ToList(); // Load into memory to simulate window functions                
+                    .ToListAsync(); // Load into memory to simulate window functions                
 
                 var result = new List<DailyRecording>();
                 int rowNumber = 1;

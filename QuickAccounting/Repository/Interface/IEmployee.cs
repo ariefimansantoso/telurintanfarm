@@ -18,5 +18,8 @@ namespace QuickAccounting.Repository.Interface
         Task<List<Employee>> GetAllEmployeeActiveBySupervisorID(int supervisorID);
         Task<List<Employee>> GetSupervisors();
         Task<int> GetLastEmployeeCode();
+        Task<int> InsertSalaryHistory(SalaryHistory model);
+        Task<List<SalaryHistory>> GetSalaryHistoryByEmployeeId(int employeeId);
+        Task DeleteSalaryHistory(int id);
     }
 }

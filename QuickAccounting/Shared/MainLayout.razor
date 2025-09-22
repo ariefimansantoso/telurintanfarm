@@ -96,7 +96,8 @@
 													@*<li><a href="/app/sales">Quotations</a></li>*@
 													<li><a href="/app/sales">Nota Penjualan</a></li>
 													<li><a href="/app/salesreturn">Nota Kredit</a></li>
-													<li><a style="cursor:pointer;" @onclick="@ClickPos">POS</a></li>
+													@* <li><a style="cursor:pointer;" @onclick="@ClickPos">POS</a></li> *@
+													<li><a href="/app/pos">POS</a></li>
 													<li><a href="/app/paymentcustomer">Pembayaran Nota</a></li>
 													<li><a href="/app/customer">Pelanggan</a></li>
 												</ul>
@@ -159,6 +160,7 @@
 													@if(currentUserRole == "Admin")
 													{
 														<li><a href="/app/adminsetpayroll">Tambah Tanggal Payroll</a></li>
+														<li><a href="/app/adminrecordvacation">Admin Submit Ijin</a></li>
 													}													
 													<li><a href="/app/recordpenalty">Sanksi dan Hukuman</a></li>
 													<li><a href="/app/recordbonus">Bonus dan Tambahan Gaji</a></li>
@@ -243,10 +245,10 @@
 												</ul>
 											</li>
 										}
-										@if (currentUserRole == "Yes Man")
+										@if (modelEmployee.EmployeeId == 63)
 										{
 											<li class="submenu">
-												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Recording</span> <span class="menu-arrow"></span></a>
+												<a href="javascript:void(0);"><img src="assets/img/icons/dollar-square.svg" alt="img"><span>Logistics</span> <span class="menu-arrow"></span></a>
 												<ul>
 													<li><a href="/app/henpopulation">Populasi</a></li>
 													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>
@@ -295,7 +297,7 @@
 												<a href="/app/mixingpakan"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Mixing Pakan</span></a>
 											</li>
 										}
-										@if(currentUserRole == "Yes Man")
+										@if (modelEmployee.EmployeeId == 63)
 										{
 											<li class="">
 												<a href="/app/mixingpakan"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Mixing Pakan</span></a>
@@ -430,10 +432,13 @@
 	{
 		var authstate = await authStateProvider.GetAuthenticationStateAsync();
 		var user = authstate.User;
-		var userName = user.Identity.Name;		
-		currentUserRole = await _userManage.GetUserRole(userName);
-		//modelUser = await _userManage.UserProfile(userName);
-		//modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+		var userName = user.Identity.Name;
+		if (user.Identity.IsAuthenticated)
+		{
+			currentUserRole = await _userManage.GetUserRole(userName);
+			modelUser = await _userManage.UserProfile(userName);
+			modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+		}
 	}
 
 	private async Task LoadProfilePhoto()

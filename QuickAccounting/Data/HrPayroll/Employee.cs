@@ -41,4 +41,15 @@ namespace QuickAccounting.Data.HrPayroll
         public string SOP { get; set; }
 		public int OldEmployeeId { get; set; }
 	}
+
+    public class SalaryHistory
+    {
+        [Key]
+        public int ID { get; set; }
+        public string SalaryType { get; set; }
+        public DateTime DateModified { get; set; }
+        public decimal Amount { get; set; }
+        public int ModifiedBy { get; set; }
+        public int EmployeeID { get; set; }
+    }
 }

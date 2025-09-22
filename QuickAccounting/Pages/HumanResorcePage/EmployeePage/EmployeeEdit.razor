@@ -6,10 +6,12 @@
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @using System.Security.Claims
+@using QuickAccounting.Components
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @attribute [Authorize]
 <PageTitle>Edit Data Karyawan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
 <div class="content">
 					<div class="page-header">
 						<div class="page-title">
@@ -236,8 +238,57 @@
 							</EditForm>
 						</div>
 					</div>
-					<!-- /add -->				
+					<!-- /add -->	
+					@if(listSalaryHistory != null && listSalaryHistory.Count > 0)
+					{
+						<h4>Riwayat Perubahan Gaji</h4>					
+						<div class="card">
+							<div class="card-body">
+								<div class="table-responsive table-scrollable">
+								<table class="mud-table-root">
+									<thead class="mud-table-head">
+										<!--!-->
+										<tr class="mud-table-row">
+											<!--!-->
+											<th scope="col" class="mud-table-cell">Jenis Pendapatan</th>	
+											<th scope="col" class="mud-table-cell">Tanggal Diubah</th>
+											<th scope="col" class="mud-table-cell">Jumlah</th>
+											<th scope="col" class="mud-table-cell"></th>
+										</tr>
+									</thead>
+									<tbody class="mud-table-body">
+										@foreach(var salary in listSalaryHistory)
+										{
+										<tr class="mud-table-row" style="">										
+											<td class="mud-table-cell">
+												@salary.SalaryType
+											</td>
+											<td class="mud-table-cell">
+												@salary.DateModified.ToString("dd-MMM-yyyy")
+											</td>
+											<td class="mud-table-cell">
+												@salary.Amount.ToString("N2")
+											</td>
+											<td class="mud-table-cell">
+												<a @onclick="(() => { OpenDeleteDialog(salary.ID); })" class="btn btn-danger" style="color:#fff !important; font-size:12px !important;">HAPUS</a>
+											</td>
+										</tr>
+										}
+									</tbody>
+								</table>
+								</div>
+							</div>
+						</div>
+					}
 				</div>
+@if (DeleteDialogOpen)
+{
+    <ModalDialog Title="Hapus Histori Gaji"
+                 Text="Apakah anda yakin anda ingin menghapus data ini?"
+                 OnClose="@OnDeleteDialogClose"
+                 DialogType="ModalDialog.ModalDialogType.Delete">
+    </ModalDialog>
+}
 @code {
 	[Parameter]
 	public string id { get; set; }
@@ -247,25 +298,79 @@
 	IList<DesignationView> listDesignation;
 	IList<SalaryPackage> listPackage;
 	string strMenu = "Human Resources";	
-	
+
 	List<UserView> listUsernames = new List<UserView>();
 	List<Employee> listSupervisors = new List<Employee>();
+	bool isProcessing;
+	UserMaster modelUser = new UserMaster();
+	Employee modelEmployee = new Employee();
+	decimal oldDailyWage = 0;
+	decimal oldTunjangan = 0;
+    List<SalaryHistory> listSalaryHistory = new List<SalaryHistory>();
+	public bool DeleteDialogOpen { get; set; }
+	int SelectedItemId = 0;
+
+	private void OpenDeleteDialog(int id)
+    {
+        SelectedItemId = id;
+
+        DeleteDialogOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task OnDeleteDialogClose(bool accepted)
+    {
+        if (accepted)
+        {
+			DeleteSalaryRecord();
+        }
+
+        DeleteDialogOpen = false;
+        StateHasChanged();
+
+        navigation.NavigateTo("/app/employee", true);
+    }
+
+	private async Task DeleteSalaryRecord()
+    {        
+        isProcessing = true;
+
+        try
+        {            
+            await _employee.DeleteSalaryHistory(SelectedItemId);            
+        }        
+        catch (Exception ex)
+        {
+            Snackbar.Add("Terjadi kesalahan pada system. Tolong di screenshot: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+
+		isProcessing = false;        
+    }
 
 	protected override async Task OnInitializedAsync()
 	{
+		isProcessing = true;
+
 		//CheckPriviliagee
 		var authState = await authenticationState;
 		var strRole = authState.User;
 		string strName = strRole.FindFirst(ClaimTypes.Role).Value;
 		var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+		var user = authState.User;
+		var userName = user.Identity.Name;
+		modelUser = await _user.UserProfile(userName);
+		modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
 		if (strShow.ShowAction == true)
 		{
 			await LoadData();
+
+			isProcessing = false;
+			StateHasChanged();
 		}
 		else
 		{
 			navigation.NavigateTo("/app/dashboard");
-			Snackbar.Add("You dont have to privilege..", Severity.Error);
+			Snackbar.Add("Anda tidak memiliki akses", Severity.Error);
 		}
 	}
 
@@ -277,11 +382,18 @@
 		listUsernames = await _user.GetAll();
 		listSupervisors = await _employee.GetSupervisors();		
 
+		oldDailyWage = model.DailyWage;
+		oldTunjangan = model.Tunjangan;
+        
+        listSalaryHistory = await _employee.GetSalaryHistoryByEmployeeId(model.EmployeeId);
+
 		StateHasChanged();
 	}
 
 	private async Task Save()
 	{
+        isProcessing = true;
+
 		var isCheck = await _employee.CheckNameId(model.EmployeeName);
 		if (isCheck == model.EmployeeId || isCheck == 0)
 		{
@@ -291,19 +403,46 @@
 			bool result = await _employee.Update(model);
 			if (result == true)
 			{
-				Snackbar.Add("Updated Successfully.", Severity.Success);
+				if(oldDailyWage != 0 && oldDailyWage != model.DailyWage)
+				{
+                    SalaryHistory modelHistory = new SalaryHistory();
+                    modelHistory.EmployeeID = model.EmployeeId;
+					modelHistory.Amount = oldDailyWage;
+                    modelHistory.DateModified = DateTime.Now;
+					modelHistory.SalaryType = "Gaji Harian";
+					modelHistory.ModifiedBy = modelEmployee.EmployeeId;
+					
+					await _employee.InsertSalaryHistory(modelHistory);
+                }
+                if (oldTunjangan != 0 && oldTunjangan != model.Tunjangan)
+				{
+					SalaryHistory modelHistory = new SalaryHistory();
+					modelHistory.EmployeeID = model.EmployeeId;
+					modelHistory.Amount = oldTunjangan;
+					modelHistory.DateModified = DateTime.Now;
+					modelHistory.SalaryType = "Tunjangan";
+					modelHistory.ModifiedBy = modelEmployee.EmployeeId;
+
+					await _employee.InsertSalaryHistory(modelHistory);
+				}
+
+				Snackbar.Add("Data telah diperbarui", Severity.Success);
 				StateHasChanged();
 				navigation.NavigateTo("/app/employee");
 			}
 			else
 			{
-				Snackbar.Add("Invalid.", Severity.Error);
+				Snackbar.Add("Mohon dicek kembali data-datanya", Severity.Error);
+                isProcessing = false;
 				StateHasChanged();
 			}
 		}
 		else
 		{
-			Snackbar.Add("Employee name already exists.", Severity.Info);
+			Snackbar.Add("Nama karyawan tsb. sudah ada di system.", Severity.Info);
+
+            isProcessing = false;
+            StateHasChanged();
 		}
 	}
 }

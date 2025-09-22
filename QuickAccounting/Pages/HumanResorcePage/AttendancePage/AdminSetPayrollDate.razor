@@ -49,7 +49,7 @@
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
-                        Tanggal Payroll
+                        Tanggal Kirim Data ke Bank
                         <input type="date" @bind="@SelectedDate" class="form-control" />
                     </div>
                 </div>
@@ -85,9 +85,9 @@
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>                                                                                        
-                                            <th style="text-align:center;">Tanggal Mulai</th>
-                                            <th style="text-align:center;">Tanggal Akhir</th>
-                                            <th style="text-align:center;">Tanggal Gajian</th>
+                                            <th style="text-align:center;">Tanggal Mulai Absen</th>
+                                            <th style="text-align:center;">Tanggal Terakhir Absen</th>
+                                            <th style="text-align:center;">Tanggal Kirim Data ke Bank</th>
                                             <th>Nama Periode</th>
                                             <th></th>
                                         </tr>                                        
@@ -161,12 +161,15 @@
 
     private async Task OnDeleteDialogClose(bool accepted)
     {
+        isProcessing = true;
+
         if (accepted)
         {
-            DeleteTanggalPayroll();
+            await DeleteTanggalPayroll();
         }
 
         DeleteDialogOpen = false;
+        isProcessing = false;
         StateHasChanged();
 
         navigation.NavigateTo("/app/adminsetpayroll", true);
@@ -195,6 +198,8 @@
 
     private async Task Save()   
     {
+        isProcessing = true;
+
         try
         {
             if (string.IsNullOrEmpty(NamaPeriode))
@@ -226,10 +231,15 @@
         {
             Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
         }
+
+        isProcessing = false;
+        StateHasChanged();
     }
 
     protected override async Task OnInitializedAsync()
     {
+        isProcessing = true;
+
         var authstate = await authStateProvider.GetAuthenticationStateAsync();
         var user = authstate.User;
         var userName = user.Identity.Name;
@@ -243,5 +253,8 @@
         await _audit.LogAsync(LogTypes.LogInfo, "Set Payroll", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
         PayrollCutoffs = await _db.PayrollCutoff.Where(x => x.ID >= 6).OrderByDescending(x => x.RealPayrollDate).ToListAsync();
+
+        isProcessing = false;
+        StateHasChanged();
     }
 }    

@@ -160,9 +160,35 @@ namespace QuickAccounting.Repository.Repository
 
         public async Task<bool> Update(Employee model)
         {
-            _context.Employee.Update(model);
+            _context.Employee.Update(model);            
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<int> InsertSalaryHistory(SalaryHistory model)
+        {
+            await _context.SalaryHistory.AddAsync(model);
+            await _context.SaveChangesAsync();
+            int id = model.ID;
+            return id;
+        }
+
+        public async Task<List<SalaryHistory>> GetSalaryHistoryByEmployeeId(int employeeId)
+        {
+            var result = await (from sh in _context.SalaryHistory
+                                where sh.EmployeeID == employeeId
+                                select sh).ToListAsync();
+            return result;
+        }
+
+        public async Task DeleteSalaryHistory(int id)
+        {
+            var entity = await _context.SalaryHistory.FindAsync(id);
+            if (entity != null)
+            {
+                _context.SalaryHistory.Remove(entity);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

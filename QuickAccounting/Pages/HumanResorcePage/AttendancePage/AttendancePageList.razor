@@ -560,28 +560,29 @@
     private async Task LoadData()
     {
         PeriodeDates = new List<DateTime>();
-       // PayrollCutoffs = await _attendance.GetPayrollCutoffs();
+        // PayrollCutoffs = await _attendance.GetPayrollCutoffs();
         //SelectedCutoffFrom = (await _attendance.GetLastPayrollCutoff()).PayrollDate;
         var lastPayrollCutoff = await _attendance.GetLastPayrollCutoff();
-       
+
         PayrollCutoffs = await _attendance.GetPayrollCutoffs();   
         PayrollCutoffs = PayrollCutoffs.Where(x => x.ID >= 6).ToList();
         var now = DateTime.Now;
-
-        if(lastPayrollCutoff.RealPayrollDate.Date < now.Date)
+        var currentPeriode = PayrollCutoffs.Where(x => x.RealPayrollDate.Year == now.Year && x.RealPayrollDate.Month == now.Month).FirstOrDefault();
+        if(currentPeriode != null)
+        //if(lastPayrollCutoff.RealPayrollDate.Date < now.Date)
         {
-            SelectedCutoffId = 0;
-            SelectedCutoffFrom = lastPayrollCutoff.RealPayrollDate;
-            SelectedCutoffTo = DateTime.Now;
+            SelectedCutoffId = currentPeriode.ID;
+            SelectedCutoffFrom = currentPeriode.PayrollDateStart;
+            SelectedCutoffTo = currentPeriode.PayrollDate;
             LastPayrollCutoff = SelectedCutoffFrom;
             LastPayrollCutoffDate = SelectedCutoffTo;
-            PayrollCutoffs.Add(new PayrollCutoff
-            {
-                ID = 0,
-                PayrollDateStart = SelectedCutoffFrom,
-                PayrollDate = SelectedCutoffTo,
-                PayrollPeriode = "Periode Terkini"
-            });
+            // PayrollCutoffs.Add(new PayrollCutoff
+            // {
+            //     ID = 0,
+            //     PayrollDateStart = SelectedCutoffFrom,
+            //     PayrollDate = SelectedCutoffTo,
+            //     PayrollPeriode = "Periode Terkini"
+            // });
         }
         else
         {

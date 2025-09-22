@@ -1,4 +1,4 @@
-﻿@page "/app/recordvacation"
+﻿@page "/app/adminrecordvacation"
 @inject IHRServices _hr
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
@@ -11,12 +11,12 @@
 @inject NavigationManager navigation
 @attribute [Authorize]
 
-<PageTitle>Form Ijin / Libur</PageTitle>
+<PageTitle>Admin - Form Ijin / Libur</PageTitle>
 <Loader IsLoading="isProcessing"></Loader>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h4>Form Ijin / Libur</h4>
+            <h4>Admin - Form Ijin / Libur</h4>
         </div>
     </div>
 
@@ -28,12 +28,40 @@
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <div class="form-group" style="text-align: center !important;">
-                                <label>Tanggal Ijin / Libur</label>
+                                <label>Dari Tanggal</label>
                                 <div class="row">
                                     <div class="col-lg-12 col-sm-12 col-12">
                                         <RadzenDatePicker @bind-Value=@TanggalIjin DateFormat="d" Change="()=>ChangeDate()" Class="w-100" />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Ke Tanggal</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <RadzenDatePicker @bind-Value=@KeTanggalIjin DateFormat="d" Change="()=>ChangeKeDate()" Class="w-100" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group">
+                                <label>Karyawan</label>
+                                <select class="form-control" @onchange="SelectedKaryawan">
+                                    @foreach (var karyawan in DaftarKaryawan)
+                                    {
+                                        <option value="@karyawan.EmployeeId">@karyawan.EmployeeName</option>
+                                    }
+
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -52,37 +80,11 @@
                                             <option value="LEMBUR">Lembur</option>
                                             <option value="DINAS">Dinas Luar</option>
                                         </select>
-                                        <span style="font-style:italic;">Apabila anda ijin sakit, maka wajib meng-upload surat dokter, dan ketika masuk membawa surat dokter, apabila tidak akan dihitung sebagai ALPHA.</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                @if(TipeIjin == "SAKIT")
-                {
-                    <div class="row">
-                        <div class="col-lg-4 col-sm-6 col-12">
-                            <div class="form-group" style="text-align: center !important;">
-                                <label>Foto Surat Dokter</label>
-                                <div class="row">
-                                    <div class="col-lg-12 col-sm-12 col-12">
-                                        @if (PhotoViewer == string.Empty)
-                                        {
-                                            <img src="/img/noimage.png" alt="img">
-                                        }
-                                        else
-                                        {
-                                            <img src="@PhotoViewer" width="80" height="80">
-                                        }
-                                        <br />
-                                        <InputFile OnChange="OnFileChange" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
 
                     <div class="row">
                         <div class="col-lg-4 col-sm-6 col-12">
@@ -132,18 +134,33 @@
     private string Alasan;
     private string PhotoSuratDokter;
     private DateTime? TanggalIjin;
+    private DateTime? KeTanggalIjin;
 
     MemoryStream uploadedFileStream;
     string uploadedFileExtension;
 
-    string strMenu = "Form Vacation";
+    List<Employee> DaftarKaryawan = new List<Employee>();
+    Employee SelectedEmployee = null;
+    string strMenu = "Admin - Form Vacation";
 
     private bool FormSubmitted;
     bool isProcessing = false;
+
     private async Task ChangeDate()
     {
         master.ForDate = TanggalIjin.Value;
         StateHasChanged();
+    }
+
+    private async Task ChangeKeDate()
+    {
+        master.ForDate = KeTanggalIjin.Value;
+        StateHasChanged();
+    }
+
+    private async Task SelectedKaryawan(ChangeEventArgs e)
+    {        
+        SelectedEmployee = await _employee.GetbyId(Convert.ToInt32(e.Value.ToString()));
     }
 
     async Task OnFileChange(InputFileChangeEventArgs e)
@@ -187,7 +204,7 @@
         modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
         PhotoSuratDokter = "";
         PhotoViewer = "";
-        
+
         //CheckPriviliagee        
         await LoadData();
 
@@ -244,48 +261,63 @@
             return;
         }
 
-        if (TipeIjin == "SAKIT")
-        {
-            string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
-            string fileName = await UploadFile(userFolder);
+        DateTime now = DateTime.Now;
 
-            if (PhotoSuratDokter == "")
+        if (KeTanggalIjin.HasValue == true)
+        {
+            if (KeTanggalIjin.Value < TanggalIjin.Value)
             {
-                Snackbar.Add("Anda belum mengambil foto surat dokter.", Severity.Error);
+                Snackbar.Add("Tanggal Akhir Ijin tidak boleh lebih kecil dari Tanggal Awal Ijin.", Severity.Error);
                 isProcessing = false;
                 return;
             }
-        }
 
-        DateTime now = DateTime.Now;
-
-        if(now.Date == TanggalIjin.Value.Date && TipeIjin == "LIBUR")
-        {
-            Snackbar.Add("Untuk pengajuan libur, harap mengajukan minimal 1 hari kerja sebelumnya.", Severity.Error);
-            isProcessing = false;
-            return;
-        }
-
-        master.ForDate = TanggalIjin.Value;
-        master.IsApproved = null;
-        master.ApprovalDescription = string.Empty;
-        master.SubmittedDesc = Alasan;
-        master.DateSubmitted = now;
-        master.SubmittedFor = TipeIjin;
-        master.EmployeeID = modelEmployee.EmployeeId;
-        master.DocPhoto = PhotoSuratDokter;
-        
-        var result = await _hr.InsertPerijinan(master);
-
-        if (result > 0)
-        {
-            Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
-            FormSubmitted = true;            
+            //jika lebih dari 1 hari
+            if ((KeTanggalIjin.Value - TanggalIjin.Value).TotalDays >= 0)
+            {
+                //looping simpan
+                for (var i = TanggalIjin.Value; i <= KeTanggalIjin.Value; i = i.AddDays(1))
+                {
+                    master = new Perijinan();
+                    master.ForDate = i;
+                    master.IsApproved = true;
+                    master.ApprovalDescription = string.Empty;
+                    master.SubmittedDesc = Alasan;
+                    master.DateSubmitted = now;
+                    master.SubmittedFor = TipeIjin;
+                    master.EmployeeID = SelectedEmployee.EmployeeId;
+                    master.DocPhoto = "";
+                    var resultLoop = await _hr.InsertPerijinan(master);
+                }
+                Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
+                FormSubmitted = true;
+                isProcessing = false;
+                StateHasChanged();
+                return;
+            }
         }
         else
         {
-            Snackbar.Add("Form Ijin gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
-        }
+            master.ForDate = TanggalIjin.Value;
+            master.IsApproved = null;
+            master.ApprovalDescription = string.Empty;
+            master.SubmittedDesc = Alasan;
+            master.DateSubmitted = now;
+            master.SubmittedFor = TipeIjin;
+            master.EmployeeID = modelEmployee.EmployeeId;
+            master.DocPhoto = PhotoSuratDokter;
+
+            var result = await _hr.InsertPerijinan(master);
+            if (result > 0)
+            {
+                Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
+                FormSubmitted = true;            
+            }
+            else
+            {
+                Snackbar.Add("Form Ijin gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
+            }
+        }        
 
         isProcessing = false;
         StateHasChanged();

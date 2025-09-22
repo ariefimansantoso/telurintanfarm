@@ -216,10 +216,10 @@
 						if (items[z].ProductId != 2 && items[z].ProductId != 6)
 						{
 							<div class="col-lg-6 col-sm-6 col-12">
-								<div class="dash-widget" style="padding: 15px 15px 0px 15px !important;">
+								<div class="dash-widget price-info">
 									<div class="dash-widgetcontent">
-										<h6 style="font-size: 24px;line-height: 2px;padding-top: 20px;">@items[z].Narration</h6>
-										<h5 style="font-size: 58px;line-height: 90px;padding: 0px 0px;margin: 0px 0px;height: fit-content;"><span class="counters">@string.Format("{0:n0}", items[z].SalesRate)</span></h5>
+										<h6 class="price-info-title">@items[z].Narration</h6>
+										<h5 class="price-info-price"><span class="counters">@string.Format("{0:n0}", items[z].SalesRate)</span></h5>
 									</div>
 								</div>
 							</div>
@@ -559,18 +559,61 @@
 
 		<div class="row">
 
-			<div class="cust-col-20 col-sm-6 col-12">
+			<div class="cust-col-3 col-sm-6 col-12">
 				<div class="dash-widget">
 					<div class="dash-widgetimg">
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
 						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", TotalNonTelurRupiah)</span></h5>
-						<h6>Non Telur</h6>
+						<h6>Non Telur Tunai</h6>
+						@if (NonTelurTunaiList != null && NonTelurTunaiList.Count > 0)
+						{
+							<table style="margin-top:10px;">
+								<tr>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Pelanggan</b></td>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Jumlah</b></td>
+								</tr>
+								@foreach (var partaiTransferTrx in NonTelurTunaiList)
+								{
+									<tr>
+										<td style="padding:3px 3px;">@partaiTransferTrx.LedgerName</td>
+										<td style="padding:3px 3px; text-align:right;">@string.Format("{0:n0}", partaiTransferTrx.Amount)</td>
+									</tr>
+								}
+							</table>
+						}
 					</div>
 				</div>
 			</div>
 
+			<div class="cust-col-3 col-sm-6 col-12">
+				<div class="dash-widget">
+					<div class="dash-widgetimg">
+						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
+					</div>
+					<div class="dash-widgetcontent">
+						<h5><span class="counters">@PublicVariables._Symbol @string.Format("{0:n0}", TotalNonTelurRupiahTransfer)</span></h5>
+						<h6>Non Telur Transfer</h6>
+						@if (NonTelurTransferList != null && NonTelurTransferList.Count > 0)
+						{
+							<table style="margin-top:10px;">
+								<tr>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Pelanggan</b></td>
+									<td style="padding:3px 3px; font-weight:bold;"><b>Jumlah</b></td>
+								</tr>
+								@foreach (var partaiTransferTrx in NonTelurTransferList)
+								{
+									<tr>
+										<td style="padding:3px 3px;">@partaiTransferTrx.LedgerName</td>
+										<td style="padding:3px 3px; text-align:right;">@string.Format("{0:n0}", partaiTransferTrx.Amount)</td>
+									</tr>
+								}
+							</table>
+						}
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<!-- Sales Butir -->
@@ -880,7 +923,10 @@
 											Karyawan
 										</td>
 										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Tanggal
+											Untuk Tanggal
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Tanggal Pengajuan
 										</td>
 										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
 											Jenis
@@ -900,6 +946,9 @@
 											</td>
 											<td style="padding: 10px 2px;vertical-align: middle; ">
 												@p.ForDate.ToString("dd/MM/yyyy")
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.DateSubmitted.ToString("dd/MM/yyyy hh:mm")
 											</td>
 											<td style="padding: 10px 2px;vertical-align: middle; ">
 												@p.SubmittedFor
@@ -979,7 +1028,10 @@
 											Karyawan
 										</td>
 										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Tanggal
+											Untuk Tanggal
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Tanggal Pengajuan
 										</td>
 										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
 											Jenis
@@ -997,6 +1049,9 @@
 											</td>
 											<td style="padding: 10px 2px;vertical-align: middle; ">
 												@p.ForDate.ToString("dd/MM/yyyy")
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.DateSubmitted.ToString("dd/MM/yyyy hh:mm")
 											</td>
 											<td style="padding: 10px 2px;vertical-align: middle; ">
 												@p.SubmittedFor
@@ -1069,7 +1124,10 @@
 											Karyawan
 										</td>
 										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-											Tanggal
+											Untuk Tanggal
+										</td>
+										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+											Tanggal Pengajuan
 										</td>
 										<td style="padding: 5px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
 											Jenis
@@ -1089,6 +1147,9 @@
 											</td>
 											<td style="padding: 10px 2px;vertical-align: middle; ">
 												@p.ForDate.ToString("dd/MM/yyyy")
+											</td>
+											<td style="padding: 10px 2px;vertical-align: middle; ">
+												@p.DateSubmitted.ToString("dd/MM/yyyy hh:mm")
 											</td>
 											<td style="padding: 10px 2px;vertical-align: middle; ">
 												@p.SubmittedFor
@@ -1369,6 +1430,8 @@
 	bool SOPAvailable;
 	List<dynamic> PartaiCashList;
 	List<dynamic> PartaiTransferList;
+	List<dynamic> NonTelurTunaiList;
+	List<dynamic> NonTelurTransferList;
 	List<dynamic> PartaiKGList;
 	private List<QuickAccounting.Data.Recording.DailyRecording> StrainData;
 	List<string> DaftarKandang;
@@ -1436,6 +1499,7 @@
 	decimal TotalPakanSum = 0;
 
 	decimal TotalNonTelurRupiah = 0;
+	decimal TotalNonTelurRupiahTransfer = 0;
 
 	DateTime dtFromDate;
 	DateTime dtToDate;
@@ -1738,9 +1802,25 @@
 										where rm.LedgerId >= 19 &&
 										rm.Date >= new DateTime(dtFromDate.Year, dtFromDate.Month, dtFromDate.Day, 0, 0, 0) &&
 										rm.Date <= new DateTime(dtToDate.Year, dtToDate.Month, dtToDate.Day, 23, 59, 59) &&
-										(rd.LedgerId == 1 || rd.LedgerId == 10) &&
-										!p.ProductCode.StartsWith("TA-")
+										rd.LedgerId == 1 &&
+										(!p.ProductCode.StartsWith("TA-") && !p.ProductCode.StartsWith("TB-") &&
+										  !p.ProductCode.StartsWith("TC-") && !p.ProductCode.StartsWith("TD-") &&
+										  !p.ProductCode.StartsWith("TE-") && !p.ProductCode.StartsWith("TF-"))
 										select sd.NetAmount).Sum();
+
+		TotalNonTelurRupiahTransfer = (from sd in _db.SalesDetails
+							   join rm in _db.SalesMaster on sd.SalesMasterId equals rm.SalesMasterId
+							   join rd in _db.ReceiptDetails on rm.SalesMasterId equals rd.SalesMasterId
+							   join al in _db.AccountLedger on rm.LedgerId equals al.LedgerId
+							   join p in _db.Product on sd.ProductId equals p.ProductId
+							   where rm.LedgerId >= 19 &&
+							   rm.Date >= new DateTime(dtFromDate.Year, dtFromDate.Month, dtFromDate.Day, 0, 0, 0) &&
+							   rm.Date <= new DateTime(dtToDate.Year, dtToDate.Month, dtToDate.Day, 23, 59, 59) &&
+							   rd.LedgerId == 10 &&
+							   (!p.ProductCode.StartsWith("TA-") && !p.ProductCode.StartsWith("TB-") &&
+								 !p.ProductCode.StartsWith("TC-") && !p.ProductCode.StartsWith("TD-") &&
+								 !p.ProductCode.StartsWith("TE-") && !p.ProductCode.StartsWith("TF-"))
+							   select sd.NetAmount).Sum();
 	}
 
 	private void LoadReportRecordingSummary()
@@ -1822,33 +1902,7 @@
 			perijinan.ActionByEmployeeID = modelEmployee.EmployeeId;
 			await _hr.UpdatePerijinan(perijinan);
 		}
-	}
-
-	// private async Task GetStrainGraphData()
-	// {
-	// 	var now = DateTime.Now;
-	// 	var currentMonth = now.Month;
-	// 	DateTime from = new DateTime(2024, 1, 1, 0, 0, 0);
-	// 	DateTime to = new DateTime(2024, 7, 31, 23,59,59);
-	// 	StrainData = await _recording.GetDailyRecordingStrain(SelectedStrain, from, to);
-
-	// 	Series = new List<ChartSeries>();
-	// 	ChartSeries series = new ChartSeries();
-	// 	series.Name = "+/- HD";
-	// 	series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualHenDay)).ToArray();
-	// 	Series.Add(series);
-
-	// 	series = new ChartSeries();
-	// 	series.Name = "EW(gr)";
-	// 	series.Data = StrainData.Select(record => Convert.ToDouble(record.ActualEggWeightG)).ToArray();
-	// 	Series.Add(series);
-
-	// 	// Map strainData to chart data
-	// 	XAxisLabels = StrainData.Select(record => record.HenAgeWeeks.ToString()).ToArray();
-	// 	yAxisValues = StrainData.Select(record => record.ActualHenDay).ToList();
-
-	// 	Options.YAxisTicks = 20;
-	// }
+	}	
 
 	private async Task SelectedKandangChange(ChangeEventArgs e)
 	{        
@@ -1970,6 +2024,10 @@
 
 		PartaiCashList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
 		PartaiTransferList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+
+		NonTelurTunaiList = await _paymentin.GetSalesNonTelur(dtFromDate, dtToDate, 1);
+		NonTelurTransferList = await _paymentin.GetSalesNonTelur(dtFromDate, dtToDate, 10);
+
 		PartaiKGList = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 10);
 		var partaiKGCash = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 1);
 		PartaiKGList.AddRange(partaiKGCash);
@@ -2065,6 +2123,10 @@
 
 		PartaiCashList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 1);
 		PartaiTransferList = await _paymentin.GetSalesPartai(dtFromDate, dtToDate, 10);
+
+		NonTelurTunaiList = await _paymentin.GetSalesNonTelur(dtFromDate, dtToDate, 1);
+		NonTelurTransferList = await _paymentin.GetSalesNonTelur(dtFromDate, dtToDate, 10);
+
 		PartaiKGList = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 10);
 		var partaiKGCash = await _paymentin.GetSalesPartaiKG(dtFromDate, dtToDate, 1);
 		PartaiKGList.AddRange(partaiKGCash);
