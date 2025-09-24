@@ -119,6 +119,16 @@
 							</select>
 									</div>
 								</div>
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>Status Karyawan Aktif?</label>
+							<input type="checkbox" @bind="model.isActive" />
+							@* <select class="form-control" @bind="model.isActive">
+								<option value="True">Aktif</option>
+								<option value="False">Tidak Aktif</option>
+							</select> *@
+						</div>
+					</div>
 								<hr/>
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
@@ -398,7 +408,6 @@
 		if (isCheck == model.EmployeeId || isCheck == 0)
 		{
 			model.Narration = string.Empty;
-			model.isActive = true;
 
 			bool result = await _employee.Update(model);
 			if (result == true)
