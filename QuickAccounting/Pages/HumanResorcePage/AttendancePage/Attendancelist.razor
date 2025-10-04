@@ -157,11 +157,11 @@
                                 int number = 1;
                                 foreach (var payrollPerPerson in payrolls)
                                 {
-                                    var currentEmployee = activeEmployees.FirstOrDefault(x => x.EmployeeId == payrollPerPerson.EmployeeID);
-                                    if (payrollPerPerson.EmployeeID == 6)
-                                    {
-                                        currentEmployee = _db.Employee.FirstOrDefault(x => x.EmployeeId == payrollPerPerson.EmployeeID);
-                                    }
+                                    var currentEmployee = //activeEmployees.FirstOrDefault(x => x.EmployeeId == payrollPerPerson.EmployeeID);
+                                    //if (payrollPerPerson.EmployeeID == 6)
+                                    //{
+                                         _db.Employee.FirstOrDefault(x => x.EmployeeId == payrollPerPerson.EmployeeID);
+                                    //}
                                     <tr>
                                         <td>@(currentEmployee != null ? currentEmployee.EmployeeName : "")</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.GajiHarian)</td>
@@ -412,6 +412,28 @@
                                     int totalHours = totalMenitLembur / 60; // Get the whole number of hours
                                     int remainingMinutes = totalMenitLembur % 60;
 
+                                    if (employee.DesignationId == 4)
+                                    {
+                                        employee.BPJS_KES = 0;
+                                        employee.BPJS_TK = 0;
+                                        rpPremi = 0;
+                                        //tambahanGaji = 0;
+                                        tunjanganTetap = 0;
+                                        ijin = 0;
+                                        sakit = 0;
+                                        setengahHari = 0;
+                                        ijinLembur = 0;
+                                        rpLembur = 0;
+                                        totalHours = 0;
+                                        remainingMinutes = 0;
+                                        libur = 0;                        
+                                        jumlahTerlambatCount = 0;
+                                        cicilan = 0;
+                                        //potonganNonCicilan = 0;
+                                        potonganSetengahHari = 0;
+                                        gajiBersih = gajiNonPremi + tambahanGaji - potonganNonCicilan;
+                                    }
+
                                     if (employee.BankAccount != "0" && employee.BankAccount != "")
                                     {
                                         payrollExcel.Add(new PayrollExcel
@@ -631,7 +653,11 @@
         if (payrolls.Count == 0)
         {
             absensiAllEmployeePerPeriode = await _attendance.GetAttendanceCurrentPeriodeAllEmployee(SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
-            detailAttendances = absensiAllEmployeePerPeriode.GroupBy(x => x.EmployeeID).OrderBy(x => x.Key).ToList();           
+            detailAttendances = absensiAllEmployeePerPeriode.GroupBy(x => x.EmployeeID).OrderBy(x => x.Key).ToList();
+            // var emptyGroup = new List<DailyAttendanceMaster>()
+            //                 .GroupBy(x => 6) // force group key = 6
+            //                 .FirstOrDefault();
+            // detailAttendances.Add(emptyGroup);
         }
 
         DateTime endDate = SelectedCutoffTo.Date; // Today's date
@@ -954,14 +980,24 @@
             if (newPayrolls.Count > 0)
             {
                 var pakThomy = _db.Employee.FirstOrDefault(x => x.EmployeeId == 6);
+                var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(pakThomy.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
+                var listBonus = listPenalty.Where(x => x.IsPenalty == false).ToList();
+                decimal tambahanGaji = 0;
+                if (listBonus.Count > 0)
+                {
+                    foreach (var bonus in listBonus)
+                    {
+                        tambahanGaji = tambahanGaji + bonus.PenaltyAmount;
+                    }
+                }
+                decimal gajiBersihPakThomy = pakThomy.DailyWage + tambahanGaji + pakThomy.Tunjangan;
                 var payrollItem = new Payroll();
                 payrollItem.Alpha = 0;
-                payrollItem.Tambahan = 0;
-                payrollItem.BPJS_KES = 0;
-                payrollItem.BPJS_TK = 0;
+                payrollItem.Tambahan = tambahanGaji;
+                payrollItem.BPJS_KES = pakThomy.BPJS_KES;
+                payrollItem.BPJS_TK = pakThomy.BPJS_TK;
                 payrollItem.RpPremi = 0;
-                payrollItem.Tambahan = 0;
-                payrollItem.Tunjangan = 0;
+                payrollItem.Tunjangan = pakThomy.Tunjangan;
                 payrollItem.Masuk = 0;
                 payrollItem.Alpha = 0;
                 payrollItem.Ijin = 0;
@@ -975,7 +1011,7 @@
                 payrollItem.Potongan = 0;
                 payrollItem.RpLembur = 0;
                 payrollItem.NoRek = pakThomy.BankAccount;
-                payrollItem.GajiBersih = pakThomy.DailyWage;
+                payrollItem.GajiBersih = gajiBersihPakThomy;
                 payrollItem.CutoffID = SelectedCutoffId;
                 payrollItem.EmployeeID = pakThomy.EmployeeId;
                 payrollItem.GajiNonPremi = 0;
@@ -991,7 +1027,7 @@
                         No = payrolls.Count,
                         Karyawan = pakThomy.EmployeeName,
                         Rekening = pakThomy.BankAccount,
-                        Gaji = pakThomy.DailyWage
+                        Gaji = gajiBersihPakThomy
                     });
 
                 _db.Payroll.AddRange(newPayrolls);

@@ -216,6 +216,11 @@
 
             await GetLocation();
 
+            if(modelEmployee.DesignationId == 4)
+            {
+                WithinBoundaries = true;
+            }
+
             if (modelEmployee.EmployeeId == 5 || modelEmployee.EmployeeId == 6)
             {
                 AttendanceFormOpen = true;

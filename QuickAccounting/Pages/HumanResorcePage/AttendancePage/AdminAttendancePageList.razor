@@ -193,7 +193,7 @@
                         .Select(record => (int)(record.Date.TimeOfDay - new TimeSpan(16, 15, 0)).TotalMinutes) // Get minutes difference
                         .Sum();
 
-                    rpLembur = (SelectedEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur;
+                    rpLembur = (SelectedEmployee.DailyWage / (decimal)480) * (decimal)totalMenitLembur * 2;
 
                     hariDinasLuar = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("DINAS")).Count();
 
@@ -291,6 +291,27 @@
                     int totalHours = totalMenitLembur / 60; // Get the whole number of hours
                     int remainingMinutes = totalMenitLembur % 60;
 
+                    if(SelectedEmployee.DesignationId == 4)
+                    {
+                        SelectedEmployee.BPJS_KES = 0;
+                        SelectedEmployee.BPJS_TK = 0;
+                        rpPremi = 0;
+                        //tambahanGaji = 0;
+                        tunjanganTetap = 0;
+                        ijin = 0;
+                        sakit = 0;
+                        setengahHari = 0;
+                        ijinLembur = 0;
+                        rpLembur = 0;
+                        totalHours = 0;
+                        remainingMinutes = 0;
+                        libur = 0;                        
+                        jumlahTerlambatCount = 0;
+                        cicilan = 0;
+                        //potonganNonCicilan = 0;
+                        potonganSetengahHari = 0;
+                        gajiBersih = gajiNonPremi + tambahanGaji - potonganNonCicilan;
+                    }
                     <div class="table-responsive table-scrollable">
                         <table class="table">
                             <thead>
@@ -314,6 +335,7 @@
                                     <th>Telat</th>
                                     <th>Cicilan</th>
                                     <th>Potongan</th>
+                                    <th>Rp. Lmbr</th>
                                     <th>No. Rek</th>
                                     <th>Total Gaji</th>
                                 </tr>
@@ -340,6 +362,7 @@
                                     <td>@jumlahTerlambatCount</td>
                                     <td>@string.Format("{0:n0}", cicilan)</td>
                                     <td>@string.Format("{0:n0}", potonganNonCicilan + potonganSetengahHari)</td>
+                                    <td>@string.Format("{0:n0}", rpLembur)</td>
                                     <td>@SelectedEmployee.BankAccount</td>
                                     <td>@string.Format("{0:n0}", gajiBersih)</td>
                                 </tr>

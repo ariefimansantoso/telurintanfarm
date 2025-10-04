@@ -246,6 +246,7 @@
         Alasan = string.Empty;
         TipeIjin = string.Empty;
         FormSubmitted = false;
+        DaftarKaryawan = await _employee.GetAllEmployeeActive();
 
         StateHasChanged();
     }

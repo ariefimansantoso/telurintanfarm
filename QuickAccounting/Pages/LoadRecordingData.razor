@@ -4,17 +4,33 @@
 @inject IAuditLogService _audit
 
 @using QuickAccounting.Data.Recording
-<h1>Success</h1>
+<Loader IsLoading="isProcessing"></Loader>
+<h1>@status</h1>
 @code{
-
+    string status = "Not Yet";
+    bool isProcessing = true;
     protected async override void OnInitialized()
     {
-        var now = DateTime.Now.Date;
+        var now = DateTime.Now.AddDays(-10);
+        var dateNow = DateTime.Now.Date;
+        var daysDifference = (dateNow - now).Days;
 
         string auditMessage = "Schedule Task LoadRecordingData is running: " + now.ToString("dd/MM/yyyy hh:mm");
         await _audit.LogAsync(LogTypes.LogInfo, "LoadRecordingData", auditMessage, -99, "System");
 
         InitiateDailyRecording(now, 5);
+
+        // for (int i = 0; i <= daysDifference; i++)
+        // {
+        //     InitiateDailyRecording(now, 5);
+        //     now = now.AddDays(1);
+        //     status = "Done " + i;
+        // }
+
+        status = "COMPLETED";
+
+        isProcessing = false;
+        StateHasChanged();
     }
 
     protected void InitiateDailyRecording(DateTime recordDate, int modifiedBy)
@@ -48,6 +64,8 @@
             {
                 todayRecords.FoodIntakePerHen = record.FoodIntakePerHen;
                 todayRecords.StrainName = record.StrainName;
+                todayRecords.FoodNeededTodayKg = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
+                todayRecords.ActualFoodNeededKG = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
                 if(string.IsNullOrEmpty(todayRecords.StrainName))
                 {
                     todayRecords.StrainName = "";

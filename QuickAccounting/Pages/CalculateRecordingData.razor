@@ -14,7 +14,7 @@
     bool isProcessing = true;
     protected async override void OnInitialized()
     {
-        var now = DateTime.Now.AddDays(-1);
+        var now = DateTime.Now.AddDays(-10);
         var dateNow = DateTime.Now.Date;
 
         var daysDifference = (dateNow - now).Days;

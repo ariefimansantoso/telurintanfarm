@@ -107,17 +107,17 @@ namespace QuickAccounting.Repository.Repository
 
         public async Task<List<Employee>> GetAllEmployeeActive()
         {
-            return await _context.Employee.Where(x => x.DesignationId == 1 && x.isActive).ToListAsync();
+            return await _context.Employee.Where(x => (x.DesignationId == 1 || x.DesignationId == 4) && x.isActive).ToListAsync();
         }
 
         public async Task<List<Employee>> GetAllEmployeeActiveBySupervisorID(int supervisorID)
         {
-            return await _context.Employee.Where(x => x.DesignationId == 1 && x.isActive && x.SupervisorID == supervisorID).ToListAsync();
+            return await _context.Employee.Where(x => (x.DesignationId == 1 || x.DesignationId == 4) && x.isActive && x.SupervisorID == supervisorID).ToListAsync();
         }
 
         public async Task<List<Employee>> GetAllEmployees()
         {
-            return await _context.Employee.Where(x => x.DesignationId == 1).ToListAsync();
+            return await _context.Employee.Where(x => (x.DesignationId == 1 || x.DesignationId == 4)).ToListAsync();
         }
 
         public async Task<List<Employee>> GetSupervisors()
