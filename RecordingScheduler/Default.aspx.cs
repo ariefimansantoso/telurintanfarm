@@ -15,9 +15,22 @@ namespace RecordingScheduler
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var now = DateTime.Now.Date;
+            //var now = DateTime.Now.Date;
 
-            InitiateDailyRecording(now, 5);
+            //InitiateDailyRecording(now, 5);
+
+            var now = DateTime.Now.AddDays(-17);
+            var dateNow = DateTime.Now;
+
+            var daysDifference = (dateNow - now).Days;
+
+            for (int i = 0; i <= daysDifference; i++)
+            {
+                InitiateDailyRecording(now, 5);
+                now = now.AddDays(1);
+            }
+
+            ltlStatus.Text = "DONE";
         }
 
         protected void InitiateDailyRecording(DateTime recordDate, int modifiedBy)

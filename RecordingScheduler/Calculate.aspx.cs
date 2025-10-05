@@ -12,6 +12,7 @@ namespace RecordingScheduler
     {
         TelurIntanDataContext _context = new TelurIntanDataContext(ConfigurationManager.ConnectionStrings["telurint_sqlserverConnectionString"].ConnectionString);
         string status = "Not Yet";
+
         protected void Page_Load(object sender, EventArgs e)
         {
             var now = DateTime.Now.AddDays(-5);
