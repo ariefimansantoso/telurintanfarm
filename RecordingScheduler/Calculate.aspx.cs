@@ -12,19 +12,19 @@ namespace RecordingScheduler
     {
         TelurIntanDataContext _context = new TelurIntanDataContext(ConfigurationManager.ConnectionStrings["telurint_sqlserverConnectionString"].ConnectionString);
         string status = "Not Yet";
+
         protected void Page_Load(object sender, EventArgs e)
         {
-            var now = new DateTime(2025, 7, 1); // DateTime.Now.AddDays(-2);
+            var now = DateTime.Now.AddDays(-5);
             var dateNow = DateTime.Now;
 
             var daysDifference = (dateNow - now).Days;
             
-            for (int i = 1; i <= daysDifference; i++)
+            for (int i = 0; i <= daysDifference; i++)
             {
                 CalculateDailyRecording(now, 5);
                 now = now.AddDays(1);
                 status = "Done " + i;
-
             }
 
             status = "COMPLETED";

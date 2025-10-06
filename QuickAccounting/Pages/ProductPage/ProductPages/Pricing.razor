@@ -18,11 +18,11 @@
 				<h4>Set Harga Barang</h4>
 			</div>
 			<div class="page-btn">
-				<Loading IsLoading="isProcessing">
+				
 				<a href="javascript:void(0);" @onclick="()=>SavePrice()" class="btn btn-added">
 					<img src="assets/img/icons/plus.svg" alt="img">Simpan
 				</a>
-				</Loading>
+				
 			</div>
 		</div>
 		@if (_render)
@@ -261,7 +261,7 @@
 
 	private async Task SavePrice()
 	{
-		isProcessing = true;
+		isLoading = true;
 		//0 - 8 - 1
 		//1 - 1 2
 		//2 - 2 3
@@ -352,7 +352,7 @@
 		p9.PriceGroup = priceGroup;
 		var product9 = await _product.GetbyId(p9.ProductID);
 		product9.SalesRate = p9.Price;
-		
+
 		p10.ProductID = 15;
 		p10.Price = inputValues[9];
 		p10.PriceDate = insertDate;
@@ -396,13 +396,15 @@
 			inputValues[i] = 0;
 		}
 
-		isProcessing = false;
+		isLoading = false;
 		_saved = true;
 		StateHasChanged();
 	}
 
 	protected override async Task OnInitializedAsync()
 	{
+		isLoading = true;
+
 		var authState = await authenticationState;
 		var strRole = authState.User;
 		string strName = strRole.FindFirst(ClaimTypes.Role).Value;
@@ -437,8 +439,12 @@
 		// var strShow = await _privilege.PriviliageCheck("Daftar Harga Barang", strName);
 		_saved = false;
 		await LoadData();
-		StateHasChanged();
+
 		_render = true;
+
+		isLoading = false;
+		StateHasChanged();
+		
 	}
 
 	private async Task LoadData()

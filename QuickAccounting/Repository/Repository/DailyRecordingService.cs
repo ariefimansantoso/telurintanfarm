@@ -18,7 +18,7 @@ namespace QuickAccounting.Repository.Repository
 			_context = context;
 		}
 
-        public async Task<List<DailyRecording>> GetRecordingsByKandang(string cageNumber, DateTime from, DateTime to)
+        public async Task<List<DailyRecording>> GetRecordingsByKandang(string cageNumber) //, DateTime from, DateTime to)
         {
 			List<DailyRecording> results = new List<DailyRecording>();
 
@@ -26,22 +26,80 @@ namespace QuickAccounting.Repository.Repository
 			{
 				cageNumber = Helper.ConvertCageNumber(cageNumber);
 
-				results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber &&
-										x.RecordDate >= from && x.RecordDate <= to)
+				results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber) // &&
+										//x.RecordDate >= from && x.RecordDate <= to)
 										.OrderByDescending(x => x.RecordDate).ToListAsync();
 			}
 			else
 			{
-				results = await _context.DailyRecording.Where(x => 
-										x.RecordDate >= from && x.RecordDate <= to)
-										.OrderByDescending(x => x.RecordDate).ToListAsync();
+				results = await _context.DailyRecording.OrderByDescending(x => x.RecordDate).ToListAsync();
 			}
 
             return results;
         }
 
-		// Save Hen Population Data
-		public async Task<bool> SaveHenPopulationAsync(string cageNumber, DateTime recordDate, string strainName,
+        public async Task<List<DailyRecording>> GetRecordingsByKandang(string cageNumber, DateTime from, DateTime to)
+        {
+            List<DailyRecording> results = new List<DailyRecording>();
+
+            if (cageNumber != "ALL")
+            {
+                cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+                results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber &&
+                                          x.RecordDate >= from && x.RecordDate <= to)
+                                        .OrderByDescending(x => x.RecordDate).ToListAsync();
+            }
+            else
+            {
+                results = await _context.DailyRecording.Where(x => x.RecordDate >= from && x.RecordDate <= to).OrderByDescending(x => x.RecordDate).ToListAsync();
+            }
+
+            return results;
+        }
+
+        public async Task<List<DailyRecording>> GetMortality5OrBelowPercent(string cageNumber, DateTime from, DateTime to)
+        {
+            List<DailyRecording> results = new List<DailyRecording>();
+
+            if (cageNumber != "ALL")
+            {
+                cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+                results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber &&
+                                          x.RecordDate >= from && x.RecordDate <= to && x.ActualHenDay <= 5)
+                                        .OrderByDescending(x => x.RecordDate).ToListAsync();
+            }
+            else
+            {
+                results = await _context.DailyRecording.Where(x => x.RecordDate >= from && x.RecordDate <= to && x.ActualHenDay <= 5).OrderByDescending(x => x.RecordDate).ToListAsync();
+            }
+
+            return results;
+        }
+
+        public async Task<List<DailyRecording>> GetMortality5OrAbovePercent(string cageNumber, DateTime from, DateTime to)
+        {
+            List<DailyRecording> results = new List<DailyRecording>();
+
+            if (cageNumber != "ALL")
+            {
+                cageNumber = Helper.ConvertCageNumber(cageNumber);
+
+                results = await _context.DailyRecording.Where(x => x.CageNumber == cageNumber &&
+                                          x.RecordDate >= from && x.RecordDate <= to && x.ActualHenDay >= 5)
+                                        .OrderByDescending(x => x.RecordDate).ToListAsync();
+            }
+            else
+            {
+                results = await _context.DailyRecording.Where(x => x.RecordDate >= from && x.RecordDate <= to && x.ActualHenDay >= 5).OrderByDescending(x => x.RecordDate).ToListAsync();
+            }
+
+            return results;
+        }
+
+        // Save Hen Population Data
+        public async Task<bool> SaveHenPopulationAsync(string cageNumber, DateTime recordDate, string strainName,
 			int populationStart, int populationEnd, int deadHenCount, int unproductiveHenCount,
 			int sickHenCount, int newHenCount, int moveOutHenCount, int modifiedBy, bool periodeStart, bool periodeEnd)
 		{

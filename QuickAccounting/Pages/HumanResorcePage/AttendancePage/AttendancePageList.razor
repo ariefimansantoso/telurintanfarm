@@ -285,6 +285,28 @@
                     int totalHours = totalMenitLembur / 60; // Get the whole number of hours
                     int remainingMinutes = totalMenitLembur % 60;
 
+                    if(SelectedEmployee.DesignationId == 4)
+                    {
+                        SelectedEmployee.BPJS_KES = 0;
+                        SelectedEmployee.BPJS_TK = 0;
+                        rpPremi = 0;
+                        //tambahanGaji = 0;
+                        tunjanganTetap = 0;
+                        ijin = 0;
+                        sakit = 0;
+                        setengahHari = 0;
+                        ijinLembur = 0;         
+                        rpLembur = 0;      
+                        totalHours = 0;
+                        remainingMinutes = 0;         
+                        libur = 0;                        
+                        jumlahTerlambatCount = 0;
+                        cicilan = 0;
+                        //potonganNonCicilan = 0;
+                        potonganSetengahHari = 0;
+                        gajiBersih = gajiNonPremi + tambahanGaji - potonganNonCicilan;
+                    }
+
                     <div class="table-responsive table-scrollable">
                         <table class="table">
                             <thead>
@@ -308,6 +330,7 @@
                                     <th>Telat</th>
                                     <th>Cicilan</th>
                                     <th>Potongan</th>
+                                    <th>Rp. Lmbr</th>
                                     <th>No. Rek</th>
                                     <th>Total Gaji</th>
                                 </tr>
@@ -334,6 +357,7 @@
                                     <td>@jumlahTerlambatCount</td>
                                     <td>@string.Format("{0:n0}", cicilan)</td>
                                     <td>@string.Format("{0:n0}", potonganNonCicilan + potonganSetengahHari)</td>
+                                    <td>@string.Format("{0:n0}", rpLembur)</td>
                                     <td>@SelectedEmployee.BankAccount</td>
                                     <td>@string.Format("{0:n0}", gajiBersih)</td>
                                 </tr>
@@ -560,28 +584,29 @@
     private async Task LoadData()
     {
         PeriodeDates = new List<DateTime>();
-       // PayrollCutoffs = await _attendance.GetPayrollCutoffs();
+        // PayrollCutoffs = await _attendance.GetPayrollCutoffs();
         //SelectedCutoffFrom = (await _attendance.GetLastPayrollCutoff()).PayrollDate;
         var lastPayrollCutoff = await _attendance.GetLastPayrollCutoff();
-       
+
         PayrollCutoffs = await _attendance.GetPayrollCutoffs();   
         PayrollCutoffs = PayrollCutoffs.Where(x => x.ID >= 6).ToList();
         var now = DateTime.Now;
-
-        if(lastPayrollCutoff.RealPayrollDate.Date < now.Date)
+        var currentPeriode = PayrollCutoffs.Where(x => x.RealPayrollDate.Year == now.Year && x.RealPayrollDate.Month == now.Month).FirstOrDefault();
+        if(currentPeriode != null)
+        //if(lastPayrollCutoff.RealPayrollDate.Date < now.Date)
         {
-            SelectedCutoffId = 0;
-            SelectedCutoffFrom = lastPayrollCutoff.RealPayrollDate;
-            SelectedCutoffTo = DateTime.Now;
+            SelectedCutoffId = currentPeriode.ID;
+            SelectedCutoffFrom = currentPeriode.PayrollDateStart;
+            SelectedCutoffTo = currentPeriode.PayrollDate;
             LastPayrollCutoff = SelectedCutoffFrom;
             LastPayrollCutoffDate = SelectedCutoffTo;
-            PayrollCutoffs.Add(new PayrollCutoff
-            {
-                ID = 0,
-                PayrollDateStart = SelectedCutoffFrom,
-                PayrollDate = SelectedCutoffTo,
-                PayrollPeriode = "Periode Terkini"
-            });
+            // PayrollCutoffs.Add(new PayrollCutoff
+            // {
+            //     ID = 0,
+            //     PayrollDateStart = SelectedCutoffFrom,
+            //     PayrollDate = SelectedCutoffTo,
+            //     PayrollPeriode = "Periode Terkini"
+            // });
         }
         else
         {

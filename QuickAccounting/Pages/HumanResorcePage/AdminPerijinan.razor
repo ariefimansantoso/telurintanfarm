@@ -56,7 +56,10 @@
 												Karyawan
 											</td>
 											<td style="padding: 5px 1px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
-												Tanggal
+												Untuk Tanggal
+											</td>
+											<td style="padding: 5px 1px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
+												Tanggal Pengajuan
 											</td>
 											<td style="padding: 5px 1px;vertical-align: middle;font-weight: 600;color: #5E5873;font-size: 14px;padding: 10px; ">
 												Jenis
@@ -74,6 +77,9 @@
 												</td>
 												<td style="padding: 10px 2px;vertical-align: middle; ">
 													@p.ForDate.ToString("dd/MM/yyyy")
+												</td>
+												<td style="padding: 10px 2px;vertical-align: middle; ">
+													@p.DateSubmitted.ToString("dd/MM/yyyy hh:mm")
 												</td>
 												<td style="padding: 10px 2px;vertical-align: middle; ">
 													@p.SubmittedFor

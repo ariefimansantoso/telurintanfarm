@@ -247,7 +247,7 @@
 	string currentUserRole = "User";
 
 	List<RecordNota> ListNota = new List<RecordNota>();
-	bool isProcessing = true;
+	bool isProcessing = false;
 
 	public decimal Utuh = 0;
 	public decimal Putih = 0;
@@ -262,6 +262,7 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		isProcessing = true;
 		//CheckPriviliagee
 		var authState = await authenticationState;
 		var strRole = authState.User;
@@ -278,6 +279,7 @@
 		if (strShow != null && strShow.ShowAction == true)
 		{
 			await LoadData();
+			isProcessing = false;
 		}
 		else
 		{
@@ -287,6 +289,7 @@
 			navigation.NavigateTo("/app/dashboard");
 			Snackbar.Add("Anda tidak memiliki akses.", Severity.Error);
 		}
+		isProcessing = false;
 	}
 	private async Task LoadData()
 	{

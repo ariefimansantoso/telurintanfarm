@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Egg.Scheduler": {
+      "commandName": "Project",
+      "commandLineArgs": "Hourly"
+    }
+  }
+}

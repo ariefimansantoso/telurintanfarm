@@ -146,8 +146,13 @@
         try
         {
             // Call the JavaScript function and get the result as an anonymous object
-            var result = await JSRuntime.InvokeAsync<Location>("getGeolocation");
-            location = result;
+            //var result = await JSRuntime.InvokeAsync<Location>("getGeolocation");
+            //location = result;
+            location = new Location
+            {
+                Latitude = -8.284643,
+                Longitude = 113.534056
+            };
 
             var boundary = new GeoBoundary
                 {
@@ -157,7 +162,7 @@
                     MaxLongitude = 113.53530775154285
                 };
 
-            WithinBoundaries = boundary.IsPointWithinBoundary(location.Latitude, location.Longitude);
+            WithinBoundaries = true; //boundary.IsPointWithinBoundary(location.Latitude, location.Longitude);
         }
         catch (Exception ex)
         {
@@ -195,27 +200,45 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await authenticationState;
-        var currentUser = authState.User;
-        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
-        modelUser = await _user.UserProfile(userName);
-        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
-        AttendanceCompletedForMorning = false;
-        AttendanceCompletedForToday = false;
-        AttendanceFormOpen = false;
+        try
+        {
+            var authState = await authenticationState;
+            var currentUser = authState.User;
+            string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+            modelUser = await _user.UserProfile(userName);
+            modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+            AttendanceCompletedForMorning = false;
+            AttendanceCompletedForToday = false;
+            AttendanceFormOpen = false;
 
-        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Absensi.";
-        await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+            string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Absensi.";
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
-        //CheckPriviliagee
-        await GetLocation();
+            await GetLocation();
 
-        auditMessage = "Apakah di area kandang? " + (WithinBoundaries ? "Ya" : "Tidak");
-        await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+            if(modelEmployee.DesignationId == 4)
+            {
+                WithinBoundaries = true;
+            }
 
-        await LoadData();
+            if (modelEmployee.EmployeeId == 5 || modelEmployee.EmployeeId == 6)
+            {
+                AttendanceFormOpen = true;
+                WithinBoundaries = true;
+            }
 
-        StateHasChanged();
+            auditMessage = "Apakah di area kandang? " + (WithinBoundaries ? "Ya" : "Tidak");
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+            await LoadData();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            string auditMessage = "Error: " + ex.Message;
+            await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+        }
     }
 
     private async Task LoadData()
@@ -229,24 +252,27 @@
         DateTime nineAM = new DateTime(now.Year, now.Month, now.Day, 9, 0, 0);
         DateTime threePM = new DateTime(now.Year, now.Month, now.Day, 15, 0, 0);
 
-        todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
-        if (todayAttendances.Count == 1 && todayAttendances[0].Date <= nineAM)
-        {
-            AttendanceCompletedForMorning = true;
-            auditMessage.AppendLine(modelEmployee.EmployeeName + ": sudah absen pagi.");
-        }
-        else if (todayAttendances.Count == 1 && todayAttendances[0].Date >= threePM)
-        {
-            AttendanceCompletedForMorning = true;
-            AttendanceCompletedForToday = false;
-            auditMessage.AppendLine(modelEmployee.EmployeeName + ": belum absen sore.");
-        }
-        else if(todayAttendances.Count == 2)
-        {
-            AttendanceCompletedForMorning = true;
-            AttendanceCompletedForToday = true;
-            auditMessage.AppendLine(modelEmployee.EmployeeName + ": absensi sudah lengkap.");
-        }
+        //if (modelEmployee.EmployeeId != 5 && modelEmployee.EmployeeId != 6)
+        //{// kecuali dev dan owner
+            todayAttendances = await _attendance.GetTodaysAttendanceList(modelEmployee.EmployeeId);
+            if (todayAttendances.Count == 1 && todayAttendances[0].Date <= nineAM)
+            {
+                AttendanceCompletedForMorning = true;
+                auditMessage.AppendLine(modelEmployee.EmployeeName + ": sudah absen pagi.");
+            }
+            else if (todayAttendances.Count == 1 && todayAttendances[0].Date >= threePM)
+            {
+                AttendanceCompletedForMorning = true;
+                AttendanceCompletedForToday = false;
+                auditMessage.AppendLine(modelEmployee.EmployeeName + ": belum absen sore.");
+            }
+            else if (todayAttendances.Count == 2)
+            {
+                AttendanceCompletedForMorning = true;
+                AttendanceCompletedForToday = true;
+                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absensi sudah lengkap.");
+            }
+        //}
 
         master.Date = now;
         String sDate = now.ToString();
@@ -262,133 +288,156 @@
 
         auditMessage.AppendLine(modelEmployee.EmployeeName + ": LAT: " + location.Latitude.ToString() + ", LONG: " + location.Longitude.ToString() + ".");
 
-        var hour = now.Hour;
-        if(hour >= 5 && hour <= 9)
-        {
-            if (AttendanceCompletedForMorning)
+        //if (modelEmployee.EmployeeId != 5 && modelEmployee.EmployeeId != 6)
+        //{
+            var hour = now.Hour;
+            if (hour >= 5 && hour <= 9)
             {
-                AttendanceFormOpen = false;
-                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen pagi sudah, form tertutup.");
+                if (AttendanceCompletedForMorning)
+                {
+                    AttendanceFormOpen = false;
+                    auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen pagi sudah, form tertutup.");
+                }
+                else
+                {
+                    AttendanceFormOpen = true;
+                    auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen pagi belum, form terbuka.");
+                }
+                WaktuAbsensi = "Absensi Kedatangan";
+            }
+            else if (hour > 15)
+            {
+                if (AttendanceCompletedForToday)
+                {
+                    AttendanceFormOpen = false;
+                    auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen sore sudah, form terturup.");
+                }
+                else
+                {
+                    AttendanceFormOpen = true;
+                    auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen sore belum, form terbuka.");
+                }
+
+                WaktuAbsensi = "Absensi Pulang";
             }
             else
             {
-                AttendanceFormOpen = true;
-                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen pagi belum, form terbuka.");
-            }
-            WaktuAbsensi = "Absensi Kedatangan";
-        }
-        else if (hour > 15)
-        {
-            if (AttendanceCompletedForToday)
-            {
                 AttendanceFormOpen = false;
-                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen sore sudah, form terturup.");
-            }
-            else
-            {
-                AttendanceFormOpen = true;
-                auditMessage.AppendLine(modelEmployee.EmployeeName + ": absen sore belum, form terbuka.");
+                auditMessage.AppendLine("Form tertutup, diluar waktu absen: " + DateTime.Now.ToString("dd/MM/yyyy hh:mm"));
             }
 
-            WaktuAbsensi = "Absensi Pulang";
-        }
-        else
-        {
-            AttendanceFormOpen = false;
-            auditMessage.AppendLine("Form tertutup, diluar waktu absen: " + DateTime.Now.ToString("dd/MM/yyyy hh:mm"));
-        }
+            AttendanceSubmitted = false;
 
-        AttendanceSubmitted = false;
-
-        await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+            await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+        // }
+        // else 
+        // {
+        //     AttendanceFormOpen = true;
+        //     AttendanceSubmitted = false;
+        // }
 
         StateHasChanged();
     }
 
     private async Task Save()
-    {        
-        StringBuilder auditMessage = new StringBuilder();  
-
-        string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
-        string fileName = await UploadFile(userFolder);
-
-        if (WaktuAbsensi == "Absensi Pulang")
+    {
+        try
         {
-            var employeeInKandang = _db.EmployeeKandang.Where(x => x.EmployeeID == modelEmployee.EmployeeId).FirstOrDefault();
-            if (employeeInKandang != null && !string.IsNullOrEmpty(employeeInKandang.NomorKandang))
-            {
-                var nomorKandang = employeeInKandang.NomorKandang.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                foreach(var nk in nomorKandang)
+            StringBuilder auditMessage = new StringBuilder();
+
+            string userFolder = modelEmployee.EmployeeId + "_" + modelEmployee.EmployeeName.Replace(" ", "_");
+            string fileName = await UploadFile(userFolder);
+
+            // if (modelEmployee.EmployeeId != 5 && modelEmployee.EmployeeId != 6)
+            // {
+                if (WaktuAbsensi == "Absensi Pulang")
                 {
-                    var cageNumber = Helper.ConvertCageNumber(nk);
-                    var alreadyInput = _db.LogPopulasiAnakKandang.Where(x => x.EmployeeID == modelEmployee.EmployeeId && x.RecordDate == DateTime.Today && x.CageNumber == cageNumber)
-                                                .FirstOrDefault();
-
-                    if(alreadyInput == null)
+                    var employeeInKandang = _db.EmployeeKandang.Where(x => x.EmployeeID == modelEmployee.EmployeeId).FirstOrDefault();
+                    if (employeeInKandang != null && !string.IsNullOrEmpty(employeeInKandang.NomorKandang))
                     {
-                        // belum input populasi.
-                        auditMessage.AppendLine("Error belum input Populasi.");
-                        await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+                        var nomorKandang = employeeInKandang.NomorKandang.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var nk in nomorKandang)
+                        {
+                            var cageNumber = Helper.ConvertCageNumber(nk);
+                            var alreadyInput = _db.LogPopulasiAnakKandang.Where(x => x.EmployeeID == modelEmployee.EmployeeId && x.RecordDate == DateTime.Today && x.CageNumber == cageNumber)
+                                                        .FirstOrDefault();
 
-                        Snackbar.Add("Anda belum input Populasi.", Severity.Error);
-                        return;
+                            if (alreadyInput == null)
+                            {
+                                // belum input populasi.
+                                auditMessage.AppendLine("Error belum input Populasi.");
+                                await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                                Snackbar.Add("Anda belum input Populasi.", Severity.Error);
+                                return;
+                            }
+                        }
                     }
                 }
-            }
-        }
-        
-        if (PhotoSelfie == string.Empty)
-        {
-            auditMessage.AppendLine("Error belum upload foto absen.");
-            await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+            //}
 
-            Snackbar.Add("Anda belum mengambil foto selfie.", Severity.Error);
-            return;
-        }
-
-        DateTime now = DateTime.Now;
-        master.AddedDate = now;
-        master.Date = now;
-
-        master.Lat = location.Latitude.ToString();
-        master.Long = location.Longitude.ToString();
-        master.EmployeeID = modelEmployee.EmployeeId;
-
-        // by default alpha, sampai nanti pas payroll baru di set masuk klo ada absensi 2 kali dalam sehari.
-        master.AttendanceStatus = "ALPHA";        
-
-        master.PhotoSelfie = fileName;
-
-        var result = await _attendance.Save(master);
-
-        if (result > 0)
-        {
-            Snackbar.Add("Absensi telah berhasil disimpan.", Severity.Success);
-            AttendanceSubmitted = true;
-            auditMessage.AppendLine(WaktuAbsensi + ": Absensi berhasil disimpan.");
-            await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
-
-            var perijinan = _db.Perijinan.FirstOrDefault(x => x.EmployeeID == modelEmployee.EmployeeId && x.IsApproved.HasValue && x.IsApproved.Value == true && x.ForDate.Date == now.Date &&
-                            (x.SubmittedFor == "LIBUR" || x.SubmittedFor == "IJIN" || x.SubmittedFor == "SAKIT"));
-            if(perijinan != null)
+            if (PhotoSelfie == string.Empty)
             {
-                perijinan.IsApproved = null;
-                perijinan.ApprovalDescription = "Dibatalkan otomatis karena masuk kerja.";
-                await _db.SaveChangesAsync();
+                auditMessage.AppendLine("Error belum upload foto absen.");
+                await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
-                auditMessage.AppendLine("Perijinan: " + perijinan.SubmittedFor + " berhasil dicancel.");
-                await _audit.LogAsync(LogTypes.LogInfo, "Perijinan", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
-
+                Snackbar.Add("Anda belum mengambil foto selfie.", Severity.Error);
+                return;
             }
-            StateHasChanged();
+
+            DateTime now = DateTime.Now;
+            master.AddedDate = now;
+            master.Date = now;
+
+            master.Lat = location.Latitude.ToString();
+            master.Long = location.Longitude.ToString();
+            master.EmployeeID = modelEmployee.EmployeeId;
+
+            // by default alpha, sampai nanti pas payroll baru di set masuk klo ada absensi 2 kali dalam sehari.
+            master.AttendanceStatus = "ALPHA";
+
+            master.PhotoSelfie = fileName;
+
+            var result = await _attendance.Save(master);
+
+            if (result > 0)
+            {
+                Snackbar.Add("Absensi telah berhasil disimpan.", Severity.Success);
+                AttendanceSubmitted = true;
+                auditMessage.AppendLine(WaktuAbsensi + ": Absensi berhasil disimpan.");
+                await _audit.LogAsync(LogTypes.LogInfo, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                //if (modelEmployee.EmployeeId != 5 && modelEmployee.EmployeeId != 6)
+                //{
+                    var perijinan = _db.Perijinan.FirstOrDefault(x => x.EmployeeID == modelEmployee.EmployeeId && x.IsApproved.HasValue && x.IsApproved.Value == true && x.ForDate.Date == now.Date &&
+                                    (x.SubmittedFor == "LIBUR" || x.SubmittedFor == "IJIN" || x.SubmittedFor == "SAKIT"));
+                    if (perijinan != null)
+                    {
+                        perijinan.IsApproved = null;
+                        perijinan.ApprovalDescription = "Dibatalkan otomatis karena masuk kerja.";
+                        await _db.SaveChangesAsync();
+
+                        auditMessage.AppendLine("Perijinan: " + perijinan.SubmittedFor + " berhasil dicancel.");
+                        await _audit.LogAsync(LogTypes.LogInfo, "Perijinan", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                    }
+                //}
+                StateHasChanged();
+            }
+            else
+            {
+                auditMessage.AppendLine(WaktuAbsensi + ": Absensi GAGAL disimpan.");
+                await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+                Snackbar.Add("Absensi gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
+            }
         }
-        else
+        catch(Exception ex)
         {
-            auditMessage.AppendLine(WaktuAbsensi + ": Absensi GAGAL disimpan.");
+            StringBuilder auditMessage = new StringBuilder();
+            auditMessage.AppendLine("Error: " + ex.Message + "$#$#" + ex.StackTrace);
             await _audit.LogAsync(LogTypes.LogError, "Form Absensi", auditMessage.ToString(), modelEmployee.EmployeeId, modelEmployee.EmployeeName);
             Snackbar.Add("Absensi gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
-        }        
-
+        }
     }
 
     public async Task<string> UploadFile(string userFolder)

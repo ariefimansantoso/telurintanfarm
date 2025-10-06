@@ -1,0 +1,326 @@
+﻿@page "/app/adminrecordvacation"
+@inject IHRServices _hr
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@using System.Security.Claims
+
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<PageTitle>Admin - Form Ijin / Libur</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Admin - Form Ijin / Libur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (FormSubmitted == false)
+            {
+                                   
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Dari Tanggal</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <RadzenDatePicker @bind-Value=@TanggalIjin DateFormat="d" Change="()=>ChangeDate()" Class="w-100" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Ke Tanggal</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <RadzenDatePicker @bind-Value=@KeTanggalIjin DateFormat="d" Change="()=>ChangeKeDate()" Class="w-100" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group">
+                                <label>Karyawan</label>
+                                <select class="form-control" @onchange="SelectedKaryawan">
+                                    @foreach (var karyawan in DaftarKaryawan)
+                                    {
+                                        <option value="@karyawan.EmployeeId">@karyawan.EmployeeName</option>
+                                    }
+
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Tipe Ijin / Libur</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                        <select class="form-control" @bind="TipeIjin">
+                                            <option value="IJIN">Ijin</option>
+                                            <option value="LIBUR">Libur</option>
+                                            <option value="SAKIT">Sakit</option>
+                                            <option value="SETENGAH HARI">Ijin Setengah Hari</option>
+                                            <option value="LEMBUR">Lembur</option>
+                                            <option value="DINAS">Dinas Luar</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <div class="form-group" style="text-align: center !important;">
+                                <label>Alasan</label>
+                                <div class="row">
+                                    <div class="col-lg-12 col-sm-12 col-12">
+                                    <textarea type="text" style="width:100%;" @bind="Alasan" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <br /> <br />
+                    <div class="row">
+                        <div class="col-lg-12" style="text-align: center !important;">
+                            <input type="button" @onclick="@(e => Save())" class="btn btn-submit me-2" value="Simpan" />
+                        </div>
+                    </div>               
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Form Ijin / Libur berhasil disimpan.</label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <!-- /product list -->
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    Perijinan master = new Perijinan();
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+
+    private string PhotoViewer;
+    private string TipeIjin;
+    private string Alasan;
+    private string PhotoSuratDokter;
+    private DateTime? TanggalIjin;
+    private DateTime? KeTanggalIjin;
+
+    MemoryStream uploadedFileStream;
+    string uploadedFileExtension;
+
+    List<Employee> DaftarKaryawan = new List<Employee>();
+    Employee SelectedEmployee = null;
+    string strMenu = "Admin - Form Vacation";
+
+    private bool FormSubmitted;
+    bool isProcessing = false;
+
+    private async Task ChangeDate()
+    {
+        master.ForDate = TanggalIjin.Value;
+        StateHasChanged();
+    }
+
+    private async Task ChangeKeDate()
+    {
+        master.ForDate = KeTanggalIjin.Value;
+        StateHasChanged();
+    }
+
+    private async Task SelectedKaryawan(ChangeEventArgs e)
+    {        
+        SelectedEmployee = await _employee.GetbyId(Convert.ToInt32(e.Value.ToString()));
+    }
+
+    async Task OnFileChange(InputFileChangeEventArgs e)
+    {
+        isProcessing = true;
+
+        try
+        {
+            var format = "image/png";
+            uploadedFileExtension = Path.GetExtension(e.File.Name);
+            uploadedFileStream = new();
+            var resized = await e.File.RequestImageFileAsync(e.File.ContentType, maxWidth: 500, maxHeight: 500);
+            using Stream fileStream = resized.OpenReadStream();
+            await fileStream.CopyToAsync(uploadedFileStream);
+
+            var fileString = $"data:{format};base64,{Convert.ToBase64String(uploadedFileStream.ToArray())}";
+            if (fileString == null)
+            {
+                PhotoViewer = string.Empty;
+            }
+            else
+            {
+                PhotoViewer = fileString;
+            }
+        }
+        catch (Exception ex)
+        {
+            PhotoViewer = string.Empty;
+        }
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+        PhotoSuratDokter = "";
+        PhotoViewer = "";
+
+        //CheckPriviliagee        
+        await LoadData();
+
+        StateHasChanged();
+    }
+
+    public async Task<string> UploadFile(string userFolder)
+    {
+        isProcessing = true;
+
+        if(PhotoViewer == "")
+        {
+            return "";
+        }
+
+        var uploadDirectory = Path.Combine(_hostingEnvironment.WebRootPath, "uploads/perijinan/" + userFolder);
+        if (!Directory.Exists(uploadDirectory))
+        {
+            Directory.CreateDirectory(uploadDirectory);
+        }
+
+        var fileExtension = uploadedFileExtension;
+        var fileName = $"{Guid.NewGuid()}{fileExtension}";
+        var path = Path.Combine(uploadDirectory, fileName);
+        await using var fs = new FileStream(path, FileMode.Create);
+        //await file.OpenReadStream(file.Size).CopyToAsync(fs);
+        uploadedFileStream.Position = 0;
+        await uploadedFileStream.CopyToAsync(fs);
+        PhotoSuratDokter = fileName;
+
+        isProcessing = false;
+
+        return fileName;
+    }
+
+    private async Task LoadData()
+    {                
+        TanggalIjin = null;              
+        Alasan = string.Empty;
+        TipeIjin = string.Empty;
+        FormSubmitted = false;
+        DaftarKaryawan = await _employee.GetAllEmployeeActive();
+
+        StateHasChanged();
+    }
+
+    private async Task Save()
+    {
+        isProcessing = true;
+
+        if (TanggalIjin.HasValue == false || TipeIjin == string.Empty)
+        {
+            Snackbar.Add("Anda belum mengisi tanggal atau Tipe Ijin. Keduanya wajib diisi.", Severity.Error);
+            isProcessing = false;
+            return;
+        }
+
+        DateTime now = DateTime.Now;
+
+        if (KeTanggalIjin.HasValue == true)
+        {
+            if (KeTanggalIjin.Value < TanggalIjin.Value)
+            {
+                Snackbar.Add("Tanggal Akhir Ijin tidak boleh lebih kecil dari Tanggal Awal Ijin.", Severity.Error);
+                isProcessing = false;
+                return;
+            }
+
+            //jika lebih dari 1 hari
+            if ((KeTanggalIjin.Value - TanggalIjin.Value).TotalDays >= 0)
+            {
+                //looping simpan
+                for (var i = TanggalIjin.Value; i <= KeTanggalIjin.Value; i = i.AddDays(1))
+                {
+                    master = new Perijinan();
+                    master.ForDate = i;
+                    master.IsApproved = true;
+                    master.ApprovalDescription = string.Empty;
+                    master.SubmittedDesc = Alasan;
+                    master.DateSubmitted = now;
+                    master.SubmittedFor = TipeIjin;
+                    master.EmployeeID = SelectedEmployee.EmployeeId;
+                    master.DocPhoto = "";
+                    var resultLoop = await _hr.InsertPerijinan(master);
+                }
+                Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
+                FormSubmitted = true;
+                isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+        }
+        else
+        {
+            master.ForDate = TanggalIjin.Value;
+            master.IsApproved = null;
+            master.ApprovalDescription = string.Empty;
+            master.SubmittedDesc = Alasan;
+            master.DateSubmitted = now;
+            master.SubmittedFor = TipeIjin;
+            master.EmployeeID = modelEmployee.EmployeeId;
+            master.DocPhoto = PhotoSuratDokter;
+
+            var result = await _hr.InsertPerijinan(master);
+            if (result > 0)
+            {
+                Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
+                FormSubmitted = true;            
+            }
+            else
+            {
+                Snackbar.Add("Form Ijin gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
+            }
+        }        
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+}

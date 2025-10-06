@@ -71,6 +71,22 @@ namespace QuickAccounting.Repository.Services
                                 }).ToListAsync();
             return result;
         }
+
+        public async Task<List<UserView>> GetUnassigned()
+        {
+            var usersWithoutEmployees = await _context.UserMaster
+                                        .Where(u => !_context.Employee.Any(e => e.UserID == u.UserId))
+                                        .Select(a => new UserView
+                                        {
+                                            UserId = a.UserId,
+                                            UserName = a.UserName,
+                                            Email = a.Email
+                                        })
+                                        .ToListAsync();
+
+            return usersWithoutEmployees;
+        }
+
         public async Task<UserMaster> UserProfile(string email)
         {
             var result = await (from a in _context.UserMaster

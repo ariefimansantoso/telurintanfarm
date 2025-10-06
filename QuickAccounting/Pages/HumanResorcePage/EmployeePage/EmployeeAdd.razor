@@ -4,6 +4,7 @@
 @inject IDesignation _designation
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
+@inject IUser _user
 @using System.Security.Claims
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
@@ -20,7 +21,7 @@
 					<div class="card">
 						<div class="card-body">
 							<EditForm Model="model" OnValidSubmit="Save">
-            <DataAnnotationsValidator />
+							<DataAnnotationsValidator />
 							<div class="row">
 								<div class="col-lg-8 col-sm-6 col-12">
 									<div class="form-group">
@@ -40,7 +41,7 @@
 									<div class="form-group">
 							<label>Designation</label>
 										<select class="form-control" @bind="model.DesignationId">
-											<option value="0">Choose</option>
+								<option value="0">Pilih</option>
 											@if(listDesignation !=null)
 											{
 											@foreach(var item in listDesignation)
@@ -56,7 +57,7 @@
 									<div class="form-group">
 										<label>Salary Package</label>
 										<select class="form-control" @bind="model.DefaultPackageId">
-											<option value="0">Choose</option>
+											<option value="0">Pilih</option>
 											@if(listPackage !=null)
 											{
 											@foreach(var item in listPackage)
@@ -65,14 +66,14 @@
 								}
 											}
 							</select>
-							<ValidationMessage For="@(() => model.DefaultPackageId)" />
+							
 									</div>
 								</div>
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
 									<label>Pilih Username/Login</label>
-									@* <select class="form-control" @bind="model.SelectedUserId">
-										<option value="0">Choose</option>
+										<select class="form-control" @bind="model.UserID">
+										<option value="0">Pilih</option>
 										@if (listUsernames != null)
 										{
 											@foreach (var item in listUsernames)
@@ -80,10 +81,27 @@
 												<option value="@item.UserId">@item.UserName</option>
 											}
 										}
-									</select> *@
+									</select>
+							<ValidationMessage For="@(() => model.UserID)" />
 									</div>
 								</div>
-					<div class="col-lg-8 col-sm-6 col-12">
+					<div class="col-lg-4 col-sm-6 col-12">
+						<div class="form-group">
+							<label>Pilih Supervisor</label>
+							<select class="form-control" @bind="model.SupervisorID">
+								<option value="0">Pilih</option>
+								@if (listSupervisors != null)
+								{
+									@foreach (var item in listSupervisors)
+									{
+										<option value="@item.EmployeeId">@item.EmployeeName</option>
+									}
+								}
+							</select>
+							<ValidationMessage For="@(() => model.SupervisorID)" />
+						</div>
+					</div>
+					<div class="col-lg-4 col-sm-6 col-12">
 						<div class="form-group">
 							<label>Date of birth</label>
 							<RadzenDatePicker @bind-Value=@model.Dob DateFormat="d" Class="w-100" />
@@ -181,6 +199,9 @@
 	IList<DesignationView> listDesignation;
 	IList<SalaryPackage> listPackage;
 	string strMenu = "Human Resources";
+	List<UserView> listUsernames = new List<UserView>();
+	List<Employee> listSupervisors = new List<Employee>();
+
 	protected override async Task OnInitializedAsync()
 	{
 		//CheckPriviliagee
@@ -198,6 +219,7 @@
 			Snackbar.Add("You dont have to privilege..", Severity.Error);
 		}
 	}
+
 	private async Task LoadData()
 	{
 		model.EmployeeCode = string.Empty;
@@ -212,12 +234,15 @@
 		model.JoiningDate = DateTime.Now;
 		listDesignation = await _designation.GetAll();
 		listPackage = await _salaryPackage.GetAll();
+		listUsernames = await _user.GetUnassigned();
+		listSupervisors = await _employee.GetSupervisors();
 		model.DefaultPackageId = 0;
 		model.DesignationId = 0;
 		model.MaritalStatus = "UnMarried";
 		model.SalaryType = "Daily wage";
 		StateHasChanged();
 	}
+
 	private async Task Save()
 	{
 		var isCheck = await _employee.CheckName(model.EmployeeName);
@@ -239,6 +264,9 @@
 			model.ID_BPJS_KES = "0";
 			model.ID_BPJS_TK = "0";
 			model.BankAccount = "";
+            int lastEmployeeCode = await _employee.GetLastEmployeeCode();
+            lastEmployeeCode++;
+            model.EmployeeCode = lastEmployeeCode.ToString();
 
 
 			var result = await _employee.Save(model);

@@ -27,14 +27,30 @@ namespace QuickAccounting.Services
 			model = await _salesInvoice.SalesInvoiceMasterView(id);
 			
 			string fileName = @"faktur-template.xlsx";
-			string filePath = $@"{_hostingEnvironment.ContentRootPath}\wwwroot\templates\" + fileName;
-			var fileNotaTemplate = new System.IO.FileInfo(filePath);			
+			//string filePath = $@"{_hostingEnvironment.ContentRootPath}\wwwroot\templates\" + fileName;
+            string filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "wwwroot", "templates", fileName);
 
-			using (ExcelPackage package = new ExcelPackage(fileNotaTemplate))
+            var fileNotaTemplate = new System.IO.FileInfo(filePath);
+            if (!fileNotaTemplate.Exists)
+                throw new Exception($"Template not found at {fileNotaTemplate.FullName}");
+
+            using (ExcelPackage package = new ExcelPackage(fileNotaTemplate))
 			{
-				ExcelWorksheet worksheet = package.Workbook.Worksheets["Faktur"];
-
-				worksheet.Cells[3, 5].Value = model.SalesMasterId;
+				if(package == null)
+				{
+					throw new Exception("Template not found");
+                }
+                
+                ExcelWorksheet worksheet = package.Workbook.Worksheets[1]; //package.Workbook.Worksheets["Faktur"];
+				if(worksheet == null)
+				{
+					throw new Exception("Worksheet not found");
+                }
+				if(worksheet.Cells[3, 5] == null)
+				{
+					throw new Exception("Cell not found");
+                }
+                worksheet.Cells[3, 5].Value = model.SalesMasterId;
 				worksheet.Cells[4, 5].Value = model.LedgerName;
 				worksheet.Cells[5, 5].Value = model.Address;
 				worksheet.Cells[3, 10].Value = model.Date;				

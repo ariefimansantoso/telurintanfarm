@@ -4,17 +4,33 @@
 @inject IAuditLogService _audit
 
 @using QuickAccounting.Data.Recording
-<h1>Success</h1>
+<Loader IsLoading="isProcessing"></Loader>
+<h1>@status</h1>
 @code{
-
+    string status = "Not Yet";
+    bool isProcessing = true;
     protected async override void OnInitialized()
     {
-        var now = DateTime.Now.Date;
+        var now = DateTime.Now.AddDays(-10);
+        var dateNow = DateTime.Now.Date;
+        var daysDifference = (dateNow - now).Days;
 
         string auditMessage = "Schedule Task LoadRecordingData is running: " + now.ToString("dd/MM/yyyy hh:mm");
         await _audit.LogAsync(LogTypes.LogInfo, "LoadRecordingData", auditMessage, -99, "System");
 
         InitiateDailyRecording(now, 5);
+
+        // for (int i = 0; i <= daysDifference; i++)
+        // {
+        //     InitiateDailyRecording(now, 5);
+        //     now = now.AddDays(1);
+        //     status = "Done " + i;
+        // }
+
+        status = "COMPLETED";
+
+        isProcessing = false;
+        StateHasChanged();
     }
 
     protected void InitiateDailyRecording(DateTime recordDate, int modifiedBy)
@@ -33,7 +49,9 @@
                 r.PopulationEnd,
                 r.StrainName,
                 r.FoodIntakePerHen,
-                r.FoodNeededTodayKg
+                r.FoodNeededTodayKg,
+                r.HenAgeDays,
+                r.ConcentrateType
             })
             .ToList();
 
@@ -46,6 +64,8 @@
             {
                 todayRecords.FoodIntakePerHen = record.FoodIntakePerHen;
                 todayRecords.StrainName = record.StrainName;
+                todayRecords.FoodNeededTodayKg = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
+                todayRecords.ActualFoodNeededKG = (record.PopulationEnd * record.FoodIntakePerHen) / 1000;
                 if(string.IsNullOrEmpty(todayRecords.StrainName))
                 {
                     todayRecords.StrainName = "";
@@ -68,8 +88,8 @@
                         MoveOutHenCount = 0,
                         FoodIntakePerHen = record.FoodIntakePerHen,
                         RemainingFoodKg = 0,
-                        FoodNeededTodayKg = record.PopulationEnd * record.FoodIntakePerHen,
-                        ActualFoodNeededKG = record.PopulationEnd * record.FoodIntakePerHen,
+                        FoodNeededTodayKg = (record.PopulationEnd * record.FoodIntakePerHen) / 1000,
+                        ActualFoodNeededKG = (record.PopulationEnd * record.FoodIntakePerHen) / 1000,
                         PerfectEggCount = 0,
                         PerfectEggKg = 0,
                         BrokenEggCount = 0,
@@ -86,6 +106,15 @@
                         StandardEggWeightG = 0,
                         EggWeightDeviation = 0,
                         FeedConversionRatio = 0,
+                        HenAgeDays = record.HenAgeDays + 1,
+                        SaldoFoodKG = 0,
+                        FoodIntakeDeviation = 0,
+                        TelurPutihButir = 0,
+                        TelurPutihKG = 0,
+                        PeriodeStart = false,
+                        PeriodeEnd = false,
+                        GroupName = "",
+                        ConcentrateType = string.IsNullOrEmpty(record.ConcentrateType) ? "" : record.ConcentrateType,
                         HenAgeWeeks = 0, // Age should be updated later
                         ModifiedBy = modifiedBy,
                         ModifiedDate = DateTime.Now

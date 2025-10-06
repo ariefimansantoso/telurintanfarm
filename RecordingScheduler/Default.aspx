@@ -9,6 +9,7 @@
 <body>
     <form id="form1" runat="server">
         <div>
+            <asp:Literal ID="ltlStatus" runat="server"></asp:Literal>
         </div>
     </form>
 </body>

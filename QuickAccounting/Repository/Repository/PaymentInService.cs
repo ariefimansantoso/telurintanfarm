@@ -63,18 +63,18 @@ namespace QuickAccounting.Repository.Repository
                     }
                 }
                 SqlConnection sqlcon = new SqlConnection(_conn.DbConn);
-                    if (sqlcon.State == ConnectionState.Closed)
-                    {
-                        sqlcon.Open();
-                    }
-                    SqlCommand cmd = new SqlCommand("PaymentInDelete", sqlcon);
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    SqlParameter para = new SqlParameter();
-                    para = cmd.Parameters.Add("@ReceiptMasterId", SqlDbType.Int);
-                    para.Value = master.ReceiptMasterId;
-                    para = cmd.Parameters.Add("@VoucherTypeId", SqlDbType.Int);
-                    para.Value = master.VoucherTypeId;
-                    int rowAffacted = cmd.ExecuteNonQuery();
+                if (sqlcon.State == ConnectionState.Closed)
+                {
+                    sqlcon.Open();
+                }
+                SqlCommand cmd = new SqlCommand("PaymentInDelete", sqlcon);
+                cmd.CommandType = CommandType.StoredProcedure;
+                SqlParameter para = new SqlParameter();
+                para = cmd.Parameters.Add("@ReceiptMasterId", SqlDbType.Int);
+                para.Value = master.ReceiptMasterId;
+                para = cmd.Parameters.Add("@VoucherTypeId", SqlDbType.Int);
+                para.Value = master.VoucherTypeId;
+                int rowAffacted = cmd.ExecuteNonQuery();
                 return true;
             }
             catch (Exception)
@@ -339,41 +339,65 @@ namespace QuickAccounting.Repository.Repository
         //}
 
         public async Task<List<SalesMaster>> GetLedgerPostingsRetail(DateTime dtFrom, DateTime dtTo, string paymentType)
-        {            
-            var ledgerPostings = await (from sm in _context.SalesMaster                                                                               
-                                        where 
+        {
+            var ledgerPostings = await (from sm in _context.SalesMaster
+                                        where
                                               sm.TipePembayaran.ToLower() == paymentType &&
                                               sm.Date >= dtFrom && sm.Date <= dtTo &&
                                               sm.PaymentStatus == "Approved" &&
                                               sm.LedgerId == 19
-										select sm).ToListAsync();
+                                        select sm).ToListAsync();
 
             return ledgerPostings;
         }
 
-		public async Task<dynamic> GetSalesPartai(DateTime dtFrom, DateTime dtTo, int ledgerId)
-		{
-			var ledgerPostings = await (from rm in _context.SalesMaster
+        public async Task<dynamic> GetSalesPartai(DateTime dtFrom, DateTime dtTo, int ledgerId)
+        {
+            var ledgerPostings = await (from rm in _context.SalesMaster
                                         join rem in _context.ReceiptMaster on rm.SalesMasterId equals rem.SalesMasterId
                                         join lp in _context.ReceiptDetails on rem.ReceiptMasterId equals lp.ReceiptMasterId
                                         join al in _context.AccountLedger on rm.LedgerId equals al.LedgerId
                                         join sd in _context.SalesDetails on rm.SalesMasterId equals sd.SalesMasterId
                                         join p in _context.Product on sd.ProductId equals p.ProductId
-                                        where  
+                                        where
                                                 rm.LedgerId >= 19 &&
-											  rem.Date >= dtFrom && rem.Date <= dtTo &&
+                                              rem.Date >= dtFrom && rem.Date <= dtTo &&
                                               lp.LedgerId == ledgerId &&
                                               p.ProductCode.StartsWith("TA-")
-										select new
+                                        select new
                                         {
                                             LedgerName = al.LedgerName,
                                             Amount = lp.ReceiveAmount
                                         }).ToListAsync<dynamic>();
 
-			return ledgerPostings;
-		}
+            return ledgerPostings;
+        }
 
-		public async Task<dynamic> GetSalesPartaiKG(DateTime dtFrom, DateTime dtTo, int ledgerId)
+        public async Task<dynamic> GetSalesNonTelur(DateTime dtFrom, DateTime dtTo, int ledgerId)
+        {
+            var ledgerPostings = await (from rm in _context.SalesMaster
+                                        join rem in _context.ReceiptMaster on rm.SalesMasterId equals rem.SalesMasterId
+                                        join lp in _context.ReceiptDetails on rem.ReceiptMasterId equals lp.ReceiptMasterId
+                                        join al in _context.AccountLedger on rm.LedgerId equals al.LedgerId
+                                        join sd in _context.SalesDetails on rm.SalesMasterId equals sd.SalesMasterId
+                                        join p in _context.Product on sd.ProductId equals p.ProductId
+                                        where
+                                                rm.LedgerId >= 19 &&
+                                              rem.Date >= dtFrom && rem.Date <= dtTo &&
+                                              lp.LedgerId == ledgerId &&
+                                              (!p.ProductCode.StartsWith("TA-") && !p.ProductCode.StartsWith("TB-") &&
+                                               !p.ProductCode.StartsWith("TC-") && !p.ProductCode.StartsWith("TD-") &&
+                                               !p.ProductCode.StartsWith("TE-") && !p.ProductCode.StartsWith("TF-"))
+                                        select new
+                                        {
+                                            LedgerName = al.LedgerName,
+                                            Amount = lp.ReceiveAmount
+                                        }).ToListAsync<dynamic>();
+
+            return ledgerPostings;
+        }
+
+        public async Task<dynamic> GetSalesPartaiKG(DateTime dtFrom, DateTime dtTo, int ledgerId)
 		{
 			var ledgerPostings = await (from rm in _context.SalesMaster
                                         join sd in _context.SalesDetails on rm.SalesMasterId equals sd.SalesMasterId

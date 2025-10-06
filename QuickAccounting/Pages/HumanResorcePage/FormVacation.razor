@@ -12,6 +12,7 @@
 @attribute [Authorize]
 
 <PageTitle>Form Ijin / Libur</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
@@ -138,7 +139,7 @@
     string strMenu = "Form Vacation";
 
     private bool FormSubmitted;
-
+    bool isProcessing = false;
     private async Task ChangeDate()
     {
         master.ForDate = TanggalIjin.Value;
@@ -147,6 +148,8 @@
 
     async Task OnFileChange(InputFileChangeEventArgs e)
     {
+        isProcessing = true;
+
         try
         {
             var format = "image/png";
@@ -170,6 +173,9 @@
         {
             PhotoViewer = string.Empty;
         }
+
+        isProcessing = false;
+        StateHasChanged();
     }
 
     protected override async Task OnInitializedAsync()
@@ -190,6 +196,8 @@
 
     public async Task<string> UploadFile(string userFolder)
     {
+        isProcessing = true;
+
         if(PhotoViewer == "")
         {
             return "";
@@ -209,6 +217,9 @@
         uploadedFileStream.Position = 0;
         await uploadedFileStream.CopyToAsync(fs);
         PhotoSuratDokter = fileName;
+
+        isProcessing = false;
+
         return fileName;
     }
 
@@ -217,7 +228,6 @@
         TanggalIjin = null;              
         Alasan = string.Empty;
         TipeIjin = string.Empty;
-
         FormSubmitted = false;
 
         StateHasChanged();
@@ -225,9 +235,12 @@
 
     private async Task Save()
     {
+        isProcessing = true;
+
         if (TanggalIjin.HasValue == false || TipeIjin == string.Empty)
         {
             Snackbar.Add("Anda belum mengisi tanggal atau Tipe Ijin. Keduanya wajib diisi.", Severity.Error);
+            isProcessing = false;
             return;
         }
 
@@ -239,11 +252,20 @@
             if (PhotoSuratDokter == "")
             {
                 Snackbar.Add("Anda belum mengambil foto surat dokter.", Severity.Error);
+                isProcessing = false;
                 return;
             }
         }
 
         DateTime now = DateTime.Now;
+
+        if(now.Date == TanggalIjin.Value.Date && TipeIjin == "LIBUR")
+        {
+            Snackbar.Add("Untuk pengajuan libur, harap mengajukan minimal 1 hari kerja sebelumnya.", Severity.Error);
+            isProcessing = false;
+            return;
+        }
+
         master.ForDate = TanggalIjin.Value;
         master.IsApproved = null;
         master.ApprovalDescription = string.Empty;
@@ -258,12 +280,14 @@
         if (result > 0)
         {
             Snackbar.Add("Form Ijin telah berhasil disimpan.", Severity.Success);
-            FormSubmitted = true;
-            StateHasChanged();
+            FormSubmitted = true;            
         }
         else
         {
             Snackbar.Add("Form Ijin gagal disimpan, silakan coba lagi, atau hubungi admin.", Severity.Error);
         }
+
+        isProcessing = false;
+        StateHasChanged();
     }
 }
