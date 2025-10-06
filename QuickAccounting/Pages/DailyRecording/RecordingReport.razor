@@ -173,8 +173,8 @@
                                     @* <td>@record.CageNumber</td> *@
                                     <td>@record.RecordDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</td>
                                     @* <td>@record.StrainName</td> *@
-                                    <td>@record.HenAgeWeeks</td>
-                                    <td>@record.HenAgeDays</td>  
+                                    <td>@Convert.ToInt32(record.HenAgeWeeks)</td>
+                                    <td>@Convert.ToInt32(record.HenAgeDays)</td>  
 
                                     <td>@record.PopulationStart</td>                                                                      
                                     <td>@record.DeadHenCount</td>
