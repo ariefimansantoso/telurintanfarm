@@ -90,6 +90,51 @@
 			</div>
 		</div>
 	</div>
+
+	<div class="row">
+
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Utuh</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockTelurPutih.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Putih</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockTelurBentes.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Bentes</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockTelurParah.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Parah</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Parah Sekali</h6>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<div class="row">
 		<div style="width:10% !important;" class="col-sm-6 col-12">
 			<div class="dash-widget">				
@@ -260,6 +305,58 @@
 	public decimal Peti = 0;
 	public decimal Lainnya = 0;
 
+	decimal StockTelurUtuh;
+	decimal StockTelurBentes;
+	decimal StockTelurPutih;
+	decimal StockTelurParah;
+	decimal StockTelurParahSekali;
+
+	private async Task LoadDataStock()
+	{
+		var stockTelurUtuh = await _db.StockTelurUtuh.FirstOrDefaultAsync();
+		if(stockTelurUtuh != null)
+		{
+			StockTelurUtuh = stockTelurUtuh.StockKG;
+		}
+
+		var startingStockDate = stockTelurUtuh.StockDate;
+
+		// bentes
+		var stockBentes = await _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefaultAsync();
+
+		// putih
+		var stockPutih = await _db.StockPosting.Where(x => x.ProductId == 7 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefaultAsync();
+
+		// pecah
+		var stockPecah = await _db.StockPosting.Where(x => x.ProductId == 17 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefaultAsync();
+
+		// pecah sekali
+		var stockPecahSekali = await _db.StockPosting.Where(x => x.ProductId == 19 && x.Date.Date >= startingStockDate)
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+												.FirstOrDefaultAsync();
+
+		StockTelurBentes = stockBentes;
+		StockTelurPutih = stockPutih;
+		StockTelurParah = stockPecah;
+		StockTelurParahSekali = stockPecahSekali;
+
+		
+		Susut = await _db.StockPosting.Where(x => x.ProductId == 124 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
+												.GroupBy(x => 1)
+												.Select(g => g.Sum(x => x.InwardQty))
+												.FirstOrDefaultAsync();
+	}
+
 	protected override async Task OnInitializedAsync()
 	{
 		isProcessing = true;
@@ -279,6 +376,7 @@
 		if (strShow != null && strShow.ShowAction == true)
 		{
 			await LoadData();
+			await LoadDataStock();
 			isProcessing = false;
 		}
 		else

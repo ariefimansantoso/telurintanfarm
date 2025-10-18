@@ -217,18 +217,36 @@ $(document).ready(function () {
 
 	function init() {
 		var $this = Sidemenu;
-		$('#sidebar-menu a').on('click', function (e) {
-			if ($(this).parent().hasClass('submenu')) {
+		$(document).off('click', '#sidebar-menu a');
+		$(document).on('click', '#sidebar-menu a', function (e) {
+			console.log('Clicked:', $(this).text());
+			//if ($(this).parent().hasClass('submenu')) {
+			//	e.preventDefault();
+			//}
+			//if (!$(this).hasClass('subdrop')) {
+			//	// $('ul', $(this).parents('ul:first')).slideUp(250);
+			//	$('a', $(this).parents('ul:first')).removeClass('subdrop');
+			//	$(this).next('ul').slideDown(350);
+			//	$(this).addClass('subdrop');
+			//} else if ($(this).hasClass('subdrop')) {
+			//	$(this).removeClass('subdrop');
+			//	$(this).next('ul').slideUp(350);
+			//}
+			const $this = $(this);
+			const $submenu = $this.next('ul');
+
+			if ($this.parent().hasClass('submenu')) {
 				e.preventDefault();
-			}
-			if (!$(this).hasClass('subdrop')) {
-				// $('ul', $(this).parents('ul:first')).slideUp(250);
-				$('a', $(this).parents('ul:first')).removeClass('subdrop');
-				$(this).next('ul').slideDown(350);
-				$(this).addClass('subdrop');
-			} else if ($(this).hasClass('subdrop')) {
-				$(this).removeClass('subdrop');
-				$(this).next('ul').slideUp(350);
+
+				if (!$this.hasClass('subdrop')) {
+					$this.closest('ul').find('ul:visible').slideUp(350);
+					$this.closest('ul').find('a.subdrop').removeClass('subdrop');
+					$this.addClass('subdrop');
+					$submenu.stop(true, true).slideDown(350);
+				} else {
+					$this.removeClass('subdrop');
+					$submenu.stop(true, true).slideUp(350);
+				}
 			}
 		});
 		$('#sidebar-menu ul li.submenu a.active').parents('li:last').children('a:first').addClass('active').trigger('click');

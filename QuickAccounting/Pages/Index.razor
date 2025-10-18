@@ -41,6 +41,7 @@
 @using QuickAccounting.Helpers;
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
+<Loader IsLoading="isLoading"></Loader>
 <style type="text/css">
 @@media (min-width: 992px) {
     .cust-col-20 {
@@ -1399,16 +1400,18 @@
 		});
 
 		function time() {
-		var d = new Date();
-		var day = d.getDate();
-		var month = d.toLocaleString('id-ID', { month: 'long' });;
-		var year = d.getFullYear();
-		var s = d.getSeconds();
-		var m = d.getMinutes();
-		var h = d.getHours();
-		var span = document.getElementById('h5Tanggal');
-		span.textContent = day + " " + month + " " + year + " " +
-		("0" + h).substr(-2) + ":" + ("0" + m).substr(-2) + ":" + ("0" + s).substr(-2);
+			var d = new Date();
+			var day = d.getDate();
+			var month = d.toLocaleString('id-ID', { month: 'long' });;
+			var year = d.getFullYear();
+			var s = d.getSeconds();
+			var m = d.getMinutes();
+			var h = d.getHours();
+			var span = document.getElementById('h5Tanggal');
+			if(span) {
+				span.textContent = day + " " + month + " " + year + " " +
+					("0" + h).substr(-2) + ":" + ("0" + m).substr(-2) + ":" + ("0" + s).substr(-2);
+			}
 		}
 	</script>
 }
