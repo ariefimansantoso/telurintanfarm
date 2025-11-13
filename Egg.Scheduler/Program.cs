@@ -184,17 +184,49 @@ public partial class Program
 
     protected static void CalculateHourlyRecording(DateTime recordDate, int modifiedBy)
     {
-        using (var _context = new TelurintDbContext(
+        var _context = new TelurintDbContext(
                 new DbContextOptionsBuilder<TelurintDbContext>()
                 .UseSqlServer("Data Source=balungfarm.javahome.co.id;Initial Catalog=telurint_db;Persist Security Info=True;User ID=sa;Password=hYu7372Svderd#$;Trust Server Certificate=True")
-                .Options))
+                //.LogTo(Console.WriteLine)
+                .Options);
+
+        try
         {
+            // Attempt to connect immediately and force an exception
+            if (!_context.Database.CanConnect())
+            {
+                Console.WriteLine("Could not connect to database!");
+                // You might add a throw here to get a stack trace
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Connection test failed: {ex.Message}");
+            throw;
+        }
 
-            Console.WriteLine("recordDate: " + recordDate);
+        Console.WriteLine("recordDate: " + recordDate);
 
-            // Get all cage numbers and their population from the previous day
-            if (_context == null) Console.WriteLine("_context null");
-            if (_context.DailyRecordings == null) Console.WriteLine("Recording null");
+        // Get all cage numbers and their population from the previous day
+        if (_context == null)
+        {
+            Console.WriteLine("_context null");
+            _context = new TelurintDbContext(
+                    new DbContextOptionsBuilder<TelurintDbContext>()
+                    .UseSqlServer("Data Source=balungfarm.javahome.co.id;Initial Catalog=telurint_db;Persist Security Info=True;User ID=sa;Password=hYu7372Svderd#$;Trust Server Certificate=True")
+                    //.LogTo(Console.WriteLine)
+                    .Options);
+        }
+
+            if (_context.DailyRecordings == null)
+            {
+                Console.WriteLine("Recording null");
+                _context = new TelurintDbContext(
+                    new DbContextOptionsBuilder<TelurintDbContext>()
+                    .UseSqlServer("Data Source=balungfarm.javahome.co.id;Initial Catalog=telurint_db;Persist Security Info=True;User ID=sa;Password=hYu7372Svderd#$;Trust Server Certificate=True")
+                    //.LogTo(Console.WriteLine)
+                    .Options);
+            }
 
             var todayRecords = _context.DailyRecordings
                 .Where(r => r.RecordDate.Date == recordDate.Date)
@@ -247,7 +279,9 @@ public partial class Program
             auditLog.EmployeeName = "CORE System";
             _context.AuditLogs.Add(auditLog);
             _context.SaveChanges();
-        }
+
+            _context.Dispose();
+        
     }
 
     public static string SerializeObjectToString(object obj)

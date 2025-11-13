@@ -323,10 +323,10 @@
                                     decimal premi = 0;
                                     decimal gajiBersih = 0;
                                     var listPotongan = _hr.GetByCurrentMonthYearAndEmployeeId(employee.EmployeeId, SelectedCutoffTo.Month, SelectedCutoffTo.Year);
-                                    if(employee.EmployeeId == 36)
+                                    @* if(employee.EmployeeId == 36)
                                     {
                                         var x = 0;
-                                    }
+                                    } *@
                                     var listPenalty = _hr.GetPenaltyByCurrentMonthYearAndEmployeeId(employee.EmployeeId, SelectedCutoffFrom.Date, SelectedCutoffTo.Date);
                                     var listBonus = listPenalty.Where(x => x.IsPenalty == false).ToList();
                                     listPenalty = listPenalty.Where(x => x.IsPenalty == true).ToList();
@@ -382,7 +382,7 @@
 
                                     foreach(DateTime alphaDate in PeriodeDatesAlpha)
                                     {
-                                        if (alphaDate > employee.JoiningDate.Date && alphaDate > SelectedCutoffFrom.Date)
+                                        if (alphaDate > employee.JoiningDate.Date && alphaDate >= SelectedCutoffFrom.Date)
                                         {
                                             var adaIjin = perijinanKaryawan.Where(x => x.ForDate.Date == alphaDate.Date).Any();
                                             if(!adaIjin)
@@ -412,6 +412,7 @@
                                     int totalHours = totalMenitLembur / 60; // Get the whole number of hours
                                     int remainingMinutes = totalMenitLembur % 60;
 
+                                    // pekerja lepas
                                     if (employee.DesignationId == 4)
                                     {
                                         employee.BPJS_KES = 0;

@@ -261,7 +261,7 @@
 
                     foreach(DateTime alphaDate in PeriodeDatesAlpha)
                     {
-                        if (alphaDate > SelectedEmployee.JoiningDate.Date && alphaDate > SelectedCutoffFrom.Date)
+                        if (alphaDate > SelectedEmployee.JoiningDate.Date && alphaDate >= SelectedCutoffFrom.Date)
                         {
                             var adaIjin = perijinanKaryawan.Where(x => x.ForDate.Date == alphaDate.Date).Any();
                             if(!adaIjin)
