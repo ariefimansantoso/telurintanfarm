@@ -19,7 +19,7 @@ namespace QuickAccounting.Constants
             var telurUtuh = await _context.StockTelurUtuh.FirstOrDefaultAsync();
             if(telurUtuh != null)
             {
-                return telurUtuh.StockDate;
+                return telurUtuh.StockDate.Date;
             }
 
             return new DateTime(1990,1,1);

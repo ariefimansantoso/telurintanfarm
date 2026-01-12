@@ -48,7 +48,7 @@
 
     <div class="card">
         <div class="card-body">            
-            <div class="row">
+            @* <div class="row">
                 <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
                         <label>Pilih Jenis Telur</label>
@@ -66,12 +66,12 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> *@
 
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
-                        <label>Jumlah Kilogram</label>
+                        <label>Jumlah Kilogram Utuh (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG)</label>
                         <div class="row">
                             <div class="col-lg-12 col-sm-12 col-12">
                                 <input type="text" class="form-control" value="@Kilogram" @onchange="OnKilogramChanged" />
@@ -80,6 +80,71 @@
                     </div>
                 </div>
             </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Putih (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurPutih.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramPutih" @onchange="OnKilogramPutihChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Bentes (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurBentes.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramBentes" @onchange="OnKilogramBentesChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Parah (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurParah.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramParah" @onchange="OnKilogramParahChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Parah Sekali (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramPS" @onchange="OnKilogramPSChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Rusak (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurRusak.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramRusak" @onchange="OnKilogramRusakChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> *@
 
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-12">
@@ -99,7 +164,19 @@
 
 
     string JenisTelurSelected = "UTUH";
-    decimal Kilogram = 0;    
+    decimal Kilogram = 0;
+    decimal KilogramPutih = 0;
+    decimal KilogramBentes = 0;
+    decimal KilogramParah = 0;
+    decimal KilogramPS = 0;
+    decimal KilogramRusak = 0;
+
+    decimal StockTelurUtuh;
+    decimal StockTelurBentes;
+    decimal StockTelurPutih;
+    decimal StockTelurParah;
+    decimal StockTelurParahSekali;
+    decimal StockTelurRusak;
 
     private UserMaster modelUser;
     private Employee modelEmployee;
@@ -115,7 +192,7 @@
     {
         if (e.Value.ToString().Contains(","))
         {
-            Snackbar.Add("Input tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            Snackbar.Add("Input Telur Utuh tidak benar. Mohon pakai TITIK.", Severity.Warning);
             IsValid = false;
             return;
         }
@@ -129,7 +206,117 @@
         else
         {
             IsValid = false;
-            Snackbar.Add("Input tidak benar.", Severity.Warning);
+            Snackbar.Add("Input Telur Utuh tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramPutihChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Putih tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramPutih = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Putih tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramBentesChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Bentes tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramBentes = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Bentes tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramParahChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Parah tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramParah = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Parah tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramPSChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Parah Sekali tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramPS = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Parah Sekali tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramRusakChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Rusak tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramRusak = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Rusak tidak benar.", Severity.Warning);
         }
     }
 
@@ -137,97 +324,41 @@
     {
         try
         {
+            string auditMessage = "";
             var dateNow = DateTime.Now;
-            if(JenisTelurSelected == "UTUH")
-            {
-                var stockTelurUtuh = _db.StockTelurUtuh.FirstOrDefault();
-                if (stockTelurUtuh != null)
-                {                    
-                    string auditMessage = "Reset stock telur UTUH: " + stockTelurUtuh.StockKG;
-                    await _audit.LogAsync(LogTypes.LogInfo, "Reset Stock Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
-                    stockTelurUtuh.StockKG = Kilogram;
-                    // stock reset mulai besoknya
-                    stockTelurUtuh.StockDate = dateNow;                    
+            var stockTelurUtuh = _db.StockTelurUtuh.FirstOrDefault();
+            if (stockTelurUtuh != null)
+            {                    
+                auditMessage = "Reset stock telur UTUH: " + stockTelurUtuh.StockKG;
+                await _audit.LogAsync(LogTypes.LogInfo, "Reset Stock Penjualan Telur UTUH", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
-                    MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
-                    mutasi.JenisTelur = "UTUH";
-                    mutasi.BeratTelurIn = Kilogram;
-                    mutasi.BeratTelurOut = 0;
-                    mutasi.DateCreated = dateNow;
-                    mutasi.CreatedBy = modelEmployee.EmployeeId;
-                    _db.MutasiStockTelurHarian.Add(mutasi);
-                    await _db.SaveChangesAsync();
-                }
-            }
-            else
-            {
-                int productId = 0;
-                switch (JenisTelurSelected)
-                {
-                    case "BENTES":
-                        productId = 16;
-                        break;
-                    case "PUTIH":
-                        productId = 7;
-                        break;
-                    case "PARAH":
-                        productId = 17;
-                        break;
-                    case "PS":
-                        productId = 19;
-                        break;
-                    case "RUSAK":
-                        productId = 106;
-                        break;
-                }
-                var existingStock = await _db.StockPosting.Where(x => x.ProductId == productId && x.Date.Date == dateNow.AddDays(1).Date &&
-                                                            x.StockCalculate == "Reset Stock").FirstOrDefaultAsync();
+                stockTelurUtuh.StockKG = Kilogram;
+                // stock reset mulai besoknya
+                stockTelurUtuh.StockDate = dateNow;                    
 
-                if(existingStock != null)
-                {
-                    _db.Remove(existingStock);
-                    await _db.SaveChangesAsync();
-                }
-
-                StockPosting stockposting = new StockPosting();
-                stockposting.Date = dateNow.AddDays(1).Date;
-                stockposting.ProductId = productId;
-                stockposting.InwardQty = Kilogram;
-                stockposting.OutwardQty = 0;
-                stockposting.UnitId = 0;
-                stockposting.BatchId = 0;
-                stockposting.Rate = 0;
-                stockposting.DetailsId = 0;
-                stockposting.InvoiceNo = productId.ToString();
-                stockposting.VoucherNo = productId.ToString();
-                stockposting.VoucherTypeId = 0;
-                stockposting.AgainstInvoiceNo = String.Empty;
-                stockposting.AgainstVoucherNo = String.Empty;
-                stockposting.AgainstVoucherTypeId = 0;
-                stockposting.WarehouseId = 1;
-                stockposting.StockCalculate = "Reset Stock";
-                stockposting.CompanyId = 1;
-                stockposting.FinancialYearId = 2;
-                stockposting.AddedDate = DateTime.Now;
-                _db.StockPosting.Add(stockposting);
-
-                MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
-                mutasi.JenisTelur = JenisTelurSelected;
-                mutasi.BeratTelurIn = Kilogram;
-                mutasi.BeratTelurOut = 0;
-                mutasi.DateCreated = dateNow;
-                mutasi.CreatedBy = modelEmployee.EmployeeId;
-                _db.MutasiStockTelurHarian.Add(mutasi);
-
+                MutasiStockTelurHarian mutasiUtuh = new MutasiStockTelurHarian();
+                mutasiUtuh.JenisTelur = "UTUH";
+                mutasiUtuh.BeratTelurIn = Kilogram;
+                mutasiUtuh.BeratTelurOut = 0;
+                mutasiUtuh.DateCreated = dateNow;
+                mutasiUtuh.CreatedBy = modelEmployee.EmployeeId;
+                _db.MutasiStockTelurHarian.Add(mutasiUtuh);
                 await _db.SaveChangesAsync();
-
-
-                string auditMessage = "Reset stok telur " + JenisTelurSelected + " stok baru: " + Kilogram;
-                await _audit.LogAsync(LogTypes.LogInfo, "Reset Stock Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
-
             }
 
+            int productIdBentes = 16;
+            int productIdPutih = 7;
+            int productIdParah = 17;
+            int productIdPS = 19;
+            int productIdRusak = 106;
+
+            await ProcessResetStock(productIdBentes, "BENTES", KilogramBentes, dateNow);
+            await ProcessResetStock(productIdPutih, "PUTIH", KilogramPutih, dateNow);
+            await ProcessResetStock(productIdParah, "PARAH", KilogramParah, dateNow);
+            await ProcessResetStock(productIdPS, "PS", KilogramPS, dateNow);
+            //await ProcessResetStock(productIdRusak, "RUSAK", dateNow);
+            
             Snackbar.Add("Reset stok berhasil.", Severity.Success);
             navigation.NavigateTo("/app/resetsalesstock", true);
         }
@@ -239,6 +370,53 @@
         {
             Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
         }
+    }
+
+    private async Task ProcessResetStock(int productId, string jenisTelur, decimal kg, DateTime dateNow)
+    {
+        var existingStock = await _db.StockPosting.Where(x => x.ProductId == productId && x.Date.Date == dateNow.Date).ToListAsync();
+
+        if (existingStock != null)
+        {
+            _db.StockPosting.RemoveRange(existingStock);
+            await _db.SaveChangesAsync();
+        }
+
+        StockPosting stockposting = new StockPosting();
+        stockposting.Date = dateNow.Date;
+        stockposting.ProductId = productId;
+        stockposting.InwardQty = kg;
+        stockposting.OutwardQty = 0;
+        stockposting.UnitId = 0;
+        stockposting.BatchId = 0;
+        stockposting.Rate = 0;
+        stockposting.DetailsId = 0;
+        stockposting.InvoiceNo = productId.ToString();
+        stockposting.VoucherNo = productId.ToString();
+        stockposting.VoucherTypeId = 0;
+        stockposting.AgainstInvoiceNo = String.Empty;
+        stockposting.AgainstVoucherNo = String.Empty;
+        stockposting.AgainstVoucherTypeId = 0;
+        stockposting.WarehouseId = 1;
+        stockposting.StockCalculate = "Reset Stock";
+        stockposting.CompanyId = 1;
+        stockposting.FinancialYearId = 2;
+        stockposting.AddedDate = DateTime.Now;
+        _db.StockPosting.Add(stockposting);
+
+        MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+        mutasi.JenisTelur = jenisTelur;
+        mutasi.BeratTelurIn = kg;
+        mutasi.BeratTelurOut = 0;
+        mutasi.DateCreated = dateNow;
+        mutasi.CreatedBy = modelEmployee.EmployeeId;
+        _db.MutasiStockTelurHarian.Add(mutasi);
+
+        await _db.SaveChangesAsync();
+
+        string auditMessage = "Reset stok telur " + jenisTelur + " stok baru: " + kg;
+        await _audit.LogAsync(LogTypes.LogInfo, "Reset Stock Penjualan Telur " + jenisTelur, auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
     }
 
     private async Task LoadStockGudang()
@@ -263,6 +441,53 @@
         string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Tambah Stok Penjualan.";
         await _audit.LogAsync(LogTypes.LogInfo, "Form Tambah Stok Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
+        LoadDataStock();
+
         await LoadStockGudang();
+    }
+
+    private void LoadDataStock()
+    {
+        var stockTelurUtuh = _db.StockTelurUtuh.FirstOrDefault();
+        if (stockTelurUtuh != null)
+        {
+            StockTelurUtuh = stockTelurUtuh.StockKG;
+        }
+
+        var startingStockDate = stockTelurUtuh.StockDate.Date;
+
+        // bentes
+        var stockBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+
+        // putih
+        var stockPutih = _db.StockPosting.Where(x => x.ProductId == 7 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+
+        // pecah
+        var stockPecah = _db.StockPosting.Where(x => x.ProductId == 17 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+
+        // pecah sekali
+        var stockPecahSekali = _db.StockPosting.Where(x => x.ProductId == 19 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+        var stockRusak = _db.StockPosting.Where(x => x.ProductId == 106 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+
+        StockTelurBentes = stockBentes;
+        StockTelurPutih = stockPutih;
+        StockTelurParah = stockPecah;
+        StockTelurParahSekali = stockPecahSekali;
+        StockTelurRusak = stockRusak;
     }
 }    

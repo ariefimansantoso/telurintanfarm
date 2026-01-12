@@ -1594,8 +1594,8 @@
 		}
 
 		var weeklyAverages = resultForTable
-            .GroupBy(r => (int)Math.Floor(r.HenAgeWeeks)) // Group by full week
-            .Select(g => new WeeklyProductionSummary
+			.GroupBy(r => (int)Math.Floor(r.HenAgeWeeks)) // Group by full week
+			.Select(g => new WeeklyProductionSummary
                 {
                     WeekNumber = g.Key,
                     AverageHenDayActual = g.Average(r => r.ActualHenDay),
@@ -1603,14 +1603,14 @@
                     AverageEggMass = g.Average(r => r.ActualEggMassKg),
                     AverageGrBt = g.Average(r => r.ActualEggWeightG)
                 })
-            .OrderByDescending(x => x.WeekNumber)
-            .ToList();
+			.OrderByDescending(x => x.WeekNumber)
+			.ToList();
 
-        var fullData = Enumerable.Range(16, 85) // 100 - 16 + 1 = 85 weeks
-            .Select(week =>
-            {
-                var existing = weeklyAverages.FirstOrDefault(d => d.WeekNumber == week);
-                return new WeeklyProductionSummary
+		var fullData = Enumerable.Range(16, 85) // 100 - 16 + 1 = 85 weeks
+			.Select(week =>
+			{
+				var existing = weeklyAverages.FirstOrDefault(d => d.WeekNumber == week);
+				return new WeeklyProductionSummary
                     {
                         WeekNumber = week,
                         AverageHenDayActual = existing?.AverageHenDayActual ?? 0,
@@ -1618,11 +1618,11 @@
                         AverageEggMass = existing?.AverageEggMass ?? 0,
                         AverageGrBt = existing?.AverageGrBt ?? 0
                     };
-            })
-            .OrderBy(d => d.WeekNumber)
-            .ToList();
+			})
+			.OrderBy(d => d.WeekNumber)
+			.ToList();
 
-        _config = new LineConfig
+		_config = new LineConfig
             {
                 Options = new LineOptions
                 {
@@ -1667,126 +1667,126 @@
                     }
                 }
             };
-        _chartKey = Guid.NewGuid().ToString();
+		_chartKey = Guid.NewGuid().ToString();
 
-        var standardData = _db.StandardData.ToList();
-        var weeks = standardData.Select(x => x.Weeks).ToList();
+		var standardData = _db.StandardData.ToList();
+		var weeks = standardData.Select(x => x.Weeks).ToList();
 
-        foreach (var week in weeks)
-        {
-            _config.Data.Labels.Add(week.ToString());
-        }
+		foreach (var week in weeks)
+		{
+			_config.Data.Labels.Add(week.ToString());
+		}
 
-        var fiStandard = standardData.Select(x => x.FI_Standard).ToList();
-        var hdStd = standardData.Select(x => x.HD_Standard).ToList();
-        var emassStandard = standardData.Select(x => x.EMass_Standard).ToList();
-        var grbtStd = standardData.Select(x => x.GrBt_Standard).ToList();
+		var fiStandard = standardData.Select(x => x.FI_Standard).ToList();
+		var hdStd = standardData.Select(x => x.HD_Standard).ToList();
+		var emassStandard = standardData.Select(x => x.EMass_Standard).ToList();
+		var grbtStd = standardData.Select(x => x.GrBt_Standard).ToList();
 
-        LineDataset<decimal> dataset1 = new LineDataset<decimal>(fiStandard)
+		LineDataset<decimal> dataset1 = new LineDataset<decimal>(fiStandard)
             {
                 Label = "FI",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightBlue),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightBlue),
                 Fill = FillingMode.Disabled               
             };
-        dataset1.PointRadius = 0;
+		dataset1.PointRadius = 0;
 
-        LineDataset<decimal> HD = new LineDataset<decimal>(hdStd)
+		LineDataset<decimal> HD = new LineDataset<decimal>(hdStd)
             {
                 Label = "HD",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightPink),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightPink),
                 Fill = FillingMode.Disabled
             };
-        HD.PointRadius = 0;
+		HD.PointRadius = 0;
 
-        LineDataset<decimal> Emass = new LineDataset<decimal>(emassStandard)
+		LineDataset<decimal> Emass = new LineDataset<decimal>(emassStandard)
             {
                 Label = "E Mass",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Yellow),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Yellow),
                 Fill = FillingMode.Disabled
             };
-        Emass.PointRadius = 0;
+		Emass.PointRadius = 0;
 
-        LineDataset<decimal> grbt = new LineDataset<decimal>(grbtStd)
+		LineDataset<decimal> grbt = new LineDataset<decimal>(grbtStd)
             {
                 Label = "GrBt",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightGreen),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.LightGreen),
                 Fill = FillingMode.Disabled
             };
-        grbt.PointRadius = 0;
+		grbt.PointRadius = 0;
 
-        _config.Data.Datasets.Add(dataset1);
-        _config.Data.Datasets.Add(HD);
-        _config.Data.Datasets.Add(Emass);
-        _config.Data.Datasets.Add(grbt);
+		_config.Data.Datasets.Add(dataset1);
+		_config.Data.Datasets.Add(HD);
+		_config.Data.Datasets.Add(Emass);
+		_config.Data.Datasets.Add(grbt);
 
-        // WeekNumber = week,
-        // AverageHenDayActual = existing?.AverageHenDayActual ?? 0,
-        // AverageFIActual = existing?.AverageFIActual ?? 0,
-        // AverageEggMass = existing?.AverageEggMass ?? 0,
-        // AverageGrBt
+		// WeekNumber = week,
+		// AverageHenDayActual = existing?.AverageHenDayActual ?? 0,
+		// AverageFIActual = existing?.AverageFIActual ?? 0,
+		// AverageEggMass = existing?.AverageEggMass ?? 0,
+		// AverageGrBt
 
 		var hdReal = fullData.Select(x => (decimal)x.AverageHenDayActual).ToList();
 
-        // load chart recording
-        LineDataset<decimal> HDReal = new LineDataset<decimal>(hdReal)
+		// load chart recording
+		LineDataset<decimal> HDReal = new LineDataset<decimal>(hdReal)
             {
                 Label = "HD Real",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Red),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Red),
                 Fill = FillingMode.Disabled               
             };
-        HDReal.PointRadius = 0;
+		HDReal.PointRadius = 0;
 
-        var fiReal = fullData.Select(x => (decimal)x.AverageFIActual).ToList();
+		var fiReal = fullData.Select(x => (decimal)x.AverageFIActual).ToList();
 
-        // load chart recording
-        LineDataset<decimal> FIReal = new LineDataset<decimal>(fiReal)
+		// load chart recording
+		LineDataset<decimal> FIReal = new LineDataset<decimal>(fiReal)
             {
                 Label = "FI Real",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Blue),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Blue),
                 Fill = FillingMode.Disabled               
             };
-        FIReal.PointRadius = 0;
+		FIReal.PointRadius = 0;
 
-        var emReal = fullData.Select(x => (decimal)x.AverageEggMass).ToList();
+		var emReal = fullData.Select(x => (decimal)x.AverageEggMass).ToList();
 
-        // load chart recording
-        LineDataset<decimal> EMReal = new LineDataset<decimal>(emReal)
+		// load chart recording
+		LineDataset<decimal> EMReal = new LineDataset<decimal>(emReal)
             {
                 Label = "EM Real",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Orange),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Orange),
                 Fill = FillingMode.Disabled               
             };
-        EMReal.PointRadius = 0;
+		EMReal.PointRadius = 0;
 
 		var grBt = fullData.Select(x => (decimal)x.AverageGrBt).ToList();
 
-        // load chart recording
-        LineDataset<decimal> GrBtReal = new LineDataset<decimal>(grBt)
+		// load chart recording
+		LineDataset<decimal> GrBtReal = new LineDataset<decimal>(grBt)
             {
                 Label = "GrBt Real",
                 BackgroundColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Green),
                 BorderColor = ColorUtil.FromDrawingColor(System.Drawing.Color.Green),
                 Fill = FillingMode.Disabled
             };
-        GrBtReal.PointRadius = 0;
+		GrBtReal.PointRadius = 0;
 
-        _config.Data.Datasets.Add(HDReal);
-        _config.Data.Datasets.Add(FIReal);
-        _config.Data.Datasets.Add(EMReal);
-        _config.Data.Datasets.Add(GrBtReal);
+		_config.Data.Datasets.Add(HDReal);
+		_config.Data.Datasets.Add(FIReal);
+		_config.Data.Datasets.Add(EMReal);
+		_config.Data.Datasets.Add(GrBtReal);
 
 
-		
 
-        ChartDataLoaded = true;
-    }
+
+		ChartDataLoaded = true;
+	}
 
 	private void OpenApproveDialog(int id)
 	{
@@ -1807,23 +1807,23 @@
 										rm.Date <= new DateTime(dtToDate.Year, dtToDate.Month, dtToDate.Day, 23, 59, 59) &&
 										rd.LedgerId == 1 &&
 										(!p.ProductCode.StartsWith("TA-") && !p.ProductCode.StartsWith("TB-") &&
-										  !p.ProductCode.StartsWith("TC-") && !p.ProductCode.StartsWith("TD-") &&
-										  !p.ProductCode.StartsWith("TE-") && !p.ProductCode.StartsWith("TF-"))
+									!p.ProductCode.StartsWith("TC-") && !p.ProductCode.StartsWith("TD-") &&
+									!p.ProductCode.StartsWith("TE-") && !p.ProductCode.StartsWith("TF-"))
 										select sd.NetAmount).Sum();
 
 		TotalNonTelurRupiahTransfer = (from sd in _db.SalesDetails
-							   join rm in _db.SalesMaster on sd.SalesMasterId equals rm.SalesMasterId
-							   join rd in _db.ReceiptDetails on rm.SalesMasterId equals rd.SalesMasterId
-							   join al in _db.AccountLedger on rm.LedgerId equals al.LedgerId
-							   join p in _db.Product on sd.ProductId equals p.ProductId
-							   where rm.LedgerId >= 19 &&
-							   rm.Date >= new DateTime(dtFromDate.Year, dtFromDate.Month, dtFromDate.Day, 0, 0, 0) &&
-							   rm.Date <= new DateTime(dtToDate.Year, dtToDate.Month, dtToDate.Day, 23, 59, 59) &&
-							   rd.LedgerId == 10 &&
-							   (!p.ProductCode.StartsWith("TA-") && !p.ProductCode.StartsWith("TB-") &&
-								 !p.ProductCode.StartsWith("TC-") && !p.ProductCode.StartsWith("TD-") &&
-								 !p.ProductCode.StartsWith("TE-") && !p.ProductCode.StartsWith("TF-"))
-							   select sd.NetAmount).Sum();
+												join rm in _db.SalesMaster on sd.SalesMasterId equals rm.SalesMasterId
+												join rd in _db.ReceiptDetails on rm.SalesMasterId equals rd.SalesMasterId
+												join al in _db.AccountLedger on rm.LedgerId equals al.LedgerId
+												join p in _db.Product on sd.ProductId equals p.ProductId
+												where rm.LedgerId >= 19 &&
+												rm.Date >= new DateTime(dtFromDate.Year, dtFromDate.Month, dtFromDate.Day, 0, 0, 0) &&
+												rm.Date <= new DateTime(dtToDate.Year, dtToDate.Month, dtToDate.Day, 23, 59, 59) &&
+												rd.LedgerId == 10 &&
+												(!p.ProductCode.StartsWith("TA-") && !p.ProductCode.StartsWith("TB-") &&
+											!p.ProductCode.StartsWith("TC-") && !p.ProductCode.StartsWith("TD-") &&
+											!p.ProductCode.StartsWith("TE-") && !p.ProductCode.StartsWith("TF-"))
+												select sd.NetAmount).Sum();
 	}
 
 	private void LoadReportRecordingSummary()
@@ -1923,7 +1923,7 @@
 			StockTelurUtuh = stockTelurUtuh.StockKG;
 		}
 
-		var startingStockDate = stockTelurUtuh.StockDate;
+		var startingStockDate = stockTelurUtuh.StockDate.Date;
 
 		// bentes
 		var stockBentes = _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)

@@ -64,6 +64,14 @@
     <div class="card">
         <div class="card-body">
             <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@ReportDate" class="form-control" />
+                    </div>
+                </div>               
+            </div>
+            <div class="row">
                 <div class="col-lg-12 col-sm-12 col-12">
                     <div class="form-group" style="text-align: center !important;">
                         <label>Pilih Nomor Kandang</label>
@@ -581,6 +589,7 @@
     private int TotalItems => DailyRecordings.Count; 
     DateTime dtFromDate;
     DateTime dtToDate;
+    DateTime ReportDate;
     private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
     private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
     public ChartOptions Options = new ChartOptions();
@@ -909,6 +918,7 @@
         else
         {
             DailyRecordings = await _recording.GetRecordingsByKandang("ALL"); //, dtFromDate, dtToDate);
+            DailyRecordings = DailyRecordings.Where(x => x.RecordDate <= ReportDate.Date).ToList();
             DailyRecordings = DailyRecordings.OrderBy(x => Convert.ToInt32(x.CageNumber)).ToList();
         }
 
@@ -922,6 +932,8 @@
         dtFromDate = new DateTime(now.Year, now.Month, 1);
         int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
         dtToDate = new DateTime(now.Year, now.Month, lastDay);
+
+        ReportDate = now;
 
         // Simulate fetching data from a service
         CageList = await _kandang.GetAll();
