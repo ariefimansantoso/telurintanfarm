@@ -1,10 +1,35 @@
 ﻿@page "/app/systemsettings"
+@using System.Runtime.InteropServices
+@using System
+@attribute [Authorize]
 
-
-    <div class="loading-container">
-        <div class="loader"></div>
-    </div>
-
+@using QuickAccounting.Components
+<Loader IsLoading="isLoading"></Loader>
+<PageTitle>System Information</PageTitle>
+<div class="content">
+	<div class="page-header">
+		<div class="page-title">
+			<h4>Informasi Sistem</h4>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-lg-12 col-sm-12 col-12">
+			<div class="form-group" style="text-align: center !important;">
+				<label>Operating System</label>
+				<div class="row">
+					<div class="col-lg-12 col-sm-12 col-12">
+						@RuntimeInformation.OSDescription
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 @code {
-    public string Fullpath = "";
+	[CascadingParameter]
+	public Task<AuthenticationState> authenticationState { get; set; }
+
+	private bool isLoading = false;
+	private string MachineName => Environment.MachineName;
+	private int ProcessorCount => Environment.ProcessorCount;
 }

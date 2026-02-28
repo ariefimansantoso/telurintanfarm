@@ -8,17 +8,17 @@ namespace QuickAccounting.Data.AccountModel
     {
         [Key]
         public int JournalMasterId { get; set; }
-        public string SerialNo { get; set; }
-        public string VoucherNo { get; set; }
+        public string SerialNo { get; set; } = string.Empty;
+        public string VoucherNo { get; set; } = string.Empty;
         public string InvoiceNo { get; set; }
         public DateTime Date { get; set; }
         public decimal Amount { get; set; }
-        public string Narration { get; set; }
-        public string UserId { get; set; }
+        public string Narration { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
         public int VoucherTypeId { get; set; }
         public int FinancialYearId { get; set; }
         public int CompanyId { get; set; }
-        public string Status { get; set; }
+        public string Status { get; set; } = string.Empty;
         public DateTime? AddedDate { get; set; }
         public DateTime? ModifyDate { get; set; }
         [NotMapped]

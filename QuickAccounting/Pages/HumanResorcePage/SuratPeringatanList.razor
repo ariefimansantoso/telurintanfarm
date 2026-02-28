@@ -1,0 +1,175 @@
+@page "/app/suratperingatanlist"
+@inject ISuratPeringatan _suratPeringatan
+@inject IEmployee _employee
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@using System.Security.Claims
+@attribute [Authorize]
+
+<PageTitle>Daftar Surat Peringatan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Daftar Surat Peringatan</h4>
+        </div>
+        <div class="page-btn">
+            <a class="btn btn-added" href="/app/suratperingatan"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Tambah Surat Peringatan</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive table-scrollable">
+                @if (_suratPeringatanList != null && _suratPeringatanList.Count > 0)
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal</th>
+                                <th>Karyawan</th>
+                                <th>Nomor Surat</th>                                
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int no = 1;
+                            }
+                            @foreach (var item in _suratPeringatanList)
+                            {
+                                <tr>
+                                    <td>@no</td>
+                                    <td>@item.DateCreated.ToString("dd/MM/yyyy")</td>
+                                    <td>@(EmployeeNameCache.ContainsKey(item.EmployeeId) ? EmployeeNameCache[item.EmployeeId] : "Unknown")</td>
+                                    <td>@item.SPOfficialNumber</td>                                    
+                                    <td>
+                                        <a href="/app/suratperingatan-edit/@item.Id" class="btn btn-sm btn-primary">Edit</a>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteSuratPeringatan(item.Id)">Hapus</button>
+                                    </td>
+                                </tr>
+                                no++;
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div style="text-align: center; padding: 20px;">
+                        <h4>Tidak ada data surat peringatan.</h4>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private List<SuratPeringatan> _suratPeringatanList;
+    private Dictionary<int, string> EmployeeNameCache = new Dictionary<int, string>();
+    private UserMaster ModelUser = new UserMaster();
+    private string MenuName = "Form Surat Peringatan";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authorized = await CheckPermission();
+        if (!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+            return;
+        }
+
+        var authState = await AuthenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        ModelUser = await _user.UserProfile(userName);
+
+        await LoadSuratPeringatan();
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        try
+        {
+            var authState = await AuthenticationState;
+            var userRole = authState.User;
+            string roleName = userRole.FindFirst(ClaimTypes.Role).Value;
+            var privilege = await _privilege.PriviliageCheck(MenuName, roleName);
+            return privilege.ShowAction;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task LoadSuratPeringatan()
+    {
+        try
+        {
+            _suratPeringatanList = await _suratPeringatan.GetAll();
+        
+            if (_suratPeringatanList != null && _suratPeringatanList.Any())
+            {
+                _suratPeringatanList = _suratPeringatanList.OrderByDescending(x => x.DateCreated).ToList();
+
+                // Pre-fetch employee names asynchronously BEFORE the UI renders
+                foreach (var item in _suratPeringatanList)
+                {
+                    if (!EmployeeNameCache.ContainsKey(item.EmployeeId))
+                    {
+                        var employee = await _employee.GetbyId(item.EmployeeId);
+                        EmployeeNameCache[item.EmployeeId] = employee?.EmployeeName ?? "Unknown";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetEmployeeName(int employeeId)
+    {
+        if (EmployeeNameCache.ContainsKey(employeeId))
+        {
+            return EmployeeNameCache[employeeId];
+        }
+
+        var employee = _employee.GetbyId(employeeId).Result;
+        string name = employee?.EmployeeName ?? "Unknown";
+        EmployeeNameCache[employeeId] = name;
+        return name;
+    }
+
+    private async Task DeleteSuratPeringatan(int id)
+    {
+        if (await JSConfirm("Apakah anda yakin ingin menghapus surat peringatan ini?"))
+        {
+            var result = await _suratPeringatan.SetDeleted(id);
+            if (result)
+            {
+                Snackbar.Add("Surat peringatan berhasil dihapus.", Severity.Success);
+                await LoadSuratPeringatan();
+            }
+            else
+            {
+                Snackbar.Add("Gagal menghapus surat peringatan.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task<bool> JSConfirm(string message)
+    {
+        // Use browser confirm dialog - requires IJSRuntime
+        // For now, we'll just return true (you can add IJSRuntime if needed)
+        return true;
+    }
+}

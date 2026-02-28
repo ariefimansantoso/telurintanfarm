@@ -114,7 +114,7 @@
                                     <td class="text-end">@string.Format("{0:n0}", td.TaxAmount)</td>
                                     <td class="text-end">@PublicVariables._Symbol @string.Format("{0:n0}", td.TotalAmount)</td>
 								<td>
-                                        <a @onclick="@(e => Edit(td.ProductId))"><img src="assets/img/icons/edit.svg" alt="svg"></a>
+                                        @* <a @onclick="@(e => Edit(td.ProductId))"><img src="assets/img/icons/edit.svg" alt="svg"></a> *@
                                         <a @onclick="@(e => deleteItem(td.Id , td.SalesDetailsId))"><img src="assets/img/icons/delete.svg" alt="svg"></a>
 								</td>
 							</tr>
@@ -423,7 +423,7 @@
         {
             isProcessing = true;
         }
-        
+
     }
     private async void OnChange(object value, string name)
     {
@@ -646,8 +646,8 @@
         editedID = id;
         AddToList();
     }
-    void deleteItem(int id, int SalesDetailsId)
-    {
+    async Task deleteItem(int id, int SalesDetailsId)
+    {        
         if (id == 0)
         {
             var myTodo = TodoList.FirstOrDefault(x => x.SalesDetailsId == SalesDetailsId);
@@ -665,6 +665,12 @@
             var myTodo = TodoList.FirstOrDefault(x => x.Id == id);
             TodoList.Remove(myTodo);
         }
+
+        var authState = await authenticationState;
+        var user = authState.User;
+        string userName = user.FindFirst(ClaimTypes.Name).Value;
+        await _sales.DeleteSalesDetailAndAddStockTelurUtuh(SalesDetailsId, userName);
+
         product.ProductId = 0;
         product.Barcode = string.Empty;
         product.UnitId = 0;

@@ -11,6 +11,8 @@
 @using ChartJs.Blazor;
 @using ChartJs.Blazor.LineChart;
 @using System.Drawing;
+@using PuppeteerSharp;
+@using PuppeteerSharp.Media;
 @inject IJournalVoucher _voucher
 @inject IPaymentIn _paymentin
 @inject IInventoryReport report
@@ -34,6 +36,9 @@
 @inject IAuditLogService _audit
 @inject IStartingStockDate _stockDate;
 @inject IKandangService _kandang
+@inject ISuratPeringatan _suratPeringatan
+@inject PdfService pdfService;
+@inject ISnackbar Snackbar
 
 @using QuickAccounting.Components
 @using QuickAccounting.Constants;
@@ -54,6 +59,10 @@
 			width: 14.28571428571429% !important;
     }
 }
+
+	.force-white * {
+		color: white !important;
+	}
 </style>
 <div class="content">
 	<div class="row">
@@ -64,7 +73,7 @@
 						<div class="dash-widgetcontent">
 
 							<h2 style="color:#fff !important;">PENGUMUMAN</h2>
-							<p class="counters" style="color:#fff !important; font-weight:bold;">
+						<p class="counters force-white" id="pengumumanContainer" style="color:#fff !important; font-weight:bold;">
 								@((MarkupString)_pengumuman.PengumumanContent)
 							</p>						
 						</div>
@@ -72,9 +81,31 @@
 				}
 		</div>
 	</div>
-	@if (modelEmployee.EmployeeId == 5 || modelEmployee.EmployeeId == 6)
+
+	@if(currentUserRole != "Admin") 
 	{
 		<div class="row">
+			<div class="col-12">
+				@if (LatestSuratPeringatan != null)
+				{
+					<div class="dash-widget" style="background-color:#ff0000;">
+						<div class="dash-widgetcontent">
+
+							<h2 style="color:#fff !important;">SURAT PERINGATAN</h2>
+							<p class="counters force-white" id="pengumumanContainer" style="color:#fff !important; font-weight:bold;">
+								Anda telah mendapatkan Surat Peringatan dari manajemen, silakan <a @onclick="DownloadSP" style="color:#fff !important; text-decoration:underline; cursor:pointer;">unduh disini</a>
+							</p>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	}
+
+
+	@if (modelEmployee.EmployeeId == 5 || modelEmployee.EmployeeId == 6)
+	{
+		@* <div class="row">
 			<div class="container-fluid">
 				<div class="col-md-12">
 					<div class="brand-text float-left mt-4">
@@ -185,7 +216,7 @@
 			</div>
 		</div>
 	
-		
+		 *@
 	
 	}
 
@@ -249,6 +280,8 @@
 			</div>
 		</div>
 	}
+	
+
 	@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")
 	{
 		
@@ -732,7 +765,7 @@
 						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
 					</div>
 					<div class="dash-widgetcontent">
-						<h5><span class="counters">@TotalTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+						<h5><span class="counters">@string.Format("{0:n2}", TotalTelurUtuh) KG</span></h5>
 						<h6>Utuh</h6>
 					</div>
 				</div>
@@ -863,8 +896,8 @@
 			</div>			
 		</div>
 
-		<div class="row">
-			<div class="col-lg-12 col-sm-12 col-12 d-flex">
+ 		@* <div class="row">
+ 			<div class="col-lg-12 col-sm-12 col-12 d-flex">
 				<div class="card flex-fill">
 					<div class="card-header pb-0 d-flex justify-content-between align-items-center">
 						<h4 class="card-title mb-0">Saldo Kas dan Bank</h4>
@@ -902,7 +935,7 @@
 					</div>
 				</div>
 			</div>
-		</div>		
+		</div>	 *@	
 	}
 	
 	
@@ -1415,6 +1448,31 @@
 		}
 	</script>
 }
+
+<script type="text/javascript">
+	function downloadPdf(base64String, fileName) {
+		const link = document.createElement('a');
+		link.href = base64String;
+		link.download = fileName;
+		link.click();
+	}
+</script>
+
+<script>
+	window.downloadFileFromBase64 = (fileName, base64String) => {
+		// Create a temporary hidden link
+		const link = document.createElement('a');
+		link.download = fileName;
+
+		// Attach the base64 string as a PDF data URL
+		link.href = 'data:application/pdf;base64,' + base64String;
+
+		// Append to body, click it to trigger download, then remove it
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
+</script>
 @code{
 	/* Kode baru */
 	private bool AdaPerijinan;
@@ -1550,6 +1608,10 @@
 
 	private bool isLoading = true;
 	private bool _render;
+
+	private SuratPeringatan LatestSuratPeringatan = new SuratPeringatan();
+	string HtmlContentPdf = "";
+	List<object> ParamDataPdf = new List<object>();
 
 	private async Task LoadDataPrices()
 	{
@@ -1989,6 +2051,132 @@
 		TotalReturan = ReturBentes + ReturPutih + ReturParah + ReturParahSekali + ReturRusak + Susut;
 	}
 
+	private async Task GetSuratPeringatan()
+	{
+		// Filter surat peringatan for selected employee
+		var allSuratPeringatan = await _suratPeringatan.GetAll();
+		LatestSuratPeringatan = allSuratPeringatan
+			.Where(x => x.EmployeeId == modelEmployee.EmployeeId)
+			.OrderByDescending(x => x.DateCreated)
+			.FirstOrDefault();
+	}
+	
+	private async Task DownloadSP()
+	{
+		try
+		{
+			if(LatestSuratPeringatan != null)
+			{			
+				ParamDataPdf.Add(modelEmployee.EmployeeName);
+				ParamDataPdf.Add(modelEmployee.EmployeeId);
+				ParamDataPdf.Add(currentUserRole);
+				ParamDataPdf.Add(LatestSuratPeringatan.SpDescription);
+				ParamDataPdf.Add(LatestSuratPeringatan.SPDate);
+			}
+
+			HtmlContentPdf = string.Format(@"<!DOCTYPE html>
+							<html lang='en'>
+							<head>
+								<meta charset='UTF-8'>
+								<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+								<title>Slip Gaji</title>
+								<link rel='stylesheet' href='http://balungfarm.javahome.co.id/css/slipgaji.css' />
+							</head>
+							<body>
+								<div class='payslip-container'>
+									<!-- Payslip Header -->
+									<div class='header'>
+										<h1>Surat Peringatan</h1>
+										<p>PT Telur Intan Farm</p>                                   
+									</div>
+
+									<!-- Employee Details -->
+									<div class='details'>
+										<table>
+											<tr>
+												<th>Nama Karyawan:</th>
+												<td>{0}</td>
+												<th>ID:</th>
+												<td>{1}</td>
+											</tr>
+											<tr>
+												<th>Jabatan:</th>
+												<td colspan='3'>{2}</td>
+											</tr>                                       
+										</table>
+									</div>
+
+									<!-- Earnings Section -->
+									<div class='earnings'>
+										{3}
+									</div>
+
+									<!-- Payslip Footer -->
+									<div class='footer'>
+										<p>
+										Balung, {4:dd MMMM yyyy} <br />
+										PT Telur Intan Farm <br />
+										Manajemen HRD
+										</p>
+										<img src='http://balungfarm.javahome.co.id/img/ttd.png' style='width: 200px' />
+									</div>
+								</div>
+							</body>
+							</html>", ParamDataPdf.ToArray());
+
+			var fileNamePdf = "suratperingatan_" + modelEmployee.EmployeeName.Replace(" ", "_") + ".pdf";
+
+			//var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+			// Initiate the download
+			// Using Javascript to download PDF
+			// var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
+			//var base64 = Convert.ToBase64String(pdfResult);
+			//var url = $"data:application/pdf;base64,{base64}";
+
+			//await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+			string uniqueProfilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
+			// 3. Launch the headless browser (NoSandbox is mandatory for Ubuntu)
+			await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+			{
+				Headless = true,
+				UserDataDir = uniqueProfilePath,
+				ExecutablePath = "/usr/bin/google-chrome-stable", 
+				Args = new[] 
+				{ 
+					"--no-sandbox", 
+					"--disable-setuid-sandbox",
+					"--disable-dev-shm-usage", 
+					"--disable-gpu"
+				}
+			});
+
+			// 4. Create a new page and inject the HTML
+			await using var page = await browser.NewPageAsync();
+			await page.SetContentAsync(HtmlContentPdf);
+
+			// 5. Generate and return the PDF file as a byte array
+			byte[] pdfBytes = await page.PdfDataAsync(new PdfOptions
+			{
+				Format = PaperFormat.A4,
+				PrintBackground = true,
+				MarginOptions = new MarginOptions { Top = "10px", Bottom = "10px", Right = "40px" }
+			});
+
+			string base64Data = Convert.ToBase64String(pdfBytes);
+
+			// 5. Call the JavaScript function to download the file
+			await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileNamePdf, base64Data);
+
+			Snackbar.Add("PDF berhasil diunduh!", Severity.Success);
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"Gagal mengunduh PDF: {ex.Message}", Severity.Error);
+		}
+    }
+
 	protected async override void OnInitialized()
 	{
 		AdaPerijinan = true;
@@ -2002,7 +2190,9 @@
 
 		JobDescAvailable = !string.IsNullOrEmpty(modelEmployee.JobDesc);
 		SOPAvailable = !string.IsNullOrEmpty(modelEmployee.SOP);
-		
+
+		await GetSuratPeringatan();
+
         CageList = await _kandang.GetAll();
 		SelectedKandang = CageList.FirstOrDefault().NoKandang;
 

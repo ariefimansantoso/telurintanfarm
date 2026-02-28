@@ -27,6 +27,6 @@ namespace QuickAccounting.Repository.Interface
 		decimal GetPenjualanTelurParah(DateTime dateFrom, DateTime to);
 		decimal GetPenjualanTelurParahSekali(DateTime dateFrom, DateTime to);
         List<dynamic> GetPenjualanTelurUtuhGraph(DateTime dateFrom, DateTime to);
-
+        Task DeleteSalesDetailAndAddStockTelurUtuh(int salesDetailId, string userName);
     }
 }

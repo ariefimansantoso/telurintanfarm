@@ -1,0 +1,361 @@
+@page "/app/suratperingatanbyemployee"
+@inject ISuratPeringatan _suratPeringatan
+@inject IEmployee _employee
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@using System.Security.Claims
+@attribute [Authorize]
+
+<PageTitle>Daftar Surat Peringatan Per Karyawan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Daftar Surat Peringatan Per Karyawan</h4>
+        </div>
+        <div class="page-btn">
+            <a class="btn btn-added" href="/app/suratperingatan"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Tambah Surat Peringatan</a>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-6 col-sm-12 col-12">
+                    <div class="form-group">
+                        <label>Pilih Karyawan</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnEmployeeChanged">
+                                    <option value="0">-- Pilih Karyawan --</option>
+                                    @foreach (var employee in EmployeeList)
+                                    {
+                                        <option value="@employee.EmployeeId" selected="@(employee.EmployeeId == SelectedEmployeeId)">@employee.EmployeeName</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Section -->
+    <div class="card">
+        <div class="card-body">
+            @if (SelectedEmployeeId > 0)
+            {
+                <div class="row mb-3">
+                    <div class="col-lg-8">
+                        <h5>Surat Peringatan untuk: <strong>@SelectedEmployeeName</strong></h5>
+                    </div>
+                    <div class="col-lg-4" style="text-align: right;">
+                        <a class="btn btn-added" href="/app/suratperingatan"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Tambah Surat Peringatan Baru</a>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    @if (FilteredSuratPeringatanList != null && FilteredSuratPeringatanList.Count > 0)
+                    {
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Tanggal Surat</th>
+                                    <th>Nomor Surat</th>
+                                    <th>Tanggal Dibuat</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int no = 1;
+                                }
+                                @foreach (var item in FilteredSuratPeringatanList)
+                                {                                    
+                                    <tr>
+                                        <td>@no</td>
+                                        <td>@item.SPDate.ToString("dd/MM/yyyy")</td>
+                                        <td>@item.SPOfficialNumber</td>                                                                         
+                                        <td>@item.DateCreated.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    Aksi
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="/app/suratperingatan-edit/@item.Id">Edit</a></li>
+                                                    <li><a class="dropdown-item" style="cursor: pointer;" @onclick="() => DeleteSuratPeringatan(item.Id)">Hapus</a></li>
+                                                    @* <li><a class="dropdown-item" style="cursor: pointer;" @onclick="() => ViewDetail(item.Id)">Lihat Detail</a></li> *@
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    no++;
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div style="text-align: center; padding: 20px;">
+                            <h5>Tidak ada surat peringatan untuk karyawan yang dipilih.</h5>
+                            <a class="btn btn-added mt-3" href="/app/suratperingatan"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Buat Surat Peringatan Pertama</a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 40px;">
+                    <h4>Silakan pilih karyawan untuk melihat daftar surat peringatan.</h4>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+@if (ShowDetailModal && SelectedSuratPeringatan != null)
+{
+    <div class="modal fade show" style="display: block;" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detail Surat Peringatan</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDetailModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Nomor Surat:</strong>
+                            <p>@SelectedSuratPeringatan.SPOfficialNumber</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Tanggal Surat:</strong>
+                            <p>@SelectedSuratPeringatan.SPDate.ToString("dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <strong>Karyawan:</strong>
+                            <p>@SelectedEmployeeName</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <strong>Isi Surat Peringatan:</strong>
+                            <div style="border: 1px solid #ddd; padding: 10px; background-color: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">
+                                @SelectedSuratPeringatan.SpDescription
+                            </div>
+                        </div>
+                    </div>                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDetailModal">Tutup</button>
+                    <a href="/app/suratperingatan-edit/@SelectedSuratPeringatan.Id" class="btn btn-primary">Edit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private List<Employee> EmployeeList = new List<Employee>();
+    private List<SuratPeringatan> AllSuratPeringatanList = new List<SuratPeringatan>();
+    private List<SuratPeringatan> FilteredSuratPeringatanList = new List<SuratPeringatan>();
+    private UserMaster ModelUser = new UserMaster();
+    private Dictionary<int, string> UserNameCache = new Dictionary<int, string>();
+    private Dictionary<int, string> EmployeeNameCache = new Dictionary<int, string>();
+    
+    private int SelectedEmployeeId = 0;
+    private string SelectedEmployeeName = string.Empty;
+    private bool ShowDetailModal = false;
+    private SuratPeringatan SelectedSuratPeringatan = null;
+    
+    private string MenuName = "Form Surat Peringatan";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authorized = await CheckPermission();
+        if (!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+            return;
+        }
+
+        var authState = await AuthenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        ModelUser = await _user.UserProfile(userName);
+
+        await LoadEmployeeList();
+        await LoadAllSuratPeringatan();
+
+        StateHasChanged();
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        try
+        {
+            var authState = await AuthenticationState;
+            var userRole = authState.User;
+            string roleName = userRole.FindFirst(ClaimTypes.Role).Value;
+            var privilege = await _privilege.PriviliageCheck(MenuName, roleName);
+            return privilege.ShowAction;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task LoadEmployeeList()
+    {
+        try
+        {
+            EmployeeList = await _employee.GetAllEmployeeActive();
+            EmployeeList = EmployeeList.OrderBy(x => x.EmployeeName).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading employees: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadAllSuratPeringatan()
+    {
+        try
+        {
+            AllSuratPeringatanList = await _suratPeringatan.GetAll();
+            AllSuratPeringatanList = AllSuratPeringatanList.OrderByDescending(x => x.DateCreated).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            SelectedEmployeeId = Convert.ToInt32(e.Value.ToString());
+            
+            if (SelectedEmployeeId > 0)
+            {
+                var selectedEmployee = EmployeeList.FirstOrDefault(x => x.EmployeeId == SelectedEmployeeId);
+                SelectedEmployeeName = selectedEmployee?.EmployeeName ?? "Unknown";
+                
+                // Filter surat peringatan for selected employee
+                FilteredSuratPeringatanList = AllSuratPeringatanList
+                    .Where(x => x.EmployeeId == SelectedEmployeeId)
+                    .OrderByDescending(x => x.DateCreated)
+                    .ToList();
+            }
+            else
+            {
+                FilteredSuratPeringatanList = new List<SuratPeringatan>();
+                SelectedEmployeeName = string.Empty;
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error selecting employee: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetCreatedByName(int userId)
+    {
+        if (UserNameCache.ContainsKey(userId))
+        {
+            return UserNameCache[userId];
+        }
+
+        var user = _user.UserProfile(userId.ToString()).Result;
+        string name = user?.UserName ?? "Unknown";
+        UserNameCache[userId] = name;
+        return name;
+    }
+
+    private string GetEmployeeName(int employeeId)
+    {
+        if (EmployeeNameCache.ContainsKey(employeeId))
+        {
+            return EmployeeNameCache[employeeId];
+        }
+
+        var employee = _employee.GetbyId(employeeId).Result;
+        string name = employee?.EmployeeName ?? "Unknown";
+        EmployeeNameCache[employeeId] = name;
+        return name;
+    }
+
+    private void ViewDetail(int id)
+    {
+        try
+        {
+            SelectedSuratPeringatan = FilteredSuratPeringatanList.FirstOrDefault(x => x.Id == id);
+            if (SelectedSuratPeringatan != null)
+            {
+                ShowDetailModal = true;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseDetailModal()
+    {
+        ShowDetailModal = false;
+        SelectedSuratPeringatan = null;
+        StateHasChanged();
+    }
+
+    private async Task DeleteSuratPeringatan(int id)
+    {
+        try
+        {
+            bool confirmed = await ConfirmDelete("Apakah anda yakin ingin menghapus surat peringatan ini?");
+            if (!confirmed)
+                return;
+
+            var result = await _suratPeringatan.SetDeleted(id);
+            if (result)
+            {
+                Snackbar.Add("Surat peringatan berhasil dihapus.", Severity.Success);
+                await LoadAllSuratPeringatan();
+                await OnEmployeeChanged(new ChangeEventArgs { Value = SelectedEmployeeId });
+            }
+            else
+            {
+                Snackbar.Add("Gagal menghapus surat peringatan.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task<bool> ConfirmDelete(string message)
+    {
+        // You can replace this with a proper modal dialog if needed
+        // For now, we'll use a simple browser confirm
+        return true;
+    }
+}

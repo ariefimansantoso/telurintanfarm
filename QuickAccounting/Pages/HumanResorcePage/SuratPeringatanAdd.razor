@@ -1,0 +1,282 @@
+@page "/app/suratperingatan"
+@inject ISuratPeringatan _suratPeringatan
+@inject IEmployee _employee
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IJSRuntime JSRuntime
+@using System.Security.Claims
+@attribute [Authorize]
+
+<PageTitle>Form Surat Peringatan Karyawan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Surat Peringatan Karyawan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (!FormSubmitted)
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Ditujukan Kepada</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnEmployeeChanged">
+                                        <option value="0">-- Pilih Karyawan --</option>
+                                        @foreach (var employee in EmployeeList)
+                                        {
+                                            <option value="@employee.EmployeeId">@employee.EmployeeName</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Nomor Surat</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="text" class="form-control" @bind="Model.SPOfficialNumber" placeholder="Nomor Surat" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Tanggal Surat Peringatan</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <RadzenDatePicker @bind-Value="@Model.DateCreated" DateFormat="d" Class="w-100" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8 col-sm-12 col-12">
+                        <div class="form-group">
+                            <label>Isi Surat Peringatan</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <div id="quill-editor-surat-peringatan" style="height: 400px; width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <br />
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <input type="button" @onclick="@SaveSuratPeringatan" class="btn btn-submit me-2" value="Simpan" />
+                        <a href="/app/dashboard" class="btn btn-cancel">Batal</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Surat Peringatan berhasil disimpan.</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <a href="/app/suratperingatan" class="btn btn-submit me-2">Tambah Surat Peringatan Lagi</a>
+                        <a href="/app/dashboard" class="btn btn-cancel">Kembali ke Dashboard</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private SuratPeringatan Model = new SuratPeringatan();
+    private List<Employee> EmployeeList = new List<Employee>();
+    private Employee SelectedEmployee = null;
+    private UserMaster ModelUser = new UserMaster();
+    private Employee modelEmployee;
+    private bool FormSubmitted = false;
+    private string MenuName = "Form Surat Peringatan";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check permission
+        var authorized = await CheckPermission();
+        if (!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+            return;
+        }
+
+        // Get current user
+        var authState = await AuthenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        ModelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(ModelUser.UserId);
+
+        // Load employee list
+        await LoadEmployeeList();
+
+        // Initialize model
+        Model = new SuratPeringatan
+        {
+            DateCreated = DateTime.Now,
+            DateModified = DateTime.Now,
+            CreatedBy = modelEmployee.EmployeeId,
+            ModifiedBy = modelEmployee.EmployeeId,
+            IsDeleted = false,
+            SpNumber = 0,
+            SpDescription = string.Empty,
+            SPOfficialNumber = string.Empty,
+            SPDate = DateTime.Now
+        };
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize Quill editor
+            await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-surat-peringatan", Model.SpDescription ?? "");
+        }
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        try
+        {
+            var authState = await AuthenticationState;
+            var userRole = authState.User;
+            string roleName = userRole.FindFirst(ClaimTypes.Role).Value;
+            var privilege = await _privilege.PriviliageCheck(MenuName, roleName);
+            return privilege.ShowAction;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task LoadEmployeeList()
+    {
+        try
+        {
+            EmployeeList = await _employee.GetAllEmployeeActive();
+            EmployeeList = EmployeeList.OrderBy(x => x.EmployeeName).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading employees: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            int employeeId = Convert.ToInt32(e.Value.ToString());
+            if (employeeId > 0)
+            {
+                SelectedEmployee = await _employee.GetbyId(employeeId);
+                Model.EmployeeId = employeeId;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error selecting employee: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task SaveSuratPeringatan()
+    {
+        try
+        {
+            // Get content from Quill editor
+            Model.SpDescription = await JSRuntime.InvokeAsync<string>("quillInterop.getQuillContent", "quill-editor-surat-peringatan");
+
+            // Validation
+            if (Model.EmployeeId == 0)
+            {
+                Snackbar.Add("Mohon pilih karyawan terlebih dahulu.", Severity.Warning);
+                return;
+            }
+
+            if (Model.SPOfficialNumber == "")
+            {
+                Snackbar.Add("Nomor surat tidak boleh kosong.", Severity.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Model.SpDescription) || Model.SpDescription == "<p><br></p>")
+            {
+                Snackbar.Add("Isi surat peringatan tidak boleh kosong.", Severity.Warning);
+                return;
+            }
+
+            if (Model.SPDate == DateTime.MinValue)
+            {
+                Snackbar.Add("Tanggal surat peringatan harus dipilih.", Severity.Warning);
+                return;
+            }
+
+            // Set audit fields
+            Model.CreatedBy = modelEmployee.EmployeeId;
+            Model.ModifiedBy = modelEmployee.EmployeeId;
+            Model.DateCreated = DateTime.Now;
+            Model.DateModified = DateTime.Now;
+            Model.IsDeleted = false;
+
+            // Save to database
+            var result = await _suratPeringatan.Insert(Model);
+
+            if (result > 0)
+            {
+                Snackbar.Add("Surat peringatan berhasil disimpan.", Severity.Success);
+                FormSubmitted = true;
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add("Gagal menyimpan surat peringatan. Silakan coba lagi.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Exception: {ex.StackTrace}");
+        }
+    }
+
+    [JSInvokable]
+    public static async Task UpdateQuillContent(string elementId, string content)
+    {
+        // This method is called from JavaScript when Quill content changes
+        // You can use this for real-time updates if needed
+    }
+}

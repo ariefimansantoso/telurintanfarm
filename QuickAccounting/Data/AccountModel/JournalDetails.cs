@@ -10,6 +10,6 @@ namespace QuickAccounting.Data.AccountModel
         public int LedgerId { get; set; }
         public decimal Credit { get; set; }
         public decimal Debit { get; set; }
-        public string Narration { get; set; }
+        public string Narration { get; set; } = string.Empty;
     }
 }

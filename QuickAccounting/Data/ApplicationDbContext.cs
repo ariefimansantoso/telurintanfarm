@@ -108,6 +108,7 @@ namespace QuickAccounting.Data
         public DbSet<StandardData> StandardData { get; set; }
         public DbSet<EmployeeKandang> EmployeeKandang { get; set; }
         public DbSet<SalaryHistory> SalaryHistory { get; set; }
+        public DbSet<SuratPeringatan> SuratPeringatan { get; set; }
         
         public DbSet<LogPopulasiAnakKandang> LogPopulasiAnakKandang { get; set; }
 	}

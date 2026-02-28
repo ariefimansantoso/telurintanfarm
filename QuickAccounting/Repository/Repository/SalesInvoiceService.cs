@@ -882,5 +882,43 @@ namespace QuickAccounting.Repository.Repository
 				}
             }
         }
+
+        public async Task DeleteSalesDetailAndAddStockTelurUtuh(int salesDetailId, string userName)
+        {
+            var salesDetail = _context.SalesDetails.FirstOrDefault(sd => sd.SalesDetailsId == salesDetailId);
+            if (salesDetail != null)
+            {
+                var product = _context.Product.FirstOrDefault(p => p.ProductId == salesDetail.ProductId);
+                if (product != null)
+                {
+                    if (product.ProductCode.StartsWith("TA-"))
+                    {
+                        var userItem = _context.UserMaster.FirstOrDefault(x => x.UserName == userName);
+                        var employeeItem = _context.Employee.FirstOrDefault(x => x.UserID == userItem.UserId);
+
+                        StockTelurUtuh stockTelurUtuh = _context.StockTelurUtuh.FirstOrDefault(x => x.ID == 1);
+                        // kurangi stock telur utuh dari gudang
+                        stockTelurUtuh.StockKG = stockTelurUtuh.StockKG + salesDetail.Qty;
+                        stockTelurUtuh.ModifiedBy = employeeItem.EmployeeId;
+                        stockTelurUtuh.ModifiedOn = DateTime.Now;
+                        _context.Update(stockTelurUtuh);
+                        await _context.SaveChangesAsync();
+
+                        MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+                        mutasi.JenisTelur = "UTUH";
+                        mutasi.BeratTelurIn = salesDetail.Qty;
+                        mutasi.BeratTelurOut = 0;
+                        mutasi.DateCreated = DateTime.Now;
+                        mutasi.CreatedBy = employeeItem.EmployeeId;
+                        mutasi.Reason = "SalesRestock";
+                        _context.MutasiStockTelurHarian.Add(mutasi);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                
+                _context.SalesDetails.Remove(salesDetail);
+                await _context.SaveChangesAsync();
+            }
+        }
 	}
 }

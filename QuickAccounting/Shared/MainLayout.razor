@@ -146,7 +146,15 @@
 												</ul>
 											</li>
 										}
-										@if (currentUserRole == "HR" || currentUserRole == "Admin")
+
+										@if(modelEmployee.EmployeeId == 8)
+										{
+											<li class="">
+												<a href="/app/recordattendance"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Form Absensi Harian</span></a>
+											</li>
+										}
+
+										@if ((currentUserRole == "HR" || currentUserRole == "Admin") && modelEmployee.EmployeeId != 8)
 										{
 											<li class="submenu">
 												<a href="javascript:void(0);"><img src="assets/img/icons/users.svg" alt="img"><span>SDM / HR</span> <span class="menu-arrow"></span></a>
@@ -164,6 +172,7 @@
 													}													
 													<li><a href="/app/recordpenalty">Sanksi dan Hukuman</a></li>
 													<li><a href="/app/recordbonus">Bonus dan Tambahan Gaji</a></li>
+													<li><a href="/app/suratperingatanbyemployee">Daftar Surat Peringatan</a></li>
 													<li><a href="/app/adminrecordattendance">Absensi Manual</a></li>
 													<li><a href="/app/adminperijinan">Admin Perijinan</a></li>
 													<li><a href="/app/penaltylist">Laporan Sanksi</a></li>
@@ -354,6 +363,9 @@
 													<li><a href="/app/tax">Tax Rates</a></li>
 												</ul>
 											</li>
+											<li class="">
+												<a href="/app/systemsettings"><img src="assets/img/icons/settings.svg" alt="img"><span> Sistem Info</span></a>
+											</li>
 										}
 									</ul>
 						</div>
@@ -412,6 +424,7 @@
 	string showModel = "";
 	private CustomErrorBoundary errorBoundary;
 	string currentUserRole = "User";
+	int userId = 0;
 
 	UserMaster modelUser = new UserMaster();
 	Employee modelEmployee = new Employee();
@@ -438,6 +451,7 @@
 		{
 			currentUserRole = await _userManage.GetUserRole(userName);
 			modelUser = await _userManage.UserProfile(userName);
+			userId = modelUser.UserId;
 			modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
 		}
 	}

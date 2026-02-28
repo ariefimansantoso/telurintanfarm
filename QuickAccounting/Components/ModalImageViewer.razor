@@ -20,15 +20,15 @@
 
 @code {
     [Parameter]
-    public string Title { get; set; }
+    public string Title { get; set; } = string.Empty;
 
     [Parameter]
-    public string ImageUrl { get; set; }
+    public string ImageUrl { get; set; } = string.Empty;
 
     [Parameter]
     public EventCallback<bool> OnClose { get; set; }
 
-    bool isProcessing;
+    //bool isProcessing;
     private Task ModalCancel()
     {
         return OnClose.InvokeAsync(false);
@@ -36,7 +36,7 @@
 
     private Task ModalOk()
     {
-        isProcessing = true;
+        //isProcessing = true;
         
         try
         {
@@ -44,7 +44,7 @@
         }
         finally
         {
-            isProcessing = false;
+            //isProcessing = false;
         }
     }
 }

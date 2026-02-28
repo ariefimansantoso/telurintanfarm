@@ -319,7 +319,7 @@
 			StockTelurUtuh = stockTelurUtuh.StockKG;
 		}
 
-		var startingStockDate = stockTelurUtuh.StockDate;
+		var startingStockDate = stockTelurUtuh.StockDate.Date;
 
 		// bentes
 		var stockBentes = await _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
@@ -391,9 +391,11 @@
 	}
 	private async Task LoadData()
 	{
+		var dateNow = DateTime.UtcNow.AddHours(7);
+
 		company = await _company.GetbyId(1);
 
-		ListNota = await _db.RecordNota.Where(x => x.DateCreated.Date == DateTime.Now.Date).ToListAsync();
+		ListNota = await _db.RecordNota.Where(x => x.DateCreated.Date == dateNow.Date).ToListAsync();
 		ListNota = ListNota.OrderByDescending(x => Convert.ToInt32(x.NomorNota)).ToList();
 
 		foreach(var nota in ListNota)

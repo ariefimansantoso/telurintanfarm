@@ -398,13 +398,15 @@
         decimal d;
         if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out d))
         {
-            TelurUtuhKG = d;     
-            if(TelurUtuhKG > 20)
+            if(d > 20)
             {
                 IsValid = false;
                 Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);
                 return;
             }
+
+            TelurUtuhKG = d;     
+            
             IsValid = true;
             Calculate();
         }
@@ -437,13 +439,15 @@
         decimal d;
         if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out d))
         {
-            TelurBentesKG = d;
-            if (TelurBentesKG > 20)
+            if (d > 20)
             {
                 IsValid = false;
                 Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);
                 return;
             }
+
+            TelurBentesKG = d;
+            
             IsValid = true;
             Calculate();
         }
@@ -476,13 +480,15 @@
         decimal d;
         if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out d))
         {
-            TelurPutihKG = d;
-            if (TelurPutihKG > 20)
+            if (d > 20)
             {
                 IsValid = false;
                 Snackbar.Add("Input salah, atau anda menimbang terlalu banyak tray.", Severity.Warning);
                 return;
             }
+
+            TelurPutihKG = d;
+            
             IsValid = true;
             Calculate();
         }
