@@ -119,6 +119,7 @@
     private bool FormSubmitted = false;
     private string MenuName = "Form Surat Peringatan";
 
+    private DotNetObjectReference<SuratPeringatanEdit> _objRef;
     protected override async Task OnInitializedAsync()
     {
         var authorized = await CheckPermission();
@@ -146,7 +147,11 @@
         if (firstRender && Model != null)
         {
             // Initialize Quill editor with existing content
-            await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-surat-peringatan-edit", Model.SpDescription ?? "");
+            //await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-surat-peringatan-edit", Model.SpDescription ?? "");
+            _objRef = DotNetObjectReference.Create(this);
+
+            // Pass the reference into your JS initialization
+            await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-surat-peringatan-edit", Model.SpDescription, _objRef, "EditSuratPeringatan");
         }
     }
 
@@ -190,7 +195,7 @@
                 Snackbar.Add("Surat peringatan tidak ditemukan.", Severity.Error);
                 navigation.NavigateTo("/app/suratperingatanbyemployee");
             }
-            await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-surat-peringatan-edit", Model.SpDescription ?? "");
+            //await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-surat-peringatan-edit", Model.SpDescription ?? "");
         }
         catch (Exception ex)
         {
@@ -257,16 +262,7 @@
     }
 
     [JSInvokable]
-    public static async Task UpdateQuillContent(string elementId, string content)
-    {
-        // This method is called from JavaScript when Quill content changes
-        // You can use this for real-time updates if needed
-    }
+    public void EditSuratPeringatan(string content) => Model.SpDescription = content;
 
-    [JSInvokable]
-    public static async Task UpdateQuillContentApart(string elementId, string content)
-    {
-        if (elementId == "quill-editor-surat-peringatan-edit")
-            Model.SpDescription = content;
-    }
+    public void Dispose() => _objRef?.Dispose();
 }

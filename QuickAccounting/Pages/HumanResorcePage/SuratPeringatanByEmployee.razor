@@ -5,7 +5,11 @@
 @inject IUser _user
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
+@inject IUser _userManage
+@inject IJSRuntime JSRuntime
 @using System.Security.Claims
+@using PuppeteerSharp
+@using PuppeteerSharp.Media
 @attribute [Authorize]
 
 <PageTitle>Daftar Surat Peringatan Per Karyawan</PageTitle>
@@ -67,6 +71,7 @@
                                     <th>Tanggal Surat</th>
                                     <th>Nomor Surat</th>
                                     <th>Tanggal Dibuat</th>
+                                    <th></th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -81,6 +86,9 @@
                                         <td>@item.SPDate.ToString("dd/MM/yyyy")</td>
                                         <td>@item.SPOfficialNumber</td>                                                                         
                                         <td>@item.DateCreated.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <a class="btn btn-sm btn-primary" @onclick="() => DownloadSP(item.Id, item.EmployeeId)"><img src="assets/img/icons/download.svg" alt="img" class="me-1">Download</a>
+                                        </td>
                                         <td>
                                             <div class="dropdown">
                                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -117,7 +125,21 @@
         </div>
     </div>
 </div>
+<script>
+    window.downloadFileFromBase64 = (fileName, base64String) => {
+        // Create a temporary hidden link
+        const link = document.createElement('a');
+        link.download = fileName;
 
+        // Attach the base64 string as a PDF data URL
+        link.href = 'data:application/pdf;base64,' + base64String;
+
+        // Append to body, click it to trigger download, then remove it
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+</script>
 <!-- Detail Modal -->
 @if (ShowDetailModal && SelectedSuratPeringatan != null)
 {
@@ -174,13 +196,139 @@
     private UserMaster ModelUser = new UserMaster();
     private Dictionary<int, string> UserNameCache = new Dictionary<int, string>();
     private Dictionary<int, string> EmployeeNameCache = new Dictionary<int, string>();
-    
+
     private int SelectedEmployeeId = 0;
     private string SelectedEmployeeName = string.Empty;
     private bool ShowDetailModal = false;
     private SuratPeringatan SelectedSuratPeringatan = null;
-    
+
     private string MenuName = "Form Surat Peringatan";
+
+    private async Task DownloadSP(int spID, int employeeID)
+    {
+        try
+        {
+            string HtmlContentPdf = "";
+            List<object> ParamDataPdf = new List<object>();
+
+            var modelEmployee = EmployeeList.FirstOrDefault(x => x.EmployeeId == employeeID);
+            var modelUser = await _userManage.GetbyId(modelEmployee.UserID);
+            var currentUserRole = await _userManage.GetUserRole(modelUser.UserName);
+            var LatestSuratPeringatan = AllSuratPeringatanList
+                .Where(x => x.Id == spID)
+                .FirstOrDefault();
+
+            if (LatestSuratPeringatan != null)
+            {
+                ParamDataPdf.Add(modelEmployee.EmployeeName);
+                ParamDataPdf.Add(modelEmployee.EmployeeId);
+                ParamDataPdf.Add(currentUserRole);
+                ParamDataPdf.Add(LatestSuratPeringatan.SpDescription);
+                ParamDataPdf.Add(LatestSuratPeringatan.SPDate);
+            }
+
+            HtmlContentPdf = string.Format(@"<!DOCTYPE html>
+							<html lang='en'>
+							<head>
+								<meta charset='UTF-8'>
+								<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+								<title>Slip Gaji</title>
+								<link rel='stylesheet' href='http://balungfarm.javahome.co.id/css/slipgaji.css' />
+							</head>
+							<body>
+								<div class='payslip-container'>
+									<!-- Payslip Header -->
+									<div class='header'>
+										<h1>Surat Peringatan</h1>
+										<p>PT Telur Intan Farm</p>
+									</div>
+
+									<!-- Employee Details -->
+									<div class='details'>
+										<table>
+											<tr>
+												<th>Nama Karyawan:</th>
+												<td>{0}</td>
+												<th>ID:</th>
+												<td>{1}</td>
+											</tr>
+											<tr>
+												<th>Jabatan:</th>
+												<td colspan='3'>{2}</td>
+											</tr>
+										</table>
+									</div>
+
+									<!-- Earnings Section -->
+									<div class='earnings'>
+										{3}
+									</div>
+
+									<!-- Payslip Footer -->
+									<div class='footer'>
+										<p>
+										Balung, {4:dd MMMM yyyy} <br />
+										PT Telur Intan Farm <br />
+										Manajemen HRD
+										</p>
+										<img src='http://balungfarm.javahome.co.id/img/ttd.png' style='width: 200px' />
+									</div>
+								</div>
+							</body>
+							</html>", ParamDataPdf.ToArray());
+
+            var fileNamePdf = "suratperingatan_" + modelEmployee.EmployeeName.Replace(" ", "_") + ".pdf";
+
+            //var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+            // Initiate the download
+            // Using Javascript to download PDF
+            // var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
+            //var base64 = Convert.ToBase64String(pdfResult);
+            //var url = $"data:application/pdf;base64,{base64}";
+
+            //await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+            string uniqueProfilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
+            // 3. Launch the headless browser (NoSandbox is mandatory for Ubuntu)
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                UserDataDir = uniqueProfilePath,
+                ExecutablePath = "/usr/bin/google-chrome-stable",
+                Args = new[]
+                {
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu"
+                }
+            });
+
+            // 4. Create a new page and inject the HTML
+            await using var page = await browser.NewPageAsync();
+            await page.SetContentAsync(HtmlContentPdf);
+
+            // 5. Generate and return the PDF file as a byte array
+            byte[] pdfBytes = await page.PdfDataAsync(new PdfOptions
+            {
+                Format = PaperFormat.A4,
+                PrintBackground = true,
+                MarginOptions = new MarginOptions { Top = "10px", Bottom = "10px", Right = "40px" }
+            });
+
+            string base64Data = Convert.ToBase64String(pdfBytes);
+
+            // 5. Call the JavaScript function to download the file
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileNamePdf, base64Data);
+
+            Snackbar.Add("PDF berhasil diunduh!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Gagal mengunduh PDF: {ex.Message}", Severity.Error);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

@@ -15,7 +15,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddServerSideBlazor().AddHubOptions(options =>
+{
+    // Increase the limit to 2 Megabytes (or whatever size you need)
+    // 2 * 1024 * 1024 = 2,097,152 bytes
+    options.MaximumReceiveMessageSize = 2 * 1024 * 1024;
+});
 builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<TooltipService>();

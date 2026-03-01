@@ -1,4 +1,4 @@
-﻿@page "/app/employeeeditjobdesc/{id}"
+﻿@page "/app/employeeeditsop/{id}"
 @inject IEmployee _employee
 @inject IDesignation _designation
 @inject ISalaryPackage _salaryPackage
@@ -18,15 +18,15 @@
 					</div>					
 					<div class="card">
 						<div class="card-body">
-							<div class="row">
+							<div class="row">								
 								<div class="col-lg-4 col-sm-6 col-12">
 									<div class="form-group">
-										<label>Job Desc</label>
-										<div id="quill-editor-jobdesc" style="height: 500px; width: 100%;"></div>
-										@*<textarea cols="6" style="width:100%;" @bind="model.JobDesc"></textarea>
-										<ValidationMessage For="@(() => model.JobDesc)" /> *@
+										<label>SOP</label>
+										<div id="quill-editor-sop" style="height: 500px; width: 100%;"></div>
+										@*<textarea cols="6" style="width:100%;" @bind="model.SOP"></textarea>
+										<ValidationMessage For="@(() => model.SOP)" /> *@
 									</div>
-								</div>								
+								</div>
 							</div>
 							<div class="row">
 								<div class="col-lg-12">
@@ -47,7 +47,7 @@
 	IList<SalaryPackage> listPackage;
 	string strMenu = "Human Resources";	
 	bool quillRendered = false;
-	private DotNetObjectReference<EmployeeEditSOPJobDesc> _objRef;
+	private DotNetObjectReference<EmployeeEditSOP> _objRef;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -75,8 +75,8 @@
 			model = await _employee.GetbyId(Convert.ToInt32(id));
 			_objRef = DotNetObjectReference.Create(this);
 
-			// Pass the reference into your JS initialization
-			await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-jobdesc", model.JobDesc, _objRef, "UpdateJobDesc");			
+			// Pass the reference into your JS initialization			
+			await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-sop", model.SOP, _objRef, "UpdateSOP");
 		}
 	}
 
@@ -116,5 +116,5 @@
 	}
 
 	[JSInvokable]
-	public void UpdateJobDesc(string content) => model.JobDesc = content;
+	public void UpdateSOP(string content) => model.SOP = content;
 }

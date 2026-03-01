@@ -42,6 +42,7 @@
 	static QuickAccounting.Data.Pengumuman model = new QuickAccounting.Data.Pengumuman();
 	string strMenu = "Pengumuman";	
 	bool quillRendered = false;
+	private DotNetObjectReference<Pengumuman> _objRef;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -63,10 +64,26 @@
 
 	private async Task LoadData()
 	{
-		model = _db.Pengumuman.FirstOrDefault(x => x.ID == 1);
-		await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-pengumuman", model.PengumumanContent);		
-		StateHasChanged();
+				
+		//StateHasChanged();
 	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize Quill editor
+            //await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-surat-peringatan", Model.SpDescription ?? "");
+
+            _objRef = DotNetObjectReference.Create(this);
+			model = _db.Pengumuman.FirstOrDefault(x => x.ID == 1);
+            // Pass the reference into your JS initialization
+			await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-pengumuman", model.PengumumanContent, _objRef, "UpdatePengumuman");
+
+			
+			//await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-pengumuman", model.PengumumanContent);
+        }
+    }
 
 	private async Task Save()
 	{
@@ -89,9 +106,7 @@
 	}
 
 	[JSInvokable]
-	public static async Task UpdateQuillContentPengumuman(string elementId, string content)
-	{		
-		if (elementId == "quill-editor-pengumuman")
-			model.PengumumanContent = content;
-	}
+	public void UpdatePengumuman(string content) => model.PengumumanContent = content;
+
+	public void Dispose() => _objRef?.Dispose();	
 }
