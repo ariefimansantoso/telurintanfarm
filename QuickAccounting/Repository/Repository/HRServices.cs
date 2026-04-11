@@ -180,11 +180,30 @@ namespace QuickAccounting.Repository.Repository
             return potongan;
         }
 
+        public async Task<List<AbsensiPotongan>> GetByCurrentMonthYearAndEmployeeIdAsync(int employeeId, int month, int year)
+        {
+            var potongan = await _context.AbsensiPotongan
+                .Where(x => x.KARYAWAN_ID == employeeId && x.CUT_OFF_BULAN == month && x.CUT_OFF_TAHUN == year)
+                .ToListAsync();
+            return potongan;
+        }
+
         public List<Penalty> GetPenaltyByCurrentMonthYearAndEmployeeId(int employeeId, DateTime from, DateTime to)
         {
             var potongan = _context.Penalty.Where(x => x.EmployeeID == employeeId && 
 											x.ForDate.Date >= from.Date && 
 											x.ForDate.Date <= to.Date).OrderByDescending(x => x.ForDate).ToList();
+            return potongan;
+        }
+
+        public async Task<List<Penalty>> GetPenaltyByCurrentMonthYearAndEmployeeIdAsync(int employeeId, DateTime from, DateTime to)
+        {
+            var potongan = await _context.Penalty
+                .Where(x => x.EmployeeID == employeeId && 
+                    x.ForDate.Date >= from.Date && 
+                    x.ForDate.Date <= to.Date)
+                .OrderByDescending(x => x.ForDate)
+                .ToListAsync();
             return potongan;
         }
 

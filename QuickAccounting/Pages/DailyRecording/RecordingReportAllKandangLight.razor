@@ -1,0 +1,459 @@
+﻿@page "/app/recordingreportsallkandanglight"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using ChartJs.Blazor.Common;
+@using ChartJs.Blazor.Common.Axes;
+@using ChartJs.Blazor.Common.Axes.Ticks;
+@using ChartJs.Blazor.Common.Enums;
+@using ChartJs.Blazor.Common.Handlers;
+@using ChartJs.Blazor.Common.Time;
+@using ChartJs.Blazor.Util;
+@using ChartJs.Blazor.Interop;
+@using ChartJs.Blazor;
+@using ChartJs.Blazor.LineChart;
+@using System.Drawing;
+@using QuickAccounting.Helpers;
+
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject ApplicationDbContext _db
+@inject IExcelService _excelService
+@inject OpenAiService _aiService;
+@attribute [Authorize]
+
+<PageTitle>Laporan Recording</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
+    }
+
+    .table thead th, table tbody td {
+        color: #637381;
+        padding: 2px !important;
+        font-size: 14px !important;
+        white-space: nowrap;
+        border: 1px solid #979797 !important;
+    }
+</style>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Laporan Recording</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@ReportDate" class="form-control" />
+                    </div>
+                </div>               
+            </div>            
+                   
+            <div class="row">
+			    <div class="col-lg col-sm-6 col-12">
+				    <div class="form-group">
+                    <a class="btn btn-filters ms-auto" @onclick="()=>LoadRecording()"><img src="assets/img/icons/search-whites.svg" alt="img" /></a>
+				    </div>
+			    </div>
+			    <div class="col-lg col-sm-6 col-12">
+				    <div class="form-group">
+                    <a class="btn btn-filters ms-auto" @onclick="()=>DownloadExcel()"><img src="assets/img/icons/download.svg" alt="img" /></a>
+				    </div>
+			    </div>
+		    </div>
+        </div>
+    </div>
+
+    @* <div class="card">
+            <div class="card-body">
+            @if (loading)
+            {
+                <p><em>Menganalisa....</em></p>
+            }
+            else if (!string.IsNullOrEmpty(analysisResult))
+            {
+                <h5>Hasil Analisa</h5>
+                <pre>@analysisResult</pre>
+            }
+            </div>
+    </div> *@
+ 
+    <div class="card">
+        <div class="card-body">
+            @if (AllKandang != null && AllKandang.Count > 0)
+            {
+                <div class="table-responsive table-scrollable">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th><a class="btn btn-filters ms-auto" @onclick='@(() => Sort("KDG"))'>Sortir</a></th>
+                                <th><a class="btn btn-filters ms-auto" @onclick='@(() => Sort("FI"))'>Sortir</a></th>
+                                <th><a class="btn btn-filters ms-auto" @onclick='@(() => Sort("%HD"))'>Sortir</a></th>
+                                <th><a class="btn btn-filters ms-auto" @onclick='@(() => Sort("FCR"))'>Sortir</a></th>
+                            </tr>
+                            <tr>
+                                <th>KDG</th>
+                                <th>FI</th>
+                                <th>%HD</th>
+                                <th>FCR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in AllKandang)
+                            {
+                                <tr>
+                                    <td>@item.Kandang</td>
+                                    <td>@item.FI</td>
+                                    <td>@item.PersenHD</td>
+                                    <td>@item.FCR</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p>Data belum ada.</p>
+            }
+
+        </div>
+    </div>
+</div>
+
+<script>
+    window.JS = {
+        SaveAs: function (fileName, byteBase64) {
+            byteBase64 = byteBase64.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Convert base64 string to byte array
+            const byteCharacters = atob(byteBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            // Create a link element and trigger the download
+            const link = document.createElement('a');
+            const url = window.URL.createObjectURL(blob);
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            window.URL.revokeObjectURL(url);
+            link.remove();
+        }
+    };
+</script>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Laporan Recording";
+
+    string SelectedNoKandang = "ALL";
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    private List<Kandang> CageList = new List<Kandang>();
+    private List<DailyRecording> DailyRecordings = new List<DailyRecording>();
+    private List<DailyRecording> PagedData = new List<DailyRecording>();
+
+    private int CurrentPage = 1;
+    private int PageSize = 10;
+    private int TotalItems => DailyRecordings.Count; 
+    DateTime dtFromDate;
+    DateTime dtToDate;
+    DateTime ReportDate;
+    private string[] XAxisLabels; // Stores RecordDate as strings for X-axis labels
+    private List<decimal> yAxisValues = new(); // Stores ActualHenDay values for Y-axis data
+    public ChartOptions Options = new ChartOptions();
+    public List<ChartSeries> Series = new List<ChartSeries>();
+    private int SeriesIndex = -1;
+    bool ChartDataLoaded = false;
+
+    bool isProcessing = true;
+
+    List<ReportAllKandang> AllKandang = new List<ReportAllKandang>();
+    List<ReportPerKandang> PerKandang = new List<ReportPerKandang>();
+
+    private LineConfig _config;
+    private Chart _chart;
+    private string _chartKey = Guid.NewGuid().ToString();
+
+    private string analysisResult;
+    private bool loading = false;
+
+    string SortOrder = "asc";
+    private string currentSortColumn = "";
+    private bool isAscending = true;
+
+    private async Task AnalyzeData(dynamic recordings)
+    {
+        isProcessing = true;
+        analysisResult = await _aiService.AnalyzeFarmDataAsync(recordings);
+        isProcessing = false;
+    }
+
+    private async Task DownloadExcel()
+    {
+        isProcessing = true;
+
+        var year = DateTime.Now.Year;
+        var month = DateTime.Now.Month;
+        var fileName = "Laporan_Recording.xlsx";
+        byte[] excelData;
+        if (SelectedNoKandang == "ALL")
+        {
+            excelData = _excelService.ExportListToExcel(AllKandang, "Sheet1");
+        }
+        else
+        {
+            excelData = _excelService.ExportListToExcel(PerKandang, "Sheet1");
+        }
+        var base64String = Convert.ToBase64String(excelData);
+        base64String = base64String.Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64String);
+
+        isProcessing = false;
+    }
+
+    private void PrepareData()
+    {
+        AllKandang = new List<ReportAllKandang>();
+        var grouped = DailyRecordings.GroupBy(x => x.CageNumber).ToList();
+
+        foreach (var itemGroup in grouped)
+        {
+            var group = itemGroup.OrderByDescending(x => x.RecordDate).ToList();
+            var reportKandangItem = new ReportAllKandang();
+
+            // ... (Paste all your existing LINQ queries here, like populationStart, etc.) ...
+            var populationStart = group.Select(x => x.PopulationStart).FirstOrDefault();
+            var foodNeededTodayKg = group.Select(x => x.FoodNeededTodayKg).FirstOrDefault();
+            var foodIntakePerHen = group.Select(x => x.FoodIntakePerHen).FirstOrDefault();
+            var totalEggCount = group.Select(x => x.TotalEggCount).FirstOrDefault();
+            var totalEggKg = group.Select(x => x.TotalEggKg).FirstOrDefault();
+            var actualHenDay = group.Select(x => x.ActualHenDay).FirstOrDefault();
+            var feedConversionRatio = group.Select(x => x.FeedConversionRatio).FirstOrDefault();
+
+            // 1. Calculate the values
+            decimal hd = 0;
+            try { hd = ((decimal)totalEggCount / (decimal)populationStart) * 100M; }
+            catch { hd = ((decimal)actualHenDay / (decimal)group.Count()); }
+
+            decimal fcr = 0;
+            try { fcr = foodNeededTodayKg / totalEggKg; }
+            catch { fcr = (feedConversionRatio / (decimal)group.Count()); }
+
+            // 2. Assign to your object
+            reportKandangItem.Kandang = Convert.ToInt32(itemGroup.Key);
+            reportKandangItem.FI = foodIntakePerHen.ToString("N2");
+            reportKandangItem.PersenHD = hd.ToString("N2");
+            reportKandangItem.FCR = fcr.ToString("N2");
+
+            // Assign your other properties...
+
+            AllKandang.Add(reportKandangItem);
+        }
+
+        // Apply default sort when data loads
+        Sort("KDG");
+    }
+
+    // The Sorting Logic
+    private void Sort(string column)
+    {
+        // Toggle sort direction if clicking the same column
+        if (currentSortColumn == column)
+        {
+            isAscending = !isAscending;
+        }
+        else
+        {
+            currentSortColumn = column;
+            isAscending = true;
+        }
+
+        switch (column)
+        {
+            case "KDG":
+                AllKandang = isAscending
+                    ? AllKandang.OrderBy(x => x.Kandang).ToList()
+                    : AllKandang.OrderByDescending(x => x.Kandang).ToList();
+                break;
+            case "FI":
+                AllKandang = isAscending
+                    ? AllKandang.OrderBy(x => decimal.Parse(x.FI)).ToList()
+                    : AllKandang.OrderByDescending(x => decimal.Parse(x.FI)).ToList();
+                break;
+            case "%HD":
+                AllKandang = isAscending
+                    ? AllKandang.OrderBy(x => decimal.Parse(x.PersenHD)).ToList()
+                    : AllKandang.OrderByDescending(x => decimal.Parse(x.PersenHD)).ToList();
+                break;
+            case "FCR":
+                AllKandang = isAscending
+                    ? AllKandang.OrderBy(x => decimal.Parse(x.FCR)).ToList()
+                    : AllKandang.OrderByDescending(x => decimal.Parse(x.FCR)).ToList();
+                break;
+        }
+    }
+
+    private async Task LoadRecording()
+    {
+        isProcessing = true;
+        StateHasChanged();                
+
+        DailyRecordings = await _recording.GetRecordingsByKandang("ALL"); //, dtFromDate, dtToDate);
+        DailyRecordings = DailyRecordings.Where(x => x.RecordDate <= ReportDate.Date).ToList();
+        DailyRecordings = DailyRecordings.OrderBy(x => Convert.ToInt32(x.CageNumber)).ToList();
+
+        PrepareData();
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.Now;
+        dtFromDate = new DateTime(now.Year, now.Month, 1);
+        int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
+        dtToDate = new DateTime(now.Year, now.Month, lastDay);
+
+        ReportDate = now;
+
+        // Simulate fetching data from a service
+        CageList = await _kandang.GetAll();
+
+        UpdatePagedData();
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    private async Task OnCageChanged(ChangeEventArgs e)
+    {        
+        if (e.Value.ToString() != "TIDAK")
+        {
+            SelectedNoKandang = e.Value.ToString();
+            StateHasChanged();
+        }
+    }
+
+    private void HandlePageChange(int pageNumber)
+    {
+        CurrentPage = pageNumber;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        PagedData = DailyRecordings
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+    }
+
+    public class ReportAllKandang
+    {
+        public int Kandang { get; set; }
+        public string Strain { get; set; }
+       
+        public string Awal { get; set; }
+        public string Mati { get; set; }
+        public string Afkir { get; set; }
+        public string SMinus { get; set; }
+        public string SPlus { get; set; }
+        public string PMinus { get; set; }
+        public string PPlus { get; set; }
+        public string Sisa { get; set; }
+        public string PAKAN { get; set; }
+        public string PAKAI { get; set; }
+        public string FI { get; set; }
+        public string UTUH { get; set; }
+        public string UtuhKg { get; set; }
+        public string PUTIH { get; set; }
+        public string PutihKg { get; set; }
+        public string BENTES { get; set; }
+        public string BentesKg { get; set; }
+        public string TotalBTR { get; set; }
+        public string TotalKG { get; set; }
+        public string KumBTR { get; set; }
+        public string KWMKG { get; set; }
+        public string PersenHD { get; set; }
+        public string DevHD { get; set; }
+        public string HHBTR { get; set; }
+        public string HHKG { get; set; }
+        public string EM { get; set; }
+        public string Grbt { get; set; }
+        public string FCR { get; set; }
+        public string Nama { get; set; }
+        public string PakaiVoV { get; set; }
+    }
+
+    public class ReportPerKandang
+    {
+        public string Tanggal { get; set; }
+        public string Minggu { get; set; }
+        public string Hari { get; set; }
+        public string Awal { get; set; }
+        public string Mati { get; set; }
+        public string Afkir { get; set; }
+        public string SMinus { get; set; }
+        public string SPlus { get; set; }
+        public string PMinus { get; set; }
+        public string PPlus { get; set; }
+        public string Sisa { get; set; }
+        public string PAKAN { get; set; }
+        public string PAKAI { get; set; }
+        public string FI { get; set; }
+        public string UTUH { get; set; }
+        public string UtuhKg { get; set; }
+        public string PUTIH { get; set; }
+        public string PutihKg { get; set; }
+        public string BENTES { get; set; }
+        public string BentesKg { get; set; }
+        public string TotalBTR { get; set; }
+        public string TotalKG { get; set; }
+        public string KumBTR { get; set; }
+        public string KWMKG { get; set; }
+        public string PersenHD { get; set; }
+        public string DevHD { get; set; }
+        public string HHBTR { get; set; }
+        public string HHKG { get; set; }
+        public string EM { get; set; }
+        public string Grbt { get; set; }
+        public string FCR { get; set; }
+        public string Nama { get; set; }
+        public string PakaiVoV { get; set; }
+    }
+}

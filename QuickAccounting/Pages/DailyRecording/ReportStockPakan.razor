@@ -28,11 +28,11 @@
         padding-top: 2px !important;
         padding-bottom: 2px !important;
         /* color: #637381;
-        font-weight: 200 !important;
-        border-bottom: 1px solid #E9ECEF;
-        vertical-align: middle;
-        white-space: nowrap;
-        text-align: right !important; */
+            font-weight: 200 !important;
+            border-bottom: 1px solid #E9ECEF;
+            vertical-align: middle;
+            white-space: nowrap;
+            text-align: right !important; */
     }
 </style>
 
@@ -44,7 +44,7 @@
     </div>
 
     <div class="card">
-        <div class="card-body">           
+        <div class="card-body">
             <div class="row">
                 <div class="col-lg col-sm-6 col-12">
                     <div class="form-group">
@@ -74,11 +74,11 @@
             @if (ProductStocks.Count > 0)
             {
                 foreach (var ps in ProductStocks)
-                {                   
+                {
                     <div class="row">
                         <div class="col-lg-12 col-sm-12 col-12">
                             <h3>@ps.Key.ProductName</h3>
-                            <div class="form-group" style="text-align: left !important;">                            
+                            <div class="form-group" style="text-align: left !important;">
                                 <div class="table-responsive table-scrollable">
                                     <table class="table table-striped">
                                         <thead>
@@ -88,14 +88,14 @@
                                                 <th style="text-align:left;">Masuk</th>
                                                 <th style="text-align:left;">Keluar</th>
                                                 <th style="text-align:left;">Susut</th>
-                                                <th style="text-align:left;">Stok Akhir</th>                                                
+                                                <th style="text-align:left;">Stok Akhir</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @{
-                                                var groupByDate = ps.Value.GroupBy(x => x.Date).ToList();                                                
+                                                var groupByDate = ps.Value.GroupBy(x => x.Date).ToList();
                                             }
-                                            @foreach(var g in groupByDate)
+                                            @foreach (var g in groupByDate)
                                             {
                                                 DateTime currentDate = DateTime.Now;
                                                 List<StockPosting> stockPosting = new List<StockPosting>();
@@ -122,18 +122,18 @@
                                                     <td style="text-align:left !important;">@stockAkhir</td>
                                                 </tr>
                                             }
-                                                                                  
+
                                         </tbody>
-                                </table>
+                                    </table>
+                                </div>
+
                             </div>
-                            
+                        </div>
                     </div>
-                </div>
-            </div>
                 }
             }
         </div>
-    </div>    
+    </div>
 </div>
 @code {
     [CascadingParameter]
@@ -153,7 +153,7 @@
     Dictionary<Product, List<StockPosting>> ProductStocks = new Dictionary<Product, List<StockPosting>>();
 
     private async Task ShowData()
-    {        
+    {
         ProductStocks = new Dictionary<Product, List<StockPosting>>();
 
         for (DateTime date = SelectedDateFrom; date <= SelectedDateTo; date = date.AddDays(1))
@@ -164,7 +164,7 @@
     }
 
     protected override async Task OnInitializedAsync()
-    {        
+    {
         var authstate = await authStateProvider.GetAuthenticationStateAsync();
         var user = authstate.User;
         var userName = user.Identity.Name;
@@ -189,12 +189,12 @@
             var stockPosting = await _db.StockPosting.Where(x => x.ProductId == p.ProductId && x.Date.Date == SelectedDate.Date).ToListAsync();
             if (ProductStocks.ContainsKey(p))
             {
-                ProductStocks[p].AddRange(stockPosting); 
+                ProductStocks[p].AddRange(stockPosting);
             }
             else
             {
                 ProductStocks.Add(p, stockPosting);
-            }            
+            }
         }
     }
-}    
+}

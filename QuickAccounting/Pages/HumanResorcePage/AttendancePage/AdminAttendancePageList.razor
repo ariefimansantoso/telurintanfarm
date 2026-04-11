@@ -279,8 +279,9 @@
                     }
 
                     int totalLiburIjin = libur + ijin;
-                    if(totalLiburIjin > 3)
+                    if(totalLiburIjin > 4)
                     {
+                        //alpha = alpha + (totalLiburIjin - 4);
                         totalGaji = gajiNonPremi;
                         rpPremi = 0;
                     }
@@ -436,6 +437,13 @@
                                         else if (attendanceItem.StartTime.Date < DateTime.Now.Date)
                                         {
                                             keterangan = "ALPHA";
+                                        }
+
+                                        if(attendanceItem.EndTime.Hour >= 14 && attendanceItem.EndTime.Hour < 15)
+                                        {
+                                            endHour = attendanceItem.EndTime.ToString("HH:mm");
+                                            keterangan = "PULANG CEPAT";
+                                            trStyle = "background-color:#42f5bc; color:#000 !important; font-weight:bold !important;";
                                         }
                                     }
                                     else

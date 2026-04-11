@@ -111,5 +111,8 @@ namespace QuickAccounting.Data
         public DbSet<SuratPeringatan> SuratPeringatan { get; set; }
         
         public DbSet<LogPopulasiAnakKandang> LogPopulasiAnakKandang { get; set; }
+
+        // New DbSet for StockOpnam table
+        public DbSet<StockOpnam> StockOpnam { get; set; }
 	}
 }

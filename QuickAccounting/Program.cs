@@ -85,6 +85,7 @@ builder.Services.AddHttpClient<OpenAiService>();
 builder.Services.AddTransient<IAuditLogService, AuditLogService>();
 builder.Services.AddTransient<IStartingStockDate, StartingStockDate>();
 builder.Services.AddTransient<ISuratPeringatan, SuratPeringatanService>();
+builder.Services.AddTransient<IStockAkhirService, StockAkhirService>();
 
 var app = builder.Build();
 

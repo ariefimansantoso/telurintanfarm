@@ -1,0 +1,101 @@
+@using QuickAccounting.Data.HrPayroll
+
+<div class="row">
+    <div class="col-lg-4 col-sm-6 col-12">
+        <div class="form-group">
+            <label>Periode</label>                       
+            <div class="row">
+                <div class="col-lg-10 col-sm-10 col-10">
+                    <select class="form-control" @onchange="HandleCutoffChange">
+                        @foreach (var cutoff in PayrollCutoffs)
+                        {
+                            <option value="@cutoff.PayrollDate.ToString("dd/MM/yyyy")" selected="@(cutoff.ID == SelectedCutoffId)">
+                                @cutoff.PayrollPeriode
+                            </option>
+                        }
+                    </select>
+                    <div style="margin-top: 10px;">
+                        <small>Mulai: @SelectedCutoffFrom.ToString("dd/MM/yyyy")</small><br/>
+                        <small>Terakhir Absen: @SelectedCutoffTo.ToString("dd/MM/yyyy")</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-sm-6 col-12">
+        <div class="form-group">
+            <label>Total Gaji</label>
+            <div class="row">
+                <div class="col-lg-10 col-sm-10 col-10">
+                    <span style="font-size:36px; font-weight:bold;">@string.Format("{0:n0}", GajiKaryawanTotal)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-sm-6 col-12">
+        <div class="form-group">   
+            <label>&nbsp;</label>
+            <div class="row">
+                <div class="col-lg-10 col-sm-10 col-10">
+                    @if (!PayrollAlreadyProcessed && SelectedCutoffId > 0)
+                    {
+                        <button class="btn btn-success me-2" @onclick="OnPayrollClick">
+                            Jalankan Payroll
+                        </button>
+                    }      
+                    <button class="btn btn-primary me-2" @onclick="OnExportFullClick">
+                        Payroll Excel Lengkap
+                    </button>
+                    <button class="btn btn-primary me-2" @onclick="OnExportBankClick">
+                        Payroll Excel Bank
+                    </button>
+                    <button class="btn btn-primary" @onclick="OnGenerateWordClick">
+                        Unduh Payroll Word
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<PayrollCutoff> PayrollCutoffs { get; set; }
+
+    [Parameter]
+    public int SelectedCutoffId { get; set; }
+
+    [Parameter]
+    public DateTime SelectedCutoffFrom { get; set; }
+
+    [Parameter]
+    public DateTime SelectedCutoffTo { get; set; }
+
+    [Parameter]
+    public decimal GajiKaryawanTotal { get; set; }
+
+    [Parameter]
+    public bool PayrollAlreadyProcessed { get; set; }
+
+    [Parameter]
+    public EventCallback<ChangeEventArgs> OnCutoffChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnPayrollClick { get; set; }
+
+    [Parameter]
+    public EventCallback OnExportFullClick { get; set; }
+
+    [Parameter]
+    public EventCallback OnExportBankClick { get; set; }
+
+    [Parameter]
+    public EventCallback OnGenerateWordClick { get; set; }
+
+    private async Task HandleCutoffChange(ChangeEventArgs e)
+    {
+        await OnCutoffChanged.InvokeAsync(e);
+    }
+}

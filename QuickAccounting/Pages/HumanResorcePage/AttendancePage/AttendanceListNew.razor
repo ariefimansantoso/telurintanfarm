@@ -1,0 +1,854 @@
+@page "/app/attendancenew"
+@inject IAttendance _attendance
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using QuickAccounting.Components
+@using DocumentFormat.OpenXml.Packaging
+@using DocumentFormat.OpenXml.Wordprocessing
+@using System.Globalization
+@using Text = DocumentFormat.OpenXml.Wordprocessing.Text
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IUser _user
+@inject IEmployee _employee
+@inject IHRServices _hr
+@inject IExcelService _excelService
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+
+@attribute [Authorize]
+<PageTitle>Admin - Laporan Absensi dan Gaji Karyawan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Admin - Laporan Absensi dan Gaji Karyawan</h4>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <PayrollControls 
+                PayrollCutoffs="PayrollCutoffs" 
+                SelectedCutoffId="SelectedCutoffId"
+                SelectedCutoffFrom="SelectedCutoffFrom"
+                SelectedCutoffTo="SelectedCutoffTo"
+                GajiKaryawanTotal="GajiKaryawanTotal"
+                PayrollAlreadyProcessed="PayrollAlreadyProcessed"
+                OnCutoffChanged="HandleCutoffChange"
+                OnPayrollClick="HandlePayroll"
+                OnExportFullClick="HandleExportFull"
+                OnExportBankClick="HandleExportBank"
+                OnGenerateWordClick="HandleGenerateWord" />
+
+            <PayrollTable 
+                PayrollRows="PayrollRows" 
+                GajiKaryawanTotal="GajiKaryawanTotal" />
+        </div>
+    </div>
+</div>
+
+<script>
+    window.JS = {
+        SaveAs: function (fileName, byteBase64) {
+            byteBase64 = byteBase64.replace(/-/g, '+').replace(/_/g, '/');
+            const byteCharacters = atob(byteBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            const link = document.createElement('a');
+            const url = window.URL.createObjectURL(blob);
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+
+            window.URL.revokeObjectURL(url);
+            link.remove();
+        }
+    };
+</script>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    // Main state
+    private DateTime SelectedCutoffFrom;
+    private DateTime SelectedCutoffTo;
+    private int SelectedCutoffId = 0;
+    private decimal GajiKaryawanTotal = 0;
+    private bool PayrollAlreadyProcessed = false;
+    private bool isProcessing = true;
+    private List<PayrollCutoff> PayrollCutoffs = new();
+    private List<PayrollRowDto> PayrollRows = new();
+    
+    // Cache for cutoff date mapping
+    private Dictionary<string, int> CutoffDateMap = new();
+    
+    // User info
+    private UserMaster CurrentUser;
+    private Employee CurrentEmployee;
+    
+    // Constants
+    private const string PAGE_MENU = "Admin - Laporan Absensi dan Gaji Karyawan";
+    private const int FREELANCE_DESIGNATION_ID = 4;
+    private const int MAX_DAYS_FOR_PREMI = 27;
+    private const int MAX_PERMITTED_LEAVE_DAYS = 3;
+    private const decimal OVERTIME_START_HOUR = 16.25m;
+    private const decimal HOURS_PER_DAY = 480;
+    private const decimal OVERTIME_MULTIPLIER = 2;
+    
+    // Template path
+    private string TemplateWordPath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "templates", "payroll_template.docx");
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await AuthorizeAndInitialize();
+        }
+        catch (Exception ex)
+        {
+            await LogError("Initialization Error", ex);
+            navigation.NavigateTo("/app/dashboard");
+        }
+    }
+
+    private async Task AuthorizeAndInitialize()
+    {
+        var authState = await AuthenticationState;
+        var userRole = authState.User;
+        var roleName = userRole.FindFirst(ClaimTypes.Role)?.Value;
+        
+        var privilege = await _privilege.PriviliageCheck(PAGE_MENU, roleName);
+        if (!privilege.ShowAction)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki akses", Severity.Error);
+            return;
+        }
+
+        var userName = userRole.FindFirst(ClaimTypes.Name)?.Value;
+        CurrentUser = await _user.UserProfile(userName);
+        CurrentEmployee = await _employee.GetbyUserId(CurrentUser.UserId);
+
+        await InitializePayrollPeriods();
+        await LoadPayrollData();
+    }
+
+    private async Task InitializePayrollPeriods()
+    {
+        PayrollCutoffs = (await _attendance.GetPayrollCutoffs())
+            .Where(x => x.ID >= 6)
+            .ToList();
+
+        var lastPayroll = await _attendance.GetLastPayrollCutoff();
+        var now = DateTime.Now;
+
+        if (lastPayroll.RealPayrollDate.Date < now.Date)
+        {
+            SelectedCutoffId = 0;
+            SelectedCutoffFrom = lastPayroll.PayrollDate.AddDays(1);
+            SelectedCutoffTo = now;
+            PayrollCutoffs.Add(new PayrollCutoff
+            {
+                ID = 0,
+                PayrollDateStart = SelectedCutoffFrom,
+                PayrollDate = SelectedCutoffTo,
+                PayrollPeriode = "Periode Terkini"
+            });
+        }
+        else
+        {
+            SelectedCutoffId = lastPayroll.ID;
+            SelectedCutoffFrom = lastPayroll.PayrollDateStart;
+            SelectedCutoffTo = lastPayroll.PayrollDate;
+            PayrollAlreadyProcessed = await _db.Payroll.AnyAsync(x => x.CutoffID == SelectedCutoffId);
+        }
+
+        BuildCutoffDateMap();
+    }
+
+    private void BuildCutoffDateMap()
+    {
+        CutoffDateMap.Clear();
+        foreach (var cutoff in PayrollCutoffs)
+        {
+            var dateKey = cutoff.PayrollDate.ToString("dd/MM/yyyy");
+            if (!CutoffDateMap.ContainsKey(dateKey))
+            {
+                CutoffDateMap[dateKey] = cutoff.ID;
+            }
+        }
+    }
+
+    private async Task LoadPayrollData()
+    {
+        isProcessing = true;
+        try
+        {
+            var existingPayrolls = await _db.Payroll
+                .Where(x => x.CutoffID == SelectedCutoffId)
+                .ToListAsync();
+
+            if (existingPayrolls.Any())
+            {
+                PayrollRows = existingPayrolls
+                    .Select((p, idx) => MapPayrollToRow(p, idx + 1))
+                    .ToList();
+                GajiKaryawanTotal = existingPayrolls.Sum(x => x.GajiBersih);
+            }
+            else
+            {
+                await CalculateAndDisplayPayroll();
+            }
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CalculateAndDisplayPayroll()
+    {
+        var activeEmployees = await _employee.GetAllEmployeeActive();
+        var attendanceData = await _attendance.GetAttendanceCurrentPeriodeAllEmployee(
+            SelectedCutoffFrom.Date, 
+            SelectedCutoffTo.Date);
+
+        var periodDates = GeneratePeriodDates();
+        var attendanceByEmployee = attendanceData.GroupBy(x => x.EmployeeID).ToList();
+
+        PayrollRows.Clear();
+        var rowNumber = 1;
+
+        foreach (var employeeGroup in attendanceByEmployee)
+        {
+            var employee = activeEmployees.FirstOrDefault(e => e.EmployeeId == employeeGroup.Key);
+            if (employee == null) continue;
+
+            var payrollData = await CalculateEmployeePayroll(employee, employeeGroup.ToList(), periodDates);
+            var row = MapPayrollDataToRow(payrollData, rowNumber++);
+            PayrollRows.Add(row);
+            GajiKaryawanTotal += payrollData.GajiBersih;
+        }
+    }
+
+    private async Task<PayrollCalculationDto> CalculateEmployeePayroll(
+        Employee employee, 
+        List<DailyAttendanceMaster> attendanceRecords, 
+        List<DateTime> periodDates)
+    {
+        var calculation = new PayrollCalculationDto 
+        { 
+            EmployeeId = employee.EmployeeId,
+            EmployeeName = employee.EmployeeName
+        };
+        
+        // Get required data
+        var permissions = _hr.GetPerijinanByEmployeeIDInPeriodePayroll(
+            employee.EmployeeId, 
+            SelectedCutoffFrom.Date, 
+            SelectedCutoffTo.Date);
+
+        var penalties = await _hr.GetPenaltyByCurrentMonthYearAndEmployeeIdAsync(
+            employee.EmployeeId, 
+            SelectedCutoffFrom.Date, 
+            SelectedCutoffTo.Date);
+
+        var deductions = await _hr.GetByCurrentMonthYearAndEmployeeIdAsync(
+            employee.EmployeeId, 
+            SelectedCutoffTo.Month, 
+            SelectedCutoffTo.Year);
+
+        // Calculate attendance days
+        var attendanceByDate = attendanceRecords.GroupBy(x => x.Date.Date).ToList();
+        var presentDays = attendanceByDate.Count(g => g.Count() >= 2);
+        var absentDays = CalculateAbsentDays(attendanceByDate, permissions, periodDates, employee.JoiningDate);
+
+        // Get permission counts
+        var permissionCounts = GetPermissionCounts(permissions);
+
+        // Calculate salary components
+        calculation.DailyWage = employee.DailyWage;
+        calculation.PresentDays = presentDays + permissionCounts.BusinessDays;
+        calculation.AbsentDays = absentDays;
+        calculation.PermissionCounts = permissionCounts;
+
+        // Calculate bonus/penalty
+        var bonusAmount = penalties.Where(x => !x.IsPenalty).Sum(x => x.PenaltyAmount);
+        var penaltyAmount = penalties.Where(x => x.IsPenalty).Sum(x => x.PenaltyAmount);
+
+        calculation.BonusAmount = bonusAmount;
+        calculation.PenaltyAmount = penaltyAmount;
+        calculation.DeductionAmount = deductions.Sum(x => x.RP_POTONGAN);
+
+        // Calculate working years and premium
+        var workingYears = _hr.GetMasaKerja(employee.JoiningDate);
+        var premiumPercentage = _hr.GetProsentasePremi(workingYears) / 100m;
+        calculation.PremiumPercentage = premiumPercentage;
+
+        // Calculate overtime
+        var overtimeMinutes = CalculateOvertimeMinutes(attendanceRecords, permissions);
+        calculation.OvertimeHours = overtimeMinutes / 60;
+        calculation.OvertimeMinutes = overtimeMinutes % 60;
+        calculation.OvertimeAmount = (employee.DailyWage / HOURS_PER_DAY) * overtimeMinutes * OVERTIME_MULTIPLIER;
+
+        // Calculate late arrivals
+        calculation.LateArrivals = CalculateLateArrivals(attendanceRecords);
+
+        // Apply salary rules
+        ApplySalaryRules(calculation, employee);
+
+        return calculation;
+    }
+
+    private int CalculateAbsentDays(
+        List<IGrouping<DateTime, DailyAttendanceMaster>> attendanceByDate,
+        List<Perijinan> permissions,
+        List<DateTime> periodDates,
+        DateTime joiningDate)
+    {
+        var absentDates = periodDates
+            .Where(d => d >= joiningDate.Date && d >= SelectedCutoffFrom.Date)
+            .Where(d => !attendanceByDate.Any(g => g.Key == d))
+            .Where(d => !permissions.Any(p => p.ForDate.Date == d))
+            .ToList();
+
+        return absentDates.Count;
+    }
+
+    private int CalculateOvertimeMinutes(
+        List<DailyAttendanceMaster> attendanceRecords,
+        List<Perijinan> permissions)
+    {
+        var overtimeThresholdTime = new TimeSpan(16, 15, 0);
+        var overtimeRecords = attendanceRecords.Where(r => r.Date.TimeOfDay > overtimeThresholdTime).ToList();
+
+        var approvedOvertimeDates = permissions
+            .Where(p => p.SubmittedFor == "LEMBUR")
+            .Select(p => p.ForDate.Date)
+            .Distinct()
+            .ToHashSet();
+
+        var totalMinutes = 0;
+        foreach (var record in overtimeRecords)
+        {
+            if (approvedOvertimeDates.Contains(record.Date.Date))
+            {
+                var minutes = (int)(record.Date.TimeOfDay - new TimeSpan(16, 15, 0)).TotalMinutes;
+                totalMinutes += minutes;
+            }
+        }
+
+        return totalMinutes;
+    }
+
+    private int CalculateLateArrivals(List<DailyAttendanceMaster> attendanceRecords)
+    {
+        var lateThreshold = new TimeSpan(6, 30, 59);
+        var groupedByDate = attendanceRecords
+            .OrderBy(x => x.Date)
+            .GroupBy(x => x.Date.Date)
+            .Select(g => g.Min(x => x.Date))
+            .ToList();
+
+        return groupedByDate.Count(arrival => arrival.TimeOfDay > lateThreshold);
+    }
+
+    private PermissionCountsDto GetPermissionCounts(List<Perijinan> permissions)
+    {
+        return new PermissionCountsDto
+        {
+            HolidayDays = permissions.Count(p => p.SubmittedFor == "LIBUR"),
+            PermissionDays = permissions.Count(p => p.SubmittedFor == "IJIN"),
+            SickDays = permissions.Count(p => p.SubmittedFor == "SAKIT"),
+            HalfDays = permissions.Count(p => p.SubmittedFor == "SETENGAH HARI"),
+            OvertimeDays = permissions.Count(p => p.SubmittedFor == "LEMBUR"),
+            BusinessDays = permissions.Count(p => p.SubmittedFor == "DINAS")
+        };
+    }
+
+    private void ApplySalaryRules(PayrollCalculationDto calculation, Employee employee)
+    {
+        // Base salary calculation
+        var effectiveDays = calculation.PresentDays;
+        decimal baseSalary;
+
+        if (effectiveDays <= MAX_DAYS_FOR_PREMI)
+        {
+            baseSalary = employee.DailyWage * (1 + calculation.PremiumPercentage) * effectiveDays;
+        }
+        else
+        {
+            baseSalary = (employee.DailyWage * (1 + calculation.PremiumPercentage) * MAX_DAYS_FOR_PREMI) +
+                        (employee.DailyWage * (effectiveDays - MAX_DAYS_FOR_PREMI));
+        }
+
+        // Apply absence penalty (no premium if absent)
+        if (calculation.AbsentDays > 0)
+        {
+            baseSalary = employee.DailyWage * calculation.PresentDays;
+            calculation.PremiumAmount = 0;
+        }
+        else
+        {
+            calculation.PremiumAmount = baseSalary - (employee.DailyWage * calculation.PresentDays);
+        }
+
+        // Apply leave penalty (no premium if excessive leaves)
+        var totalLeaves = calculation.PermissionCounts.HolidayDays + calculation.PermissionCounts.PermissionDays;
+        if (totalLeaves > MAX_PERMITTED_LEAVE_DAYS)
+        {
+            baseSalary = employee.DailyWage * calculation.PresentDays;
+            calculation.PremiumAmount = 0;
+        }
+
+        // Apply freelancer rules
+        if (employee.DesignationId == FREELANCE_DESIGNATION_ID)
+        {
+            calculation.BPJS_Health = 0;
+            calculation.BPJS_Labor = 0;
+            calculation.PremiumAmount = 0;
+            calculation.AllowanceAmount = 0;
+            calculation.OvertimeAmount = 0;
+            calculation.LateArrivals = 0;
+            baseSalary = employee.DailyWage * calculation.PresentDays + calculation.BonusAmount - calculation.PenaltyAmount;
+        }
+        else
+        {
+            calculation.BPJS_Health = employee.BPJS_KES;
+            calculation.BPJS_Labor = employee.BPJS_TK;
+            calculation.AllowanceAmount = employee.Tunjangan;
+        }
+
+        // Calculate half-day deduction
+        var halfDayDeduction = calculation.PermissionCounts.HalfDays > 0 
+            ? (employee.DailyWage / 2) * calculation.PermissionCounts.HalfDays 
+            : 0;
+
+        // Final net salary
+        calculation.GrossAmount = baseSalary;
+        calculation.GajiBersih = baseSalary 
+            - calculation.BPJS_Health 
+            - calculation.BPJS_Labor 
+            - calculation.DeductionAmount 
+            - calculation.PenaltyAmount 
+            + calculation.AllowanceAmount 
+            + calculation.OvertimeAmount 
+            + calculation.BonusAmount 
+            - halfDayDeduction;
+    }
+
+    private List<DateTime> GeneratePeriodDates()
+    {
+        var dates = new List<DateTime>();
+        var currentDate = SelectedCutoffFrom.Date;
+        while (currentDate <= SelectedCutoffTo.Date)
+        {
+            dates.Add(currentDate);
+            currentDate = currentDate.AddDays(1);
+        }
+        return dates;
+    }
+
+    private PayrollRowDto MapPayrollDataToRow(PayrollCalculationDto data, int rowNumber)
+    {
+        return new PayrollRowDto
+        {
+            No = rowNumber,
+            EmployeeName = data.EmployeeName,
+            DailyWage = data.DailyWage,
+            BPJS_Health = data.BPJS_Health,
+            BPJS_Labor = data.BPJS_Labor,
+            PremiumAmount = data.PremiumAmount,
+            BonusAmount = data.BonusAmount,
+            AllowanceAmount = data.AllowanceAmount,
+            PresentDays = data.PresentDays,
+            AbsentDays = data.AbsentDays,
+            PermissionDays = data.PermissionCounts.PermissionDays,
+            SickDays = data.PermissionCounts.SickDays,
+            HalfDays = data.PermissionCounts.HalfDays,
+            OvertimeDays = data.PermissionCounts.OvertimeDays,
+            OvertimeHours = data.OvertimeHours,
+            OvertimeMinutes = data.OvertimeMinutes,
+            HolidayDays = data.PermissionCounts.HolidayDays,
+            BusinessDays = data.PermissionCounts.BusinessDays,
+            LateArrivals = data.LateArrivals,
+            DeductionAmount = data.DeductionAmount,
+            PenaltyAmount = data.PenaltyAmount,
+            OvertimeAmount = data.OvertimeAmount,
+            BankAccount = data.BankAccount,
+            GajiBersih = data.GajiBersih
+        };
+    }
+
+    private PayrollRowDto MapPayrollToRow(Payroll payroll, int rowNumber)
+    {
+        var employee = _db.Employee.FirstOrDefault(e => e.EmployeeId == payroll.EmployeeID);
+        
+        return new PayrollRowDto
+        {
+            No = rowNumber,
+            EmployeeName = employee?.EmployeeName ?? "Unknown",
+            DailyWage = payroll.GajiHarian,
+            BPJS_Health = payroll.BPJS_KES,
+            BPJS_Labor = payroll.BPJS_TK,
+            PremiumAmount = payroll.RpPremi,
+            BonusAmount = payroll.Tambahan,
+            AllowanceAmount = payroll.Tunjangan,
+            PresentDays = payroll.Masuk,
+            AbsentDays = payroll.Alpha,
+            PermissionDays = payroll.Ijin,
+            SickDays = payroll.Sakit,
+            HalfDays = payroll.SetengahHari,
+            OvertimeDays = payroll.Lembur,
+            OvertimeHours = (int)(payroll.RpLembur / (payroll.GajiHarian / HOURS_PER_DAY) / OVERTIME_MULTIPLIER) / 60,
+            OvertimeMinutes = (int)(payroll.RpLembur / (payroll.GajiHarian / HOURS_PER_DAY) / OVERTIME_MULTIPLIER) % 60,
+            HolidayDays = payroll.Libur,
+            BusinessDays = payroll.DinasLuar,
+            LateArrivals = payroll.Telat,
+            DeductionAmount = payroll.Cicilan,
+            PenaltyAmount = payroll.Potongan,
+            OvertimeAmount = payroll.RpLembur,
+            BankAccount = payroll.NoRek,
+            GajiBersih = payroll.GajiBersih
+        };
+    }
+
+    private async Task HandleCutoffChange(ChangeEventArgs e)
+    {
+        isProcessing = true;
+        var dateKey = e.Value?.ToString();
+        
+        if (!CutoffDateMap.TryGetValue(dateKey, out var cutoffId))
+        {
+            isProcessing = false;
+            return;
+        }
+
+        SelectedCutoffId = cutoffId;
+
+        try
+        {
+            if (SelectedCutoffId > 0)
+            {
+                var cutoff = await _db.PayrollCutoff.FirstOrDefaultAsync(x => x.ID == SelectedCutoffId);
+                if (cutoff != null)
+                {
+                    SelectedCutoffFrom = cutoff.PayrollDateStart;
+                    SelectedCutoffTo = cutoff.PayrollDate;
+                    PayrollAlreadyProcessed = await _db.Payroll.AnyAsync(x => x.CutoffID == SelectedCutoffId);
+                }
+            }
+            else
+            {
+                var lastPayroll = await _attendance.GetLastPayrollCutoff();
+                SelectedCutoffFrom = lastPayroll.PayrollDate.AddDays(1);
+                SelectedCutoffTo = DateTime.Now;
+                PayrollAlreadyProcessed = false;
+            }
+
+            await LoadPayrollData();
+        }
+        catch (Exception ex)
+        {
+            await LogError("Error changing cutoff", ex);
+        }
+    }
+
+    private async Task HandlePayroll()
+    {
+        if (!PayrollRows.Any())
+        {
+            Snackbar.Add("Tidak ada data payroll untuk diproses", Severity.Warning);
+            return;
+        }
+
+        isProcessing = true;
+        try
+        {
+            var payrollItems = PayrollRows.Select(row => BuildPayrollEntity(row)).ToList();
+            
+            _db.Payroll.AddRange(payrollItems);
+            await _db.SaveChangesAsync();
+
+            Snackbar.Add("Payroll berhasil diproses", Severity.Success);
+            await Task.Delay(1000);
+            navigation.NavigateTo("/app/attendance");
+        }
+        catch (DbUpdateException ex)
+        {
+            await LogError("Database error during payroll", ex);
+            Snackbar.Add("Gagal memproses payroll", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            await LogError("Unexpected error during payroll", ex);
+            Snackbar.Add("Error: Terjadi kesalahan tidak terduga", Severity.Error);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private Payroll BuildPayrollEntity(PayrollRowDto row)
+    {
+        return new Payroll
+        {
+            Alpha = row.AbsentDays,
+            Tambahan = row.BonusAmount,
+            BPJS_KES = row.BPJS_Health,
+            BPJS_TK = row.BPJS_Labor,
+            RpPremi = row.PremiumAmount,
+            Tunjangan = row.AllowanceAmount,
+            Masuk = row.PresentDays,
+            Ijin = row.PermissionDays,
+            Sakit = row.SickDays,
+            SetengahHari = row.HalfDays,
+            Lembur = row.OvertimeDays,
+            Libur = row.HolidayDays,
+            DinasLuar = row.BusinessDays,
+            Telat = row.LateArrivals,
+            Cicilan = row.DeductionAmount,
+            Potongan = row.PenaltyAmount,
+            RpLembur = row.OvertimeAmount,
+            NoRek = row.BankAccount,
+            GajiBersih = row.GajiBersih,
+            CutoffID = SelectedCutoffId,
+            EmployeeID = row.EmployeeId,
+            TanggalGajian = SelectedCutoffTo.AddDays(1),
+            CreatedBy = CurrentEmployee.EmployeeId,
+            CreatedDate = DateTime.Now,
+            GajiHarian = row.DailyWage
+        };
+    }
+
+    private async Task HandleExportFull() => await ExportPayroll(PayrollRows, "Payroll_LENGKAP");
+    private async Task HandleExportBank() => await ExportPayroll(GetBankTransferRows(), "Payroll_Bank");
+
+    private async Task ExportPayroll(List<PayrollRowDto> data, string fileNamePrefix)
+    {
+        isProcessing = true;
+        try
+        {
+            var fileName = $"{fileNamePrefix}_{DateTime.Now.Year}_{DateTime.Now.Month}.xlsx";
+            var excelData = _excelService.ExportListToExcel(data, "Sheet1");
+            var base64 = Convert.ToBase64String(excelData)
+                .Replace('+', '-')
+                .Replace('/', '_')
+                .TrimEnd('=');
+
+            await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private List<PayrollRowDto> GetBankTransferRows() =>
+        PayrollRows.Where(r => !string.IsNullOrEmpty(r.BankAccount) && r.BankAccount != "0").ToList();
+
+    private async Task HandleGenerateWord()
+    {
+        isProcessing = true;
+        try
+        {
+            var wordData = GetBankTransferRows();
+            var generatedBytes = await GeneratePayrollWord(wordData);
+            var fileName = $"Payroll_{DateTime.Now.Year}_{DateTime.Now.Month}.docx";
+            var base64 = Convert.ToBase64String(generatedBytes)
+                .Replace('+', '-')
+                .Replace('/', '_')
+                .TrimEnd('=');
+
+            await JSRuntime.InvokeVoidAsync("JS.SaveAs", fileName, base64);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task<byte[]> GeneratePayrollWord(List<PayrollRowDto> payrollData)
+    {
+        var templateBytes = File.ReadAllBytes(TemplateWordPath);
+        using var memStream = new MemoryStream();
+        memStream.Write(templateBytes, 0, templateBytes.Length);
+
+        using (var wordDoc = WordprocessingDocument.Open(memStream, true))
+        {
+            var body = wordDoc.MainDocumentPart.Document.Body;
+            var monthYear = DateTime.Now.ToString("MMMM yyyy", new CultureInfo("id-ID")).ToUpper();
+            var date = DateTime.Now.ToString("dd-MM-yyyy");
+
+            // Replace placeholders
+            foreach (var textElement in body.Descendants<Text>())
+            {
+                textElement.Text = textElement.Text
+                    .Replace("[MONTHYEAR]", monthYear)
+                    .Replace("[DATE]", date);
+            }
+
+            // Find and populate table
+            var table = body.Elements<Table>()
+                .FirstOrDefault(t => t.Elements<TableRow>().FirstOrDefault()?.Elements<TableCell>().Count() == 4);
+
+            if (table != null)
+            {
+                var headerRow = table.Elements<TableRow>().First();
+                var headerCells = headerRow.Elements<TableCell>().ToList();
+                var totalSalary = 0m;
+                var rowNum = 1;
+
+                foreach (var row in payrollData)
+                {
+                    var newRow = new TableRow();
+                    newRow.Append(
+                        CloneStyledCell(headerCells, 0, rowNum.ToString()),
+                        CloneStyledCell(headerCells, 1, row.EmployeeName),
+                        CloneStyledCell(headerCells, 2, row.BankAccount),
+                        CloneStyledCell(headerCells, 3, row.GajiBersih.ToString("N0", new CultureInfo("id-ID")))
+                    );
+                    table.AppendChild(newRow);
+                    totalSalary += row.GajiBersih;
+                    rowNum++;
+                }
+
+                // Add total row
+                var totalRow = new TableRow();
+                totalRow.Append(
+                    CloneStyledCell(headerCells, 0, ""),
+                    CloneStyledCell(headerCells, 1, ""),
+                    CloneStyledCell(headerCells, 2, "Total:"),
+                    CloneStyledCell(headerCells, 3, totalSalary.ToString("N0", new CultureInfo("id-ID")))
+                );
+                table.AppendChild(totalRow);
+
+                wordDoc.MainDocumentPart.Document.Save();
+            }
+        }
+
+        return memStream.ToArray();
+    }
+
+    private static TableCell CloneStyledCell(List<TableCell> headerCells, int index, string newText)
+    {
+        var templateCell = headerCells[index];
+        var newCell = (TableCell)templateCell.CloneNode(true);
+
+        var cellProperties = newCell.GetFirstChild<TableCellProperties>();
+        if (cellProperties != null)
+        {
+            var shading = cellProperties.Elements<Shading>().FirstOrDefault();
+            shading?.Remove();
+        }
+
+        foreach (var text in newCell.Descendants<Text>())
+        {
+            text.Text = "";
+        }
+
+        var firstRun = newCell.Descendants<Run>().FirstOrDefault();
+        if (firstRun != null)
+        {
+            firstRun.RemoveAllChildren<Text>();
+            firstRun.AppendChild(new Text(newText));
+        }
+        else
+        {
+            newCell.Append(new Paragraph(new Run(new Text(newText))));
+        }
+
+        return newCell;
+    }
+
+    private async Task LogError(string context, Exception ex)
+    {
+        var message = $"{context}: {ex.Message} - {ex.InnerException?.Message}";
+        await _audit.LogAsync(LogTypes.LogError, "Payroll", message, CurrentEmployee?.EmployeeId ?? 0, CurrentEmployee?.EmployeeName ?? "Unknown");
+    }
+
+    // DTOs
+    private class PayrollCalculationDto
+    {
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; }
+        public decimal DailyWage { get; set; }
+        public int PresentDays { get; set; }
+        public int AbsentDays { get; set; }
+        public PermissionCountsDto PermissionCounts { get; set; } = new();
+        public decimal PremiumPercentage { get; set; }
+        public decimal PremiumAmount { get; set; }
+        public decimal BPJS_Health { get; set; }
+        public decimal BPJS_Labor { get; set; }
+        public decimal AllowanceAmount { get; set; }
+        public int OvertimeHours { get; set; }
+        public int OvertimeMinutes { get; set; }
+        public decimal OvertimeAmount { get; set; }
+        public int LateArrivals { get; set; }
+        public decimal DeductionAmount { get; set; }
+        public decimal BonusAmount { get; set; }
+        public decimal PenaltyAmount { get; set; }
+        public decimal GrossAmount { get; set; }
+        public decimal GajiBersih { get; set; }
+        public string BankAccount { get; set; }
+    }
+
+    private class PermissionCountsDto
+    {
+        public int HolidayDays { get; set; }
+        public int PermissionDays { get; set; }
+        public int SickDays { get; set; }
+        public int HalfDays { get; set; }
+        public int OvertimeDays { get; set; }
+        public int BusinessDays { get; set; }
+    }
+
+    public class PayrollRowDto
+    {
+        public int No { get; set; }
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; }
+        public decimal DailyWage { get; set; }
+        public decimal BPJS_Health { get; set; }
+        public decimal BPJS_Labor { get; set; }
+        public decimal PremiumAmount { get; set; }
+        public decimal BonusAmount { get; set; }
+        public decimal AllowanceAmount { get; set; }
+        public int PresentDays { get; set; }
+        public int AbsentDays { get; set; }
+        public int PermissionDays { get; set; }
+        public int SickDays { get; set; }
+        public int HalfDays { get; set; }
+        public int OvertimeDays { get; set; }
+        public int OvertimeHours { get; set; }
+        public int OvertimeMinutes { get; set; }
+        public int HolidayDays { get; set; }
+        public int BusinessDays { get; set; }
+        public int LateArrivals { get; set; }
+        public decimal DeductionAmount { get; set; }
+        public decimal PenaltyAmount { get; set; }
+        public decimal OvertimeAmount { get; set; }
+        public string BankAccount { get; set; }
+        public decimal GajiBersih { get; set; }
+    }
+
+    public class PayrollExcel
+    {
+        public int No { get; set; }
+        public string Karyawan { get; set; }
+        public string Rekening { get; set; }
+        public decimal Gaji { get; set; }
+    }
+}

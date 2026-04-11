@@ -1,4 +1,4 @@
-﻿@page "/app/recordingvov"
+﻿@page "/app/stokopnampakan"
 @using System.Security.Claims;
 @using QuickAccounting.Data.Recording;
 @inject IJSRuntime JSRuntime
@@ -9,56 +9,24 @@
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @inject IDailyRecordingService _recording
-@inject IKandangService _kandang
 @inject ApplicationDbContext _db
+@inject IStockAkhirService _stockAkhirService
 @attribute [Authorize]
 
-<PageTitle>Form Recording VOV</PageTitle>
+<PageTitle>Stok Opnam Pakan</PageTitle>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h4>Form Recording VOV</h4>
+            <h4>Stok Opnam Pakan</h4>
         </div>
     </div>
 
     <div class="card">
         <div class="card-body">
             @if (FormSubmitted == false)
-            {
-                <div class="row">
-                    <div class="col-lg-12 col-sm-12 col-12">
-                        <div class="form-group" style="text-align: center !important;">
-                            <label>Pilih Nomor Kandang</label>
-                            <div class="row">
-                                <div class="col-lg col-sm-12 col-12">
-                                    <select class="form-control" @onchange="OnCageChanged">
-                                        <option value="TIDAK">PILIH NO KANDANG</option>
-                                        @foreach (var kandangItem in CageList)
-                                        {
-                                            <option value="@kandangItem.NoKandang">@kandangItem.NoKandang</option>
-                                        }
+            {                
 
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-lg-12 col-sm-12 col-12">
-                        <div class="form-group" style="text-align: center !important;">
-                            <label>Strain</label>
-                            <div class="row">
-                                <div class="col-lg-12 col-sm-12 col-12">
-                                    <input type="text" class="form-control" @bind="StrainName" disabled />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
+                @* <div class="row">
                     <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
                             <label>Record Date</label>
@@ -69,7 +37,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> *@
 
                 <div class="row">
                     <div class="col-lg-12 col-sm-12 col-12">
@@ -79,9 +47,8 @@
                                     <thead>
                                         <tr>
                                             <th>Produk</th>
-                                            <th>Pemakaian</th>
+                                            <th>Sisa</th>
                                             <th>Satuan</th>
-                                            <th>Hari Ke-</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -90,8 +57,7 @@
                                         <tr>
                                                 <td style="text-align:left !important;">@product.Name</td>
                                                 <td><input type="text" @bind="@product.Usage" class="form-control" /></td>
-                                                <td style="width: 50px !important;">@product.Satuan</td>
-                                                <td><input type="text" @bind="@product.Day" class="form-control" /></td>
+                                                <td>@product.Satuan</td>
                                         </tr>                                                                 
                                     }
                                     </tbody>
@@ -105,7 +71,7 @@
                 <br /> <br />
                 <div class="row">
                     <div class="col-lg-12" style="text-align: center !important;">
-                        <input type="button" @onclick="@(e => SaveVOVAsync())" class="btn btn-submit me-2" value="Simpan VOV Data" />
+                        <input type="button" @onclick="@(e => SaveVOVAsync())" class="btn btn-submit me-2" value="Simpan Stok Opnam Pakan" />
                     </div>
                 </div>
             }
@@ -114,7 +80,7 @@
                 <div class="row">
                     <div class="col-lg-12 col-sm-12 col-12">
                         <div class="form-group" style="text-align: center !important;">
-                            <label style="font-size:24px; font-weight:bold;">Data VOV telah tersimpan.</label>
+                            <label style="font-size:24px; font-weight:bold;">Data Stok Opnam Pakan telah tersimpan.</label>
                         </div>
                     </div>
                 </div>
@@ -128,20 +94,17 @@
     public Task<AuthenticationState> authenticationState { get; set; }
 
     private DateTime RecordDate { get; set; }
-    private decimal HenAgeWeek { get; set; }
-    private decimal HenAgeDays { get; set; }
-    private string StrainName { get; set; }
     private bool FormSubmitted { get; set; }
-    string SelectedNoKandang = "";
+
     DateTime TodaysDate;
-    private List<Kandang> CageList = new List<Kandang>(); // Placeholder for cage numbers.
+
     private DailyRecording CurrentRecording;
-    string strMenu = "Form Recording VOV";
+    string strMenu = "Form Stok Opnam Recording VOV";
 
     private UserMaster modelUser;
     private Employee modelEmployee;
 
-    List<Product> ProductObat = new List<Product>();
+    List<StockOpnam> StockAkhirs = new List<StockOpnam>();
     List<VOVItem> VOVItems = new List<VOVItem>();
 
     private void SetTodaysDate()
@@ -164,12 +127,9 @@
         {           
             SetTodaysDate();           
 
-            // Fetch cage numbers, can be populated dynamically from a service or DB
-            CageList = await _kandang.GetAll();
-
             var newItems = (from p in _db.Product
                             join u in _db.Unit on p.UnitId equals u.UnitId // Assuming the table is _db.Unit
-                            where p.GroupId == 7
+                            where p.GroupId == 3
                             select new VOVItem
                 {
                     ID = p.ProductId,
@@ -179,7 +139,6 @@
                     Satuan = u.UnitName, // Assign the string name here
                     GroupId = p.GroupId
                 }).ToList();
-
             VOVItems.AddRange(newItems);
         }
         else
@@ -191,63 +150,52 @@
         StateHasChanged();
     }
 
-    private async Task OnCageChanged(ChangeEventArgs e)
-    {
-        if (e.Value.ToString() != "TIDAK")
-        {
-            SelectedNoKandang = e.Value.ToString();
-            CurrentRecording = await _recording.GetDailyRecordForTodayForFormAsync(SelectedNoKandang, TodaysDate, modelEmployee.EmployeeId);
-            RecordDate = CurrentRecording.RecordDate;
-            StrainName = CurrentRecording.StrainName;
-            HenAgeDays = CurrentRecording.HenAgeDays;
-            HenAgeWeek = CurrentRecording.HenAgeWeeks;
-
-            StateHasChanged();
-        }
-    }
-
     private async Task SaveVOVAsync()
     {
-        if (SelectedNoKandang == "")
-        {
-            Snackbar.Add("Mohon pilih No Kandang terlebih dahulu.", Severity.Error);
-            return;
-        }
+        // Determine record date: prefer explicit RecordDate, fall back to TodaysDate
+        var stockDate = RecordDate != default(DateTime) ? RecordDate : TodaysDate;
+        int countSave = 0;
 
-        List<DailyRecordingVOV> dailyRecordingVOVs = new List<DailyRecordingVOV>();
         foreach (var item in VOVItems)
         {
             if (item.Usage > 0)
             {
-                DailyRecordingVOV newRecording = new DailyRecordingVOV();
-                newRecording.VOVProductID = item.ID;
-                newRecording.VOVProductName = item.Name;
-                newRecording.RecordDate = RecordDate;
-                newRecording.CageNumber = SelectedNoKandang;
-                newRecording.DateCreated = DateTime.Now;
-                newRecording.CreatedBy = modelEmployee.EmployeeId;
-                newRecording.Day = item.Day;
-                newRecording.StrainName = StrainName;
-                newRecording.HenAgeDays = HenAgeDays;
-                newRecording.HenAgeWeeks = HenAgeWeek;
-                newRecording.Usage = item.Usage;
+                // Create StockOpnam record using the StockOpnam service
+                var stock = new StockOpnam
+                {
+                    ProductID = item.ID,
+                    GroupId = item.GroupId,
+                    StockAkhir = item.Usage,
+                    StockDate = TodaysDate,
+                    CreatedDate = DateTime.Now,
+                    CreatedBy = modelEmployee.EmployeeId
+                };
 
-                dailyRecordingVOVs.Add(newRecording);
+                StockAkhirs.Add(stock);
+                countSave++;
             }
         }
 
-        if (dailyRecordingVOVs.Count > 0)
+        if (countSave > 0)
         {
-            await _db.AddRangeAsync(dailyRecordingVOVs);
-            await _db.SaveChangesAsync();
+            try
+            {
+                await _stockAkhirService.CreateAllAsync(StockAkhirs);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error saving data: {ex.InnerException.Message}", Severity.Error);
+                return;
+            }
 
-            Snackbar.Add("VOV data telah tersimpan.", Severity.Success);
+            Snackbar.Add("Stok Opnam Pakan data telah tersimpan.", Severity.Success);
             FormSubmitted = true;
             StateHasChanged();
         }
         else
         {
-            Snackbar.Add("Recording tidak ditemukan untuk kandang yang dipilih.", Severity.Error);
+            Snackbar.Add("Stok Opnam Pakan belum tersimpan.", Severity.Error);
         }
     }
 

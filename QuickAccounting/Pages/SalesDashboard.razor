@@ -1,4 +1,4 @@
-﻿@page "/app/dashboard"
+﻿@page "/app/salesdashboard"
 @using System.Globalization
 @using ChartJs.Blazor.Common;
 @using ChartJs.Blazor.Common.Axes;
@@ -34,11 +34,10 @@
 @inject IDailyRecordingService _recording
 @inject ApplicationDbContext _db
 @inject IAuditLogService _audit
-@inject IStartingStockDate _stockDate
+@inject IStartingStockDate _stockDate;
 @inject IKandangService _kandang
 @inject ISuratPeringatan _suratPeringatan
-@inject PdfService pdfService
-@inject IStockAkhirService _stockAkhirService
+@inject PdfService pdfService;
 @inject ISnackbar Snackbar
 
 @using QuickAccounting.Components
@@ -375,75 +374,6 @@
 					</div>
 					<div class="dash-widgetcontent">
 						<h5><span class="counters">@StockTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
-						<h6>Parah Sekali</h6>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="container-fluid">
-				<div class="col-md-12">
-					<div class="brand-text float-left mt-4">
-						<h3>Stock Opnam Telur Hari Ini</h3>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="row">
-
-			<div class="cust-col-20 col-sm-6 col-12">
-				<div class="dash-widget">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash1.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockOpnamTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
-						<h6>Utuh</h6>
-					</div>
-				</div>
-			</div>
-			<div class="cust-col-20 col-sm-6 col-12">
-				<div class="dash-widget dash1">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash2.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockOpnamTelurPutih.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
-						<h6>Putih</h6>
-					</div>
-				</div>
-			</div>
-			<div class="cust-col-20 col-sm-6 col-12">
-				<div class="dash-widget dash2">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash3.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockOpnamTelurBentes.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
-						<h6>Bentes</h6>
-					</div>
-				</div>
-			</div>
-			<div class="cust-col-20 col-sm-6 col-12">
-				<div class="dash-widget dash3">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockOpnamTelurParah.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
-						<h6>Parah</h6>
-					</div>
-				</div>
-			</div>
-			<div class="cust-col-20 col-sm-6 col-12">
-				<div class="dash-widget dash3">
-					<div class="dash-widgetimg">
-						<span><img src="assets/img/icons/dash4.svg" alt="img"></span>
-					</div>
-					<div class="dash-widgetcontent">
-						<h5><span class="counters">@StockOpnamTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
 						<h6>Parah Sekali</h6>
 					</div>
 				</div>
@@ -1612,12 +1542,6 @@
 	decimal StockTelurParah;
 	decimal StockTelurParahSekali;
 
-	decimal StockOpnamTelurUtuh;
-	decimal StockOpnamTelurBentes;
-	decimal StockOpnamTelurPutih;
-	decimal StockOpnamTelurParah;
-	decimal StockOpnamTelurParahSekali;
-
 	decimal ReturPutih = 0;
 	decimal ReturBentes = 0;
 	decimal ReturRusak = 0;
@@ -1917,25 +1841,6 @@
 
 
 		ChartDataLoaded = true;
-	}
-
-	private async Task LoadStokOpnam() 
-	{
-		var stockOpnamData = (from so in _db.StockOpnam
-							where so.StockDate >= dtFromDate &&
-								  so.StockDate <= dtToDate && so.GroupId == 6
-							select so).ToList();
-
-		int productIdBentes = 16;
-		int productIdPutih = 7;
-		int productIdParah = 17;
-		int productIdPS = 19;
-
-        StockOpnamTelurUtuh = stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault().StockAkhir;
-		StockOpnamTelurBentes = stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault().StockAkhir;
-		StockOpnamTelurPutih = stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault().StockAkhir;
-		StockOpnamTelurParah = stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault().StockAkhir;
-		StockOpnamTelurParahSekali = stockOpnamData.Where(x => x.ProductID == productIdPS).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdPS).FirstOrDefault().StockAkhir;
 	}
 
 	private void OpenApproveDialog(int id)
@@ -2323,8 +2228,6 @@
 
 		LoadReportRecordingSummary();
 		CalculateTotalNonTelurRupiah();
-
-		LoadStokOpnam();
 
 		if(currentUserRole == "Supervisor")
 		{

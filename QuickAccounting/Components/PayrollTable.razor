@@ -1,0 +1,87 @@
+@using AttendanceListNew = QuickAccounting.Pages.HumanResorcePage.AttendancePage.AttendanceListNew
+
+<div class="table-responsive table-scrollable">                
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Karyawan</th>
+                <th>Harian</th>
+                <th>BPJS Kes</th>
+                <th>BPJS TK</th>
+                <th>Premi</th>
+                <th>Tambahan</th>
+                <th>Tunjangan</th>
+                <th>M</th>
+                <th>A</th>
+                <th>I</th>
+                <th>S</th>
+                <th>1/2</th>
+                <th>Lembur</th>
+                <th>Waktu Lembur</th>
+                <th>L</th>
+                <th>DL</th>
+                <th>Telat</th>
+                <th>Cicilan</th>
+                <th>Potongan</th>
+                <th>Rp. Lmbr</th>
+                <th>No. Rek</th>
+                <th>Total Gaji</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (PayrollRows?.Any() == true)
+            {
+                @foreach (var row in PayrollRows)
+                {
+                    <tr>
+                        <td>@row.EmployeeName</td>
+                        <td>@string.Format("{0:n0}", row.DailyWage)</td>
+                        <td>@string.Format("{0:n0}", row.BPJS_Health)</td>
+                        <td>@string.Format("{0:n0}", row.BPJS_Labor)</td>
+                        <td>@string.Format("{0:n0}", row.PremiumAmount)</td>
+                        <td>@string.Format("{0:n0}", row.BonusAmount)</td>
+                        <td>@string.Format("{0:n0}", row.AllowanceAmount)</td>
+                        <td>@row.PresentDays</td>
+                        <td>@row.AbsentDays</td>
+                        <td>@row.PermissionDays</td>
+                        <td>@row.SickDays</td>
+                        <td>@row.HalfDays</td>
+                        <td>@row.OvertimeDays</td>
+                        <td>@row.OvertimeHours Jam @row.OvertimeMinutes Menit</td>
+                        <td>@row.HolidayDays</td>
+                        <td>@row.BusinessDays</td>
+                        <td>@row.LateArrivals</td>
+                        <td>@string.Format("{0:n0}", row.DeductionAmount)</td>
+                        <td>@string.Format("{0:n0}", row.PenaltyAmount)</td>
+                        <td>@string.Format("{0:n0}", row.OvertimeAmount)</td>
+                        <td>@row.BankAccount</td>
+                        <td>@string.Format("{0:n0}", row.GajiBersih)</td>
+                    </tr>
+                }
+                <tr>
+                    <td colspan="21" style="text-align:right;">
+                        <span style="font-size:20px; font-weight:bold;">
+                            Total @string.Format("{0:n0}", GajiKaryawanTotal)
+                        </span>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                <tr>
+                    <td colspan="22" style="text-align:center; padding: 20px;">
+                        <h4>Tidak ada data payroll.</h4>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public List<AttendanceListNew.PayrollRowDto> PayrollRows { get; set; }
+
+    [Parameter]
+    public decimal GajiKaryawanTotal { get; set; }
+}

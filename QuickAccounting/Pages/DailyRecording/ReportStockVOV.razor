@@ -1,4 +1,4 @@
-﻿@page "/app/reportstockvov___"
+﻿@page "/app/reportstockvov"
 @using System.Security.Claims;
 @using Microsoft.EntityFrameworkCore;
 @using QuickAccounting.Data.Recording;
@@ -18,6 +18,7 @@
 @inject AuthenticationStateProvider authStateProvider
 @inject ApplicationDbContext _db
 @inject IAuditLogService _audit
+@inject IStockAkhirService _stockAkhirService
 @attribute [Authorize]
 
 <PageTitle>Laporan Stok VOV</PageTitle>
@@ -39,20 +40,20 @@
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h2>Laporan Stok VOV Harian</h2>
+            <h2>Laporan Stok VOV</h2>
         </div>
     </div>
 
     <div class="card">
         <div class="card-body">           
-            <div class="row">
+            @* <div class="row">
                 <div class="col-lg col-sm-6 col-12">
                     <div class="form-group">
                         Tanggal
                         <input type="date" @bind="@SelectedDateFrom" class="form-control" />
                     </div>
                 </div>
-            </div>
+            </div> *@
 
             <div class="row">
                 <div class="col-lg col-sm-6 col-12">
@@ -71,36 +72,44 @@
                 </div>
             </div>
 
-            @if (Products.Count > 0)
+            @if (stocks.Count > 0)
             {
-                foreach (Product p in Products)
-                {
-                    <div class="row">
-                        <div class="col-lg-12 col-sm-12 col-12">
-                            <h3>@p.ProductName</h3>
-                            <div class="form-group" style="text-align: left !important;">                            
-                                <div class="table-responsive table-scrollable">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th style="text-align:left;">Tanggal</th>
-                                                <th style="text-align:left;">Stok Awal</th>
-                                                <th style="text-align:left;">Masuk</th>
-                                                <th style="text-align:left;">Keluar</th>
-                                                <th style="text-align:left;">Susut</th>
-                                                <th style="text-align:left;">Stok Akhir</th>                                                
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: left !important;">                            
+                            <div class="table-responsive table-scrollable">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            @* <th style="text-align:left;">Tanggal</th> *@
+                                            <th style="text-align:left;">Produk</th>
+                                            <th style="text-align:left;">Masuk</th>
+                                            <th style="text-align:left;">Terpakai</th>
+                                            <th style="text-align:left;">Sisa Stok</th>
+                                            <th style="text-align:left;">Stok Real</th>
+                                            <th style="text-align:left;">Selisih</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach(var reportStock in stocks) 
+                                        {
+                                        <tr>
+                                           @*  <td style="text-align:left !important;">@reportStock.CurrentDate.ToString("dd/MM/yyyy")</td> *@
+                                            <td style="text-align:left !important;">@reportStock.ProductName</td>
+                                            <td style="text-align:left !important;">@reportStock.TotalInwardQty</td>
+                                            <td style="text-align:left !important;">@reportStock.TotalOutwardQty</td>
+                                            <td style="text-align:left !important;">@(reportStock.CurrentStock)</td>
+                                            <td style="text-align:left !important;">@reportStock.StockReal</td>
+                                                <td style="text-align:left !important;">@(reportStock.StockReal - reportStock.CurrentStock)</td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                                                           
-                                        </tbody>
+                                        }                                        
+                                    </tbody>
                                 </table>
                             </div>
                             
                     </div>
                 </div>
             </div>
-                }
             }
         </div>
     </div>    
@@ -116,51 +125,14 @@
     DateTime SelectedDateFrom;
     DateTime SelectedDateTo;
 
-    public class StockReportItem
-    {
-        public DateTime CurrentDate { get; set; }
-        public decimal NettKandang { get; set; }
-        public decimal BrutoKandang { get; set; }        
-        public decimal TotalStockPenjualan { get; set; }
-        public decimal Utuh { get; set; }
-        public decimal Putih { get; set; }
-        public decimal Bentes { get; set; }
-        public decimal Rusak { get; set; }
-        public decimal Parah { get; set; }
-        public decimal ParahSekali { get; set; }
-        public decimal TotalStockGudang { get; set; }
-        public decimal Selisih { get; set; }
-        public decimal ReturUtuh { get; set; }
-        public decimal ReturPutih { get; set; }
-        public decimal ReturBentes { get; set; }
-        public decimal ReturRusak { get; set; }
-        public decimal ReturParah { get; set; }
-        public decimal ReturParahSekali { get; set; }
-        public decimal Susut { get; set; }
-        public decimal TotalReturan { get; set; }
-    }
-
     bool isProcessing;
     bool IsValid = true;
     List<DateTime> dates = new List<DateTime>();
-    List<Product> Products = new List<Product>();
-    Dictionary<Product, List<StockPosting>> ProductStocks = new Dictionary<Product, List<StockPosting>>();
+    List<StockVOV> stocks = new List<StockVOV>();
 
     private async Task ShowData()
     {
-        Products = new List<Product>();
-        ProductStocks = new Dictionary<Product, List<StockPosting>>();
-
-        for (DateTime date = SelectedDateFrom; date <= SelectedDateTo; date = date.AddDays(1))
-        {
-            dates.Add(date);
-            await LoadData(date);
-        }
-    }
-
-    private async Task LoadData(DateTime SelectedDate)
-    {
-        
+        stocks = await _stockAkhirService.GetReportStockVOV(SelectedDateFrom, SelectedDateTo);
     }
 
     protected override async Task OnInitializedAsync()
@@ -175,14 +147,9 @@
         string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Laporan Stok VOV.";
         await _audit.LogAsync(LogTypes.LogInfo, "Laporan Stok VOV", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
-        SelectedDateFrom = SelectedDateTo = DateTime.Now;
+        SelectedDateFrom = new DateTime(2026, 4, 1, 0, 0, 0);
+        SelectedDateTo = DateTime.Now;
 
-        Products = await _db.Product.Where(x => x.GroupId == 3).ToListAsync();
-
-        foreach(Product p in Products)
-        {
-            
-        }
-        await LoadData(DateTime.Now);
+        await ShowData();
     }
 }    

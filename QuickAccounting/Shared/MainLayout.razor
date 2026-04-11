@@ -266,6 +266,10 @@
 													<li><a href="/app/eggproduction">Produksi Telur</a></li>
 													<li><a href="/app/recordingvov">Recording VOV Kandang</a></li>
 													<li><a href="/app/recordingvovbyobat">Recording VOV Obat</a></li>
+													<li><a href="/app/stokopnamvov">Stok Opnam VOV</a></li>
+													<li><a href="/app/stokopnampakan">Stok Opnam Pakan</a></li>
+													<li><a href="/app/reportstockvov">Laporan Stok VOV</a></li>
+													<li><a href="/app/setperiodebaru">Set Periode Baru</a></li>
 													@* <li><a href="javascript:void(0);">Informasi Hen Day</a></li> *@
 													<li><a href="/app/recordingreports">Laporan Recording</a></li>
 												</ul>
@@ -280,10 +284,14 @@
 													<li><a href="/app/foodintake">Food Intake/Konsumsi Pakan</a></li>													
 													<li><a href="/app/eggproduction">Produksi Telur</a></li>
 													<li><a href="/app/concentrateform">Ganti Konsentrat Per Kandang</a></li>
-													<li><a href="/app/recordingvov">Recording VOV Kandang</a></li>
+													@* <li><a href="/app/recordingvov">Recording VOV Kandang</a></li> *@
 													<li><a href="/app/recordingvovbyobat">Recording VOV Obat</a></li>
+													<li><a href="/app/stokopnamvov">Stok Opnam VOV</a></li>
+													<li><a href="/app/reportstockvov">Laporan Stok VOV</a></li>
+													<li><a href="/app/stokopnampakan">Stok Opnam Pakan</a></li>
 													<li><a href="/app/setperiodebaru">Set Periode Baru</a></li>												
-													<li><a href="/app/recordingreports">Laporan Recording</a></li>	
+													<li><a href="/app/recordingreports">Laporan Recording</a></li>
+													<li><a href="/app/recordingreportsallkandanglight">Recording All Kandang</a></li>
 													<li><a href="/app/setanakkandang">Daftar Anak Kandang</a></li>
 												</ul>
 											</li>
@@ -311,6 +319,15 @@
 										{
 											<li class="">
 												<a href="/app/mixingpakan"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Mixing Pakan</span></a>
+											</li>
+											<li class="submenu">
+												<a href="javascript:void(0);"><img src="assets/img/icons/product.svg" alt="img"><span> Inventaris</span> <span class="menu-arrow"></span></a>
+												<ul>
+													<li><a href="/app/product">Produk</a></li>
+													<li><a href="/app/category">Kategori Produk</a></li>
+													<li><a href="/app/brand">Merek</a></li>
+													<li><a href="/app/unit">Unit Satuan</a></li>
+												</ul>
 											</li>
 										}
 										@if (currentUserRole == "Sales" || currentUserRole == "Purchase" || currentUserRole == "Admin")

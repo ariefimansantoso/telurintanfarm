@@ -66,7 +66,8 @@
                                     <thead>
                                         <tr>
                                             <th>Kandang</th>
-                                            <th>Pemakaian (KG)</th>
+                                            <th>Pemakaian</th>
+                                            <th>Satuan</th>
                                             <th>Hari Ke-</th>
                                         </tr>
                                     </thead>
@@ -76,6 +77,7 @@
                                         <tr>
                                                 <td style="text-align:left !important;">@product.Name</td>
                                                 <td><input type="text" @bind="@product.Usage" class="form-control" /></td>
+                                                <td style="width: 50px !important;">@product.Satuan</td>
                                                 <td><input type="text" @bind="@product.Day" class="form-control" /></td>
                                         </tr>                                                                 
                                     }
@@ -129,6 +131,7 @@
 
     int SelectedVOVID = 0;
     string SelectedVOVName = "";
+    string Satuan = "";
 
     List<Product> ProductObat = new List<Product>();
     List<KandangItem> KandangItems = new List<KandangItem>();
@@ -165,7 +168,8 @@
                     ID = p.ID,
                     Name = p.NoKandang,
                     Usage = 0,
-                    Day = 0
+                    Day = 0,
+                    Satuan = Satuan
                 });
             }
         }
@@ -184,7 +188,24 @@
         {
             SelectedVOVID = Convert.ToInt32(e.Value.ToString());
             SelectedVOVName = VOVList.FirstOrDefault(x => x.ProductId == SelectedVOVID).ProductName;
+            var product = VOVList.FirstOrDefault(x => x.ProductId == SelectedVOVID);
+            Satuan = _db.Unit.FirstOrDefault(x => x.UnitId == product.UnitId).UnitName;
 
+            VOVList = new List<Product>(); // Clear the list to avoid duplication
+            KandangItems = new List<KandangItem>(); // Clear the list to avoid duplication  
+
+            VOVList = ProductObat = _db.Product.Where(x => x.GroupId == 7).ToList();   
+            foreach (Kandang p in CageList)
+            {
+                KandangItems.Add(new KandangItem
+                {
+                    ID = p.ID,
+                    Name = p.NoKandang,
+                    Usage = 0,
+                    Day = 0,
+                    Satuan = Satuan
+                });
+            }
             StateHasChanged();
         }
     }
@@ -198,6 +219,9 @@
         }
 
         List<DailyRecordingVOV> dailyRecordingVOVs = new List<DailyRecordingVOV>();
+        List<StockPosting> stockPostings = new List<StockPosting>();
+        decimal totalUsage = 0;
+
         foreach (var item in KandangItems)
         {
             if (item.Usage > 0)
@@ -218,12 +242,36 @@
                 newRecording.Usage = item.Usage;
 
                 dailyRecordingVOVs.Add(newRecording);
+
+                totalUsage = totalUsage + item.Usage;
             }
         }
+
+        StockPosting stockposting = new StockPosting();
+        stockposting.Date = DateTime.Now;
+        stockposting.ProductId = SelectedVOVID;
+        stockposting.InwardQty = 0;
+        stockposting.OutwardQty = totalUsage;
+        stockposting.UnitId = 0;
+        stockposting.BatchId = 0;
+        stockposting.Rate = 0;
+        stockposting.DetailsId = 0;
+        stockposting.InvoiceNo = SelectedVOVID.ToString();
+        stockposting.VoucherNo = SelectedVOVID.ToString();
+        stockposting.VoucherTypeId = 0;
+        stockposting.AgainstInvoiceNo = String.Empty;
+        stockposting.AgainstVoucherNo = String.Empty;
+        stockposting.AgainstVoucherTypeId = 0;
+        stockposting.WarehouseId = 1;
+        stockposting.StockCalculate = "Pemakaian";
+        stockposting.CompanyId = 1;
+        stockposting.FinancialYearId = 2;
+        stockposting.AddedDate = DateTime.Now;
 
         if (dailyRecordingVOVs.Count > 0)
         {
             await _db.AddRangeAsync(dailyRecordingVOVs);
+            await _db.AddAsync(stockposting);
             await _db.SaveChangesAsync();
 
             Snackbar.Add("VOV data telah tersimpan.", Severity.Success);
@@ -242,5 +290,7 @@
         public string Name { get; set; }
         public decimal Usage { get; set; }
         public int Day { get; set; }
+        public string Satuan { get; set; }
+        public int GroupId { get; set; }
     }
 }

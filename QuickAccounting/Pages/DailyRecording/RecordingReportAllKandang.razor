@@ -125,7 +125,7 @@
             <div class="card-body">
                 @if(ChartDataLoaded) 
 	            {
-                    <Chart Config="_config" @ref="_chart" @key="_chartKey"></Chart>
+                    <Chart Config="_config" @ref="_chart" @key="_chartKey" Width="1200" Height="400"></Chart>
                 }
             </div>
         </div>
@@ -615,7 +615,8 @@
             {
                 Options = new LineOptions
                 {
-                    Responsive = true,                    
+                    Responsive = false,
+                MaintainAspectRatio = false,
                     Title = new OptionsTitle
                     {
                         Display = true,

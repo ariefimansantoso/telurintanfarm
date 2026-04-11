@@ -1,0 +1,443 @@
+﻿@page "/app/stokopnametelur"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Constants;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@using Newtonsoft.Json
+@inject IStockAkhirService _stockAkhirService
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@inject IStartingStockDate _stockDate;
+@attribute [Authorize]
+
+<PageTitle>Stok Opname Telur</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+                    font-weight: 200 !important;
+                    border-bottom: 1px solid #E9ECEF;
+                    vertical-align: middle;
+                    white-space: nowrap;
+                    text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Stok Opname Telur</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">            
+            @* <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Pilih Jenis Telur</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnJenisTelurChanged">
+                                    <option value="UTUH">UTUH</option>
+                                    <option value="PUTIH">PUTIH</option>
+                                    <option value="BENTES">BENTES</option>
+                                    <option value="PARAH">PARAH</option>
+                                    <option value="PS">PARAH SEKALI</option>
+                                    <option value="RUSAK">RUSAK</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> *@
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Utuh (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@Kilogram" @onchange="OnKilogramChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Putih (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurPutih.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramPutih" @onchange="OnKilogramPutihChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Bentes (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurBentes.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramBentes" @onchange="OnKilogramBentesChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Parah (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurParah.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramParah" @onchange="OnKilogramParahChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Parah Sekali (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramPS" @onchange="OnKilogramPSChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <label>Jumlah Kilogram Rusak (Apabila tidak ada perubahan, masukkan angka stok sekarang yaitu: @StockTelurRusak.ToString("F2", new CultureInfo("id-ID")) KG)</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <input type="text" class="form-control" value="@KilogramRusak" @onchange="OnKilogramRusakChanged" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> *@
+
+            <div class="row">
+                <div class="col-lg-12 col-sm-12 col-12">
+                    <div class="form-group" style="text-align: center !important;">
+                        <button @onclick="() => Save()" class="btn btn-primary" style="color:#fff !important;" disabled="@( !IsValid )">Simpan</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Reset Stok Penjualan";
+
+
+    string JenisTelurSelected = "UTUH";
+    decimal Kilogram = 0;
+    decimal KilogramPutih = 0;
+    decimal KilogramBentes = 0;
+    decimal KilogramParah = 0;
+    decimal KilogramPS = 0;
+    decimal KilogramRusak = 0;
+
+    decimal StockTelurUtuh;
+    decimal StockTelurBentes;
+    decimal StockTelurPutih;
+    decimal StockTelurParah;
+    decimal StockTelurParahSekali;
+    decimal StockTelurRusak;
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "Admin";
+
+    private List<StockPenjualan> StockPenjualan = new List<StockPenjualan>();
+    int SelectedItemId;
+    public bool DeleteDialogOpen { get; set; }
+    bool isProcessing;
+    bool IsValid = true;
+
+    private async Task OnKilogramChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Utuh tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            Kilogram = v;            
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Utuh tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramPutihChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Putih tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramPutih = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Putih tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramBentesChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Bentes tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramBentes = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Bentes tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramParahChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Parah tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramParah = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Parah tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramPSChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Parah Sekali tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramPS = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Parah Sekali tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task OnKilogramRusakChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().Contains(","))
+        {
+            Snackbar.Add("Input Telur Rusak tidak benar. Mohon pakai TITIK.", Severity.Warning);
+            IsValid = false;
+            return;
+        }
+
+        decimal v;
+        if (decimal.TryParse(e.Value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out v))
+        {
+            IsValid = true;
+            KilogramRusak = v;
+        }
+        else
+        {
+            IsValid = false;
+            Snackbar.Add("Input Telur Rusak tidak benar.", Severity.Warning);
+        }
+    }
+
+    private async Task Save()   
+    {
+        try
+        {
+            string auditMessage = "";
+            var dateNow = DateTime.Now;
+
+            int productIdBentes = 16;
+            int productIdPutih = 7;
+            int productIdParah = 17;
+            int productIdPS = 19;
+            int productIdRusak = 106;
+
+            // telur utuh
+            var stock = new StockOpnam
+            {
+                ProductID = -99,
+                GroupId = 6,
+                StockAkhir = Kilogram,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId
+            };
+
+            var stockPutih = new StockOpnam
+            {
+                ProductID = productIdPutih,
+                GroupId = 6,
+                StockAkhir = KilogramPutih,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId
+            };
+
+            var stockBentes = new StockOpnam
+            {
+                ProductID = productIdBentes,
+                GroupId = 6,
+                StockAkhir = KilogramBentes,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId
+            };
+
+            var stockParah = new StockOpnam
+            {
+                ProductID = productIdParah,
+                GroupId = 6,
+                StockAkhir = KilogramParah,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId
+            };
+
+            var stockPS = new StockOpnam
+            {
+                ProductID = productIdPS,
+                GroupId = 6,
+                StockAkhir = KilogramPS,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId
+            };
+
+            var stockRusak = new StockOpnam
+            {
+                ProductID = productIdRusak,
+                GroupId = 6,
+                StockAkhir = KilogramRusak,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId
+            };
+            
+            List<StockOpnam> StockAkhirs = new List<StockOpnam>();
+            StockAkhirs.Add(stock);
+            StockAkhirs.Add(stockPutih);
+            StockAkhirs.Add(stockBentes);
+            StockAkhirs.Add(stockParah);
+            StockAkhirs.Add(stockPS);
+            StockAkhirs.Add(stockRusak);
+
+            try
+            {
+                await _stockAkhirService.CreateAllAsync(StockAkhirs);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error saving data: {ex.InnerException.Message}", Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("Stok Opnam Telur berhasil.", Severity.Success);
+            navigation.NavigateTo("/app/resetsalesstock", true);
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }    
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Form Tambah Stok Penjualan.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Form Tambah Stok Penjualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+    }
+
+}    

@@ -30,6 +30,7 @@
 @inject IAuditLogService _audit
 @inject IEmployee _employee
 @inject IUser _user
+@inject IStockAkhirService _stockAkhirService
 @attribute [Authorize]
 <PageTitle>Picking Scan</PageTitle>
 <Loader IsLoading="isProcessing"></Loader>
@@ -220,6 +221,63 @@
 			</div>
 		</div>
 	</div>
+
+
+	<div class="row">
+		<div class="container-fluid">
+			<div class="col-md-12">
+				<div class="brand-text float-left mt-4">
+					<h3>Stock Opnam Telur Hari Ini</h3>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockOpnamTelurUtuh.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Utuh</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash1">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockOpnamTelurPutih.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Putih</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash2">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockOpnamTelurBentes.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Bentes</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash3">			
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockOpnamTelurParah.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Parah</h6>
+				</div>
+			</div>
+		</div>
+		<div style="width:10% !important;" class="col-sm-6 col-12">
+			<div class="dash-widget dash3">				
+				<div class="dash-widgetcontent">
+					<h5><span class="counters">@StockOpnamTelurParahSekali.ToString("F2", new CultureInfo("id-ID")) KG</span></h5>
+					<h6>Parah Sekali</h6>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
 	<div class="card">
 		<div class="card-body">			
 			<div class="table-responsive table-scrollable">
@@ -310,6 +368,32 @@
 	decimal StockTelurPutih;
 	decimal StockTelurParah;
 	decimal StockTelurParahSekali;
+
+	decimal StockOpnamTelurUtuh;
+	decimal StockOpnamTelurBentes;
+	decimal StockOpnamTelurPutih;
+	decimal StockOpnamTelurParah;
+	decimal StockOpnamTelurParahSekali;
+
+	
+	private async Task LoadStokOpnam() 
+	{
+		var stockOpnamData = (from so in _db.StockOpnam
+							where so.StockDate >= DateTime.Now.Date && so.GroupId == 6
+							select so).ToList();
+
+		int productIdBentes = 16;
+		int productIdPutih = 7;
+		int productIdParah = 17;
+		int productIdPS = 19;
+
+        StockOpnamTelurUtuh = stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault().StockAkhir;
+		StockOpnamTelurBentes = stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault().StockAkhir;
+		StockOpnamTelurPutih = stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault().StockAkhir;
+		StockOpnamTelurParah = stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault().StockAkhir;
+		StockOpnamTelurParahSekali = stockOpnamData.Where(x => x.ProductID == productIdPS).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdPS).FirstOrDefault().StockAkhir;
+	}
+
 
 	private async Task LoadDataStock()
 	{

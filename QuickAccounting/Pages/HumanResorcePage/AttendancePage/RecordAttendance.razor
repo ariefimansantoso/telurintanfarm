@@ -250,7 +250,7 @@
         DateTime now = DateTime.Now;
 
         DateTime nineAM = new DateTime(now.Year, now.Month, now.Day, 9, 0, 0);
-        DateTime threePM = new DateTime(now.Year, now.Month, now.Day, 15, 0, 0);
+        DateTime threePM = new DateTime(now.Year, now.Month, now.Day, 14, 0, 0);
 
         //if (modelEmployee.EmployeeId != 5 && modelEmployee.EmployeeId != 6)
         //{// kecuali dev dan owner
@@ -305,7 +305,7 @@
                 }
                 WaktuAbsensi = "Absensi Kedatangan";
             }
-            else if (hour > 15)
+            else if (hour > 14)
             {
                 if (AttendanceCompletedForToday)
                 {
