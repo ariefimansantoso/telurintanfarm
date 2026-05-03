@@ -5,7 +5,7 @@
         public int ID { get; set; } // Primary Key
         public int CutoffID { get; set; }
         public int EmployeeID { get; set; }
-        public int Masuk { get; set; }
+        public decimal Masuk { get; set; }
         public int Libur { get; set; }
         public int Ijin { get; set; }
         public int Sakit { get; set; }
@@ -31,5 +31,6 @@
         public decimal ProsentasePremi { get; set; }
         public decimal GajiNonPremi { get; set; }
         public DateTime TanggalGajian { get; set; }
+        public decimal DepositGaji { get; set; }
     }
 }

@@ -1,0 +1,287 @@
+@page "/app/addkontrakkerja"
+@inject QuickAccounting.Repository.Interface.IKontrakKerjaService _kontrakService
+@inject IEmployee _employee
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IJSRuntime JSRuntime
+@using System.Security.Claims
+@attribute [Authorize]
+
+<PageTitle>Form Kontrak Kerja Karyawan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Form Kontrak Kerja Karyawan</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (!FormSubmitted)
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Ditujukan Kepada</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <select class="form-control" @onchange="OnEmployeeChanged">
+                                        <option value="0">-- Pilih Karyawan --</option>
+                                        @foreach (var employee in EmployeeList)
+                                        {
+                                            <option value="@employee.EmployeeId">@employee.EmployeeName</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Tanggal Mulai</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <RadzenDatePicker @bind-Value="Model.DateStart" DateFormat="d" Class="w-100" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Tanggal Berakhir</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <RadzenDatePicker @bind-Value="Model.DateEnd" DateFormat="d" Class="w-100" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8 col-sm-12 col-12">
+                        <div class="form-group">
+                            <label>Detail Kontrak</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <div id="quill-editor-kontrak" style="height: 300px; width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group">
+                            <label>Kontrak Permanen</label>
+                            <div class="row">
+                                <div class="col-lg-12 col-sm-12 col-12">
+                                    <input type="checkbox" @bind="Model.IsPermanent" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <br />
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <input type="button" @onclick="SaveKontrakKerja" class="btn btn-submit me-2" value="Simpan Kontrak" />
+                        <a href="/app/kontraklist" class="btn btn-cancel">Batal</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <div class="form-group" style="text-align: center !important;">
+                            <label style="font-size:24px; font-weight:bold;">Kontrak Kerja berhasil disimpan.</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12" style="text-align: center !important;">
+                        <a href="/app/addkontrakkerja" class="btn btn-submit me-2">Tambah Kontrak Lagi</a>
+                        <a href="/app/kontraklist" class="btn btn-cancel">Kembali ke Daftar Kontrak</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private QuickAccounting.Data.HrPayroll.KontrakKerja Model = new QuickAccounting.Data.HrPayroll.KontrakKerja();
+    private List<Employee> EmployeeList = new List<Employee>();
+    private Employee SelectedEmployee;
+    private UserMaster ModelUser = new UserMaster();
+    private Employee modelEmployee;
+    private bool FormSubmitted = false;
+    private string MenuName = "Form Kontrak Kerja";
+
+    private DotNetObjectReference<KontrakAdd> _objRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check permission
+        var authorized = await CheckPermission();
+        if (!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+            return;
+        }
+
+        // Get current user
+        var authState = await AuthenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        ModelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(ModelUser.UserId);
+
+        // Load employee list
+        await LoadEmployeeList();
+
+        // Initialize model with audit defaults
+        Model = new QuickAccounting.Data.HrPayroll.KontrakKerja
+        {
+            DateCreated = DateTime.Now,
+            DateModified = DateTime.Now,
+            CreatedBy = modelEmployee.EmployeeId,
+            ModifiedBy = modelEmployee.EmployeeId,
+            IsExpired = false,
+            IsPermanent = false,
+            DateStart = DateTime.Now,
+            DateEnd = DateTime.Now.AddMonths(1),
+            ContractDetails = string.Empty
+        };
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("quillInterop.initializeQuill", "quill-editor-kontrak", Model.ContractDetails ?? "", _objRef, "AddKontrakContent");
+        }
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        try
+        {
+            var authState = await AuthenticationState;
+            var userRole = authState.User;
+            string roleName = userRole.FindFirst(ClaimTypes.Role).Value;
+            var privilege = await _privilege.PriviliageCheck(MenuName, roleName);
+            return privilege.ShowAction;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task LoadEmployeeList()
+    {
+        try
+        {
+            EmployeeList = await _employee.GetAllEmployeeActive();
+            EmployeeList = EmployeeList.OrderBy(x => x.EmployeeName).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading employees: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            int employeeId = Convert.ToInt32(e.Value.ToString());
+            if (employeeId > 0)
+            {
+                SelectedEmployee = await _employee.GetbyId(employeeId);
+                Model.EmployeeID = employeeId;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error selecting employee: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task SaveKontrakKerja()
+    {
+        try
+        {
+            // Get content from Quill editor
+            Model.ContractDetails = await JSRuntime.InvokeAsync<string>("quillInterop.getQuillContent", "quill-editor-kontrak");
+
+            // Validation
+            if (Model.EmployeeID == 0)
+            {
+                Snackbar.Add("Mohon pilih karyawan terlebih dahulu.", Severity.Warning);
+                return;
+            }
+
+            if (Model.DateStart == DateTime.MinValue || Model.DateEnd == DateTime.MinValue)
+            {
+                Snackbar.Add("Tanggal mulai dan berakhir harus diisi.", Severity.Warning);
+                return;
+            }
+
+            if (Model.DateEnd < Model.DateStart && !Model.IsPermanent)
+            {
+                Snackbar.Add("Tanggal berakhir harus lebih besar atau sama dengan tanggal mulai, kecuali untuk kontrak permanen.", Severity.Warning);
+                return;
+            }
+
+            // Set audit fields (automatically)
+            Model.CreatedBy = modelEmployee.EmployeeId;
+            Model.ModifiedBy = modelEmployee.EmployeeId;
+            Model.DateCreated = DateTime.Now;
+            Model.DateModified = DateTime.Now;
+            Model.IsExpired = false;
+
+            // Save to database via service
+            var newId = await _kontrakService.CreateAsync(Model);
+
+            if (newId > 0)
+            {
+                Snackbar.Add("Kontrak kerja berhasil disimpan.", Severity.Success);
+                FormSubmitted = true;
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add("Gagal menyimpan kontrak kerja. Silakan coba lagi.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Exception: {ex.StackTrace}");
+        }
+    }
+
+    [JSInvokable]
+    public void AddKontrakContent(string content) => Model.ContractDetails = content;
+
+    public void Dispose() => _objRef?.Dispose();
+}

@@ -1,0 +1,177 @@
+@page "/app/kontraklist"
+@inject IKontrakKerjaService _kontrakService
+@inject IEmployee _employee
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@using System.Security.Claims
+@attribute [Authorize]
+
+<PageTitle>Daftar Surat Peringatan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Daftar Kontrak Kerja</h4>
+        </div>
+        <div class="page-btn">
+            <a class="btn btn-added" href="/app/addkontrakkerja"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Tambah Kontrak Kerja</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive table-scrollable">
+                @if (_kontrakKerjaList != null && _kontrakKerjaList.Count > 0)
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>                                                               
+                                <th>Karyawan</th>
+                                <th>Mulai</th>
+                                <th>Berakhir</th>
+                                <th>Permanen</th>  
+                                <th>Ditandatangani</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int no = 1;
+                            }
+                            @foreach (var item in _kontrakKerjaList)
+                            {
+                                <tr>
+                                    <td>@(EmployeeNameCache.ContainsKey(item.EmployeeID) ? EmployeeNameCache[item.EmployeeID] : "Tidak ada nama")</td>
+                                    <td>@item.DateStart.ToString("dd/MM/yyyy")</td>
+                                    <td>@item.DateEnd.ToString("dd/MM/yyyy")</td>
+                                    <td>@(item.IsPermanent ? "Ya" : "Tidak")</td>
+                                    <td>@(item.IsSigned ? "Ya" : "Tidak")</td>
+                                    <td>
+                                        <a href="/app/kontrak-edit/@item.ID" class="btn btn-sm btn-primary">Edit</a>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteKontrakKerja(item.ID)">Hapus</button>
+                                    </td>
+                                </tr>
+                                no++;
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div style="text-align: center; padding: 20px;">
+                        <h4>Tidak ada data kontrak kerja.</h4>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private List<KontrakKerja> _kontrakKerjaList;
+    private Dictionary<int, string> EmployeeNameCache = new Dictionary<int, string>();
+    private UserMaster ModelUser = new UserMaster();
+    private string MenuName = "Form Kontrak Kerja";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authorized = await CheckPermission();
+        if (!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+            return;
+        }
+
+        var authState = await AuthenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        ModelUser = await _user.UserProfile(userName);
+
+        await LoadKontrakKerja();
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        try
+        {
+            var authState = await AuthenticationState;
+            var userRole = authState.User;
+            string roleName = userRole.FindFirst(ClaimTypes.Role).Value;
+            var privilege = await _privilege.PriviliageCheck(MenuName, roleName);
+            return privilege.ShowAction;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task LoadKontrakKerja()
+    {
+        try
+        {
+            _kontrakKerjaList = await _kontrakService.GetAllAsync();
+
+            if (_kontrakKerjaList != null && _kontrakKerjaList.Any())
+            {
+                _kontrakKerjaList = _kontrakKerjaList.OrderByDescending(x => x.DateCreated).ToList();
+
+                // Pre-fetch employee names asynchronously BEFORE the UI renders
+                foreach (var item in _kontrakKerjaList)
+                {
+                    if (!EmployeeNameCache.ContainsKey(item.EmployeeID))
+                    {
+                        var employee = await _employee.GetbyId(item.EmployeeID);
+                        EmployeeNameCache[item.EmployeeID] = employee?.EmployeeName ?? "Belum ada namanya";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetEmployeeName(int employeeId)
+    {
+        if (EmployeeNameCache.ContainsKey(employeeId))
+        {
+            return EmployeeNameCache[employeeId];
+        }
+
+        var employee = _employee.GetbyId(employeeId).Result;
+        string name = employee?.EmployeeName ?? "Belum ada namanya";
+        EmployeeNameCache[employeeId] = name;
+        return name;
+    }
+
+    private async Task DeleteKontrakKerja(int id)
+    {
+        if (await JSConfirm("Apakah anda yakin ingin menghapus kontrak kerja ini?"))
+        {
+            var result = await _kontrakService.DeleteAsync(id);
+            if (result)
+            {
+                Snackbar.Add("Kontrak kerja berhasil dihapus.", Severity.Success);
+                await LoadKontrakKerja();
+            }
+            else
+            {
+                Snackbar.Add("Gagal menghapus kontrak kerja.", Severity.Error);
+            }
+        }
+    }
+
+    private async Task<bool> JSConfirm(string message)
+    {
+        // Use browser confirm dialog - requires IJSRuntime
+        // For now, we'll just return true (you can add IJSRuntime if needed)
+        return true;
+    }
+}

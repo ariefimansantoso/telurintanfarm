@@ -1,0 +1,480 @@
+@page "/app/kontrakbyemployee"
+@inject QuickAccounting.Repository.Interface.IKontrakKerjaService _kontrakService
+@inject IEmployee _employee
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IUser _userManage
+@inject IJSRuntime JSRuntime
+@using System.Security.Claims
+@using PuppeteerSharp
+@using PuppeteerSharp.Media
+@attribute [Authorize]
+
+<PageTitle>Daftar Kontrak Kerja Per Karyawan</PageTitle>
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Daftar Kontrak Kerja Per Karyawan</h4>
+        </div>
+        <div class="page-btn">
+            <a class="btn btn-added" href="/app/addkontrakkerja"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Tambah Kontrak Kerja</a>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-6 col-sm-12 col-12">
+                    <div class="form-group">
+                        <label>Pilih Karyawan</label>
+                        <div class="row">
+                            <div class="col-lg-12 col-sm-12 col-12">
+                                <select class="form-control" @onchange="OnEmployeeChanged">
+                                    <option value="0">-- Pilih Karyawan --</option>
+                                    @foreach (var employee in EmployeeList)
+                                    {
+                                        <option value="@employee.EmployeeId" selected="@(employee.EmployeeId == SelectedEmployeeId)">@employee.EmployeeName</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Section -->
+    <div class="card">
+        <div class="card-body">
+            @if (SelectedEmployeeId > 0)
+            {
+                <div class="row mb-3">
+                    <div class="col-lg-8">
+                        <h5>Kontrak Kerja untuk: <strong>@SelectedEmployeeName</strong></h5>
+                    </div>
+                    <div class="col-lg-4" style="text-align: right;">
+                        <a class="btn btn-added" href="/app/addkontrakkerja"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Tambah Kontrak Baru</a>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    @if (FilteredKontrakList != null && FilteredKontrakList.Count > 0)
+                    {
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Tanggal Mulai</th>
+                                    <th>Tanggal Berakhir</th>
+                                    <th>Ditandatangani</th>
+                                    <th></th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int no = 1;
+                                }
+                                @foreach (var item in FilteredKontrakList)
+                                {
+                                    <tr>
+                                        <td>@no</td>
+                                        <td>@item.DateStart.ToString("dd/MM/yyyy")</td>
+                                        <td>@(item.IsPermanent ? "Permanen" : item.DateEnd.ToString("dd/MM/yyyy"))</td>
+                                        <td>@(item.IsSigned ? "Ya" : "Tidak")</td>
+                                        <td>
+                                            <a class="btn btn-sm btn-primary" @onclick="() => DownloadKontrak(item.ID, item.EmployeeID)"><img src="assets/img/icons/download.svg" alt="img" class="me-1">Download</a>
+                                        </td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    Aksi
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="/app/kontrak-edit/@item.ID">Edit</a></li>
+                                                    @* <li><a class="dropdown-item" style="cursor: pointer;" @onclick="() => DeleteKontrak(item.ID)">Hapus</a></li> *@
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    no++;
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div style="text-align: center; padding: 20px;">
+                            <h5>Tidak ada kontrak kerja untuk karyawan yang dipilih.</h5>
+                            <a class="btn btn-added mt-3" href="/app/addkontrakkerja"><img src="assets/img/icons/plus.svg" alt="img" class="me-1">Buat Kontrak Pertama</a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 40px;">
+                    <h4>Silakan pilih karyawan untuk melihat daftar kontrak kerja.</h4>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    window.downloadFileFromBase64 = (fileName, base64String) => {
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = 'data:application/pdf;base64,' + base64String;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+</script>
+
+<!-- Detail Modal -->
+@if (ShowDetailModal && SelectedKontrak != null)
+{
+    <div class="modal fade show" style="display: block;" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detail Kontrak Kerja</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDetailModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Tanggal Mulai:</strong>
+                            <p>@SelectedKontrak.DateStart.ToString("dd/MM/yyyy")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Tanggal Berakhir:</strong>
+                            <p>@(SelectedKontrak.IsPermanent ? "Permanen" : SelectedKontrak.DateEnd.ToString("dd/MM/yyyy"))</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <strong>Karyawan:</strong>
+                            <p>@SelectedEmployeeName</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <strong>Detail Kontrak:</strong>
+                            <div style="border: 1px solid #ddd; padding: 10px; background-color: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">
+                                @SelectedKontrak.ContractDetails
+                            </div>
+                        </div>
+                    </div>                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDetailModal">Tutup</button>
+                    <a href="/app/kontrak-edit/@SelectedKontrak.ID" class="btn btn-primary">Edit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private List<Employee> EmployeeList = new List<Employee>();
+    private List<QuickAccounting.Data.HrPayroll.KontrakKerja> AllKontrakList = new List<QuickAccounting.Data.HrPayroll.KontrakKerja>();
+    private List<QuickAccounting.Data.HrPayroll.KontrakKerja> FilteredKontrakList = new List<QuickAccounting.Data.HrPayroll.KontrakKerja>();
+    private UserMaster ModelUser = new UserMaster();
+    private Dictionary<int, string> UserNameCache = new Dictionary<int, string>();
+    private Dictionary<int, string> EmployeeNameCache = new Dictionary<int, string>();
+
+    private int SelectedEmployeeId = 0;
+    private string SelectedEmployeeName = string.Empty;
+    private bool ShowDetailModal = false;
+    private QuickAccounting.Data.HrPayroll.KontrakKerja SelectedKontrak = null;
+
+    private string MenuName = "Form Kontrak Kerja";
+
+    private async Task DownloadKontrak(int kontrakID, int employeeID)
+    {
+        try
+        {
+            string HtmlContentPdf = "";
+            List<object> ParamDataPdf = new List<object>();
+
+            var modelEmployee = EmployeeList.FirstOrDefault(x => x.EmployeeId == employeeID);
+            var modelUser = await _userManage.GetbyId(modelEmployee.UserID);
+            var currentUserRole = await _userManage.GetUserRole(modelUser.UserName);
+            var latestKontrak = AllKontrakList.FirstOrDefault(x => x.ID == kontrakID);
+
+            if (latestKontrak != null)
+            {
+                ParamDataPdf.Add(modelEmployee.EmployeeName);
+                ParamDataPdf.Add(modelEmployee.EmployeeId);
+                ParamDataPdf.Add(currentUserRole);
+                ParamDataPdf.Add(latestKontrak.ContractDetails);
+                ParamDataPdf.Add(latestKontrak.DateStart);
+                ParamDataPdf.Add(latestKontrak.DateEnd);
+            }
+
+            HtmlContentPdf = string.Format(@"<!DOCTYPE html>
+							<html lang='en'>
+							<head>
+								<meta charset='UTF-8'>
+								<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+								<title>Kontrak Kerja</title>
+								<link rel='stylesheet' href='http://balungfarm.javahome.co.id/css/slipgaji.css' />
+							</head>
+							<body>
+								<div class='payslip-container'>
+									<div class='header'>
+										<h1>Kontrak Kerja</h1>
+										<p>PT Telur Intan Farm</p>
+									</div>
+									<div class='details'>
+										<table>
+											<tr>
+												<th>Nama Karyawan:</th>
+												<td>{0}</td>
+												<th>ID:</th>
+												<td>{1}</td>
+											</tr>
+											<tr>
+												<th>Jabatan:</th>
+												<td colspan='3'>{2}</td>
+											</tr>
+										</table>
+									</div>
+									<div class='contract'>
+										{3}
+									</div>
+									<div class='footer'>
+										<p>
+										Balung, {4:dd MMMM yyyy} <br />
+										PT Telur Intan Farm <br />
+										Manajemen HRD
+										</p>
+									</div>
+								</div>
+							</body>
+							</html>", ParamDataPdf.ToArray());
+
+            var fileNamePdf = "kontrak_" + modelEmployee.EmployeeName.Replace(" ", "_") + ".pdf";
+
+            string uniqueProfilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                UserDataDir = uniqueProfilePath,
+                ExecutablePath = "/usr/bin/google-chrome-stable",
+                Args = new[]
+                {
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu"
+                }
+            });
+
+            await using var page = await browser.NewPageAsync();
+            await page.SetContentAsync(HtmlContentPdf);
+
+            byte[] pdfBytes = await page.PdfDataAsync(new PdfOptions
+            {
+                Format = PaperFormat.A4,
+                PrintBackground = true,
+                MarginOptions = new MarginOptions { Top = "10px", Bottom = "10px", Right = "40px" }
+            });
+
+            string base64Data = Convert.ToBase64String(pdfBytes);
+            await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileNamePdf, base64Data);
+
+            Snackbar.Add("PDF berhasil diunduh!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Gagal mengunduh PDF: {ex.Message}", Severity.Error);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authorized = await CheckPermission();
+        if (!authorized)
+        {
+            navigation.NavigateTo("/app/dashboard");
+            Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
+            return;
+        }
+
+        var authState = await AuthenticationState;
+        var currentUser = authState.User;
+        string userName = currentUser.FindFirst(ClaimTypes.Name).Value;
+        ModelUser = await _user.UserProfile(userName);
+
+        await LoadEmployeeList();
+        await LoadAllKontrak();
+
+        StateHasChanged();
+    }
+
+    private async Task<bool> CheckPermission()
+    {
+        try
+        {
+            var authState = await AuthenticationState;
+            var userRole = authState.User;
+            string roleName = userRole.FindFirst(ClaimTypes.Role).Value;
+            var privilege = await _privilege.PriviliageCheck(MenuName, roleName);
+            return privilege.ShowAction;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task LoadEmployeeList()
+    {
+        try
+        {
+            EmployeeList = await _employee.GetAllEmployeeActive();
+            EmployeeList = EmployeeList.OrderBy(x => x.EmployeeName).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading employees: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadAllKontrak()
+    {
+        try
+        {
+            AllKontrakList = await _kontrakService.GetAllAsync();
+            AllKontrakList = AllKontrakList.OrderByDescending(x => x.DateCreated).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            SelectedEmployeeId = Convert.ToInt32(e.Value.ToString());
+
+            if (SelectedEmployeeId > 0)
+            {
+                var selectedEmployee = EmployeeList.FirstOrDefault(x => x.EmployeeId == SelectedEmployeeId);
+                SelectedEmployeeName = selectedEmployee?.EmployeeName ?? "Unknown";
+
+                FilteredKontrakList = AllKontrakList
+                    .Where(x => x.EmployeeID == SelectedEmployeeId)
+                    .OrderByDescending(x => x.DateCreated)
+                    .ToList();
+            }
+            else
+            {
+                FilteredKontrakList = new List<QuickAccounting.Data.HrPayroll.KontrakKerja>();
+                SelectedEmployeeName = string.Empty;
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error selecting employee: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetCreatedByName(int userId)
+    {
+        if (UserNameCache.ContainsKey(userId))
+        {
+            return UserNameCache[userId];
+        }
+
+        var user = _user.UserProfile(userId.ToString()).Result;
+        string name = user?.UserName ?? "Unknown";
+        UserNameCache[userId] = name;
+        return name;
+    }
+
+    private string GetEmployeeName(int employeeId)
+    {
+        if (EmployeeNameCache.ContainsKey(employeeId))
+        {
+            return EmployeeNameCache[employeeId];
+        }
+
+        var employee = _employee.GetbyId(employeeId).Result;
+        string name = employee?.EmployeeName ?? "Unknown";
+        EmployeeNameCache[employeeId] = name;
+        return name;
+    }
+
+    private void ViewDetail(int id)
+    {
+        try
+        {
+            SelectedKontrak = FilteredKontrakList.FirstOrDefault(x => x.ID == id);
+            if (SelectedKontrak != null)
+            {
+                ShowDetailModal = true;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseDetailModal()
+    {
+        ShowDetailModal = false;
+        SelectedKontrak = null;
+        StateHasChanged();
+    }
+
+    private async Task DeleteKontrak(int id)
+    {
+        try
+        {
+            bool confirmed = await ConfirmDelete("Apakah anda yakin ingin menghapus kontrak kerja ini?");
+            if (!confirmed)
+                return;
+
+            var result = await _kontrakService.DeleteAsync(id);
+            if (result)
+            {
+                Snackbar.Add("Kontrak kerja berhasil dihapus.", Severity.Success);
+                await LoadAllKontrak();
+                await OnEmployeeChanged(new ChangeEventArgs { Value = SelectedEmployeeId });
+            }
+            else
+            {
+                Snackbar.Add("Gagal menghapus kontrak kerja.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task<bool> ConfirmDelete(string message)
+    {
+        // Replace with modal if needed
+        return true;
+    }
+}

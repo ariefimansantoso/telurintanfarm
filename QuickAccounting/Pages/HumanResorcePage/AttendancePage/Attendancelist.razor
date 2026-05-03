@@ -139,6 +139,7 @@
                         <th>Cicilan</th>
                         <th>Potongan</th>
                         <th>Rp. Lmbr</th>
+                        <th>Deposit</th>
                         <th>No. Rek</th>
                         <th>Total Gaji</th>
                     </tr>
@@ -184,6 +185,7 @@
                                         <td>@string.Format("{0:n0}", payrollPerPerson.Cicilan)</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.Potongan)</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.RpLembur)</td>
+                                        <td>@string.Format("{0:n0}", payrollPerPerson.DepositGaji)</td>
                                         <td>@payrollPerPerson.NoRek</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.GajiBersih)</td>
                                     </tr>
@@ -222,10 +224,14 @@
 
                                 @foreach (var item in sortedAttendances)
                                 {
+                                    if(item.Key == 45)
+                                    {
+                                        var x = 0;
+                                    }
                                     var employee = activeEmployees.FirstOrDefault(x => x.EmployeeId == item.Key);
                                     PeriodeDatesAlpha = new List<DateTime>();
                                     PeriodeDatesAlpha.AddRange(PeriodeDates);
-                                    var countMasuk = 0;
+                                    decimal countMasuk = 0;
                                     var groupByDate = item.GroupBy(x => x.Date.Date).ToList();                                    
                                     var alpha = 0;
                                     foreach (var gbd in groupByDate)
@@ -259,6 +265,7 @@
                                     int masaKerjaDalamTahun = _hr.GetMasaKerja(tanggalMulaiKerja);
                                     decimal prosentasiPremi = _hr.GetProsentasePremi(masaKerjaDalamTahun) / 100;
                                     decimal gajiNonPremi = 0;
+                                    decimal depositGaji = 0;
 
                                     //calculate tunjangan hari kerja
                                     decimal dailyTunjangan = employee.Tunjangan / 365; //rata2 hari dalam sebulan 30                                
@@ -339,7 +346,11 @@
                                     decimal potonganSetengahHari = 0;
                                     if (setengahHari > 0)
                                     {
-                                        potonganSetengahHari = potonganSetengahHari + (employee.DailyWage / 2);
+                                        for(int i = 1; i <= setengahHari; i++)
+                                        {
+                                            countMasuk = countMasuk + 1;
+                                            potonganSetengahHari = potonganSetengahHari + (employee.DailyWage / 2);
+                                        }                                        
                                     }
 
                                     if (listPotongan.Count > 0)
@@ -407,7 +418,9 @@
                                         rpPremi = 0;
                                     }
 
-                                    gajiBersih = totalGaji - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan + potonganSetengahHari + tambahanGaji + tunjanganTetap + rpLembur;
+                                    gajiBersih = totalGaji - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan - potonganSetengahHari + tambahanGaji + tunjanganTetap + rpLembur;
+                                    depositGaji = gajiBersih * 0.1m;
+                                    gajiBersih = gajiBersih - depositGaji;
                                     gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
 
                                     int totalHours = totalMenitLembur / 60; // Get the whole number of hours
@@ -432,8 +445,10 @@
                                         jumlahTerlambatCount = 0;
                                         cicilan = 0;
                                         //potonganNonCicilan = 0;
-                                        potonganSetengahHari = 0;
+                                        potonganSetengahHari = 0;                                        
                                         gajiBersih = gajiNonPremi + tambahanGaji - potonganNonCicilan;
+                                        depositGaji = gajiBersih * 0.1m;
+                                        gajiBersih = gajiBersih - depositGaji;
                                     }
 
                                     if (employee.BankAccount != "0" && employee.BankAccount != "")
@@ -477,6 +492,7 @@
                                     payrollItem.CreatedBy = modelEmployee.EmployeeId;
                                     payrollItem.CreatedDate = DateTime.Now;
                                     payrollItem.GajiHarian = employee.DailyWage;
+                                    payrollItem.DepositGaji = depositGaji;
                                     newPayrolls.Add(payrollItem);
 
                                     <tr>
@@ -501,6 +517,7 @@
                                         <td>@string.Format("{0:n0}", cicilan)</td>
                                         <td>@string.Format("{0:n0}", potonganNonCicilan + potonganSetengahHari)</td>
                                         <td>@string.Format("{0:n0}", rpLembur)</td>
+                                        <td>@string.Format("{0:n0}", depositGaji)</td>
                                         <td>@employee.BankAccount</td>
                                         <td>@string.Format("{0:n0}", gajiBersih)</td>
                                     </tr>
@@ -1022,6 +1039,7 @@
                 payrollItem.CreatedBy = modelEmployee.EmployeeId;
                 payrollItem.CreatedDate = DateTime.Now;
                 payrollItem.GajiHarian = pakThomy.DailyWage;
+                payrollItem.DepositGaji = 0;
                 newPayrolls.Add(payrollItem);
 
                 payrollExcel.Add(new PayrollExcel
@@ -1040,7 +1058,6 @@
 
                 isProcessing = false;
                 navigation.NavigateTo("/app/attendance");
-
             }
         }
         catch(DbUpdateException dex)

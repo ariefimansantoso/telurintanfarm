@@ -87,6 +87,10 @@ namespace QuickAccounting.Data
         public DbSet<Payroll> Payroll { get; set; }
         public DbSet<PayrollCutoff> PayrollCutoff { get; set; }
         public DbSet<AbsensiPotongan> AbsensiPotongan { get; set; }
+
+        // KontrakKerja DbSet
+        public DbSet<KontrakKerja> KontrakKerja { get; set; }
+
         //Budget
         public DbSet<BudgetMaster> BudgetMaster { get; set; }
         public DbSet<BudgetDetails> BudgetDetails { get; set; }
@@ -114,5 +118,6 @@ namespace QuickAccounting.Data
 
         // New DbSet for StockOpnam table
         public DbSet<StockOpnam> StockOpnam { get; set; }
-	}
+        public DbSet<DepositGaji> DepositGaji { get; set; }
+    }
 }

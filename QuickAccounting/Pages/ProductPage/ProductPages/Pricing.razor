@@ -199,10 +199,10 @@
 		inputValues[3] = value0 - 600;
 		inputValues[4] = value0 - 700;
 
-		inputValues[5] = value0 - 1000;
-		inputValues[6] = value0 - 2000;
-		inputValues[7] = value0 - 3500;
-		inputValues[8] = value0 - 4500;
+		// inputValues[5] = value0 - 1000;
+		// inputValues[6] = value0 - 2000;
+		// inputValues[7] = value0 - 3500;
+		// inputValues[8] = value0 - 4500;
 	}
 
 	private void Number1Changed(ChangeEventArgs e)
@@ -412,31 +412,41 @@
 		if(strShow == null)
 		{
 			navigation.NavigateTo("/app/dashboard");
-			Snackbar.Add("You dont have to privilege..", Severity.Error);
+			Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
 			return;
 		}
 
 		if (strShow.ShowAction != true)
 		{
 			navigation.NavigateTo("/app/dashboard");
-			Snackbar.Add("You dont have to privilege..", Severity.Error);
+			Snackbar.Add("Anda tidak memiliki hak akses.", Severity.Error);
 			return;
 		}
 
 		inputValues = new int[10];
-		for(int i = 0; i < 10; i++)
-		{
-			inputValues[i] = 0;
-		}
 
 		products = _pricing.GetAllProducts();
 		prices5Days = _pricing.GetPricesTake5Days();
 
-		//CheckPriviliagee
-		// var authState = await authenticationState;
-		// var strRole = authState.User;
-		// string strName = strRole.FindFirst(ClaimTypes.Role).Value;
-		// var strShow = await _privilege.PriviliageCheck("Daftar Harga Barang", strName);
+		var igrouping = prices5Days[0];
+
+		for (int i = 0; i < 10; i++)
+		{			
+			if(i > 4)
+			{
+				var productItem = igrouping.FirstOrDefault(x => x.ProductID == products[i].ProductId);
+				if (productItem != null)
+				{
+					inputValues[i] = Convert.ToInt32(productItem.Price);
+				}
+			}
+			else
+			{
+				inputValues[i] = 0;
+			}
+		}
+		
+		
 		_saved = false;
 		await LoadData();
 

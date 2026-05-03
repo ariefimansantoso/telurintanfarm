@@ -3,6 +3,9 @@
 @inject IJSRuntime JSRuntime
 @inject ISnackbar Snackbar
 @using System.Security.Claims
+@using System.Runtime.InteropServices
+@using PuppeteerSharp
+@using PuppeteerSharp.Media
 @inject IPrivilege _privilege
 @inject NavigationManager navigation
 @inject IUser _user
@@ -289,7 +292,7 @@
                                             <td>Potongan</td>
                                             <td>{16}</td>
                                         </tr>
-                                        
+
                                         <tr class='total'>
                                             <td>Total Potongan</td>
                                             <td>{17}</td>
@@ -313,15 +316,54 @@
 
             var fileNamePdf = "slipgaji_" + modelEmployee.EmployeeName.Replace(" ", "_") + "_" + Cutoff.PayrollPeriode.Replace(" ", "_") + "_.pdf";
 
-            var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+            if (RuntimeInformation.OSDescription.Contains("Ubuntu"))
+            {
+                string uniqueProfilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
-            // Initiate the download
-            // Using Javascript to download PDF
-            // var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
-            var base64 = Convert.ToBase64String(pdfResult);
-            var url = $"data:application/pdf;base64,{base64}";
+                // 3. Launch the headless browser (NoSandbox is mandatory for Ubuntu)
+                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+                {
+                    Headless = true,
+                    UserDataDir = uniqueProfilePath,
+                    ExecutablePath = "/usr/bin/google-chrome-stable",
+                    Args = new[]
+                    {
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu"
+                    }
+                });
 
-            await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+                // 4. Create a new page and inject the HTML
+                await using var page = await browser.NewPageAsync();
+                await page.SetContentAsync(HtmlContentPdf);
+
+                // 5. Generate and return the PDF file as a byte array
+                byte[] pdfBytes = await page.PdfDataAsync(new PdfOptions
+                {
+                    Format = PaperFormat.A4,
+                    PrintBackground = true,
+                    MarginOptions = new MarginOptions { Top = "10px", Bottom = "10px", Right = "40px" }
+                });
+
+                string base64Data = Convert.ToBase64String(pdfBytes);
+
+                // 5. Call the JavaScript function to download the file
+                await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileNamePdf, base64Data);
+            }
+            else
+            {
+                var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+                // Initiate the download
+                // Using Javascript to download PDF
+                // var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
+                var base64 = Convert.ToBase64String(pdfResult);
+                var url = $"data:application/pdf;base64,{base64}";
+
+                await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+            }
         }
         else
         {

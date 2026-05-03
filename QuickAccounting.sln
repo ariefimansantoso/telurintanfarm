@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecordingScheduler", "Recor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Egg.Scheduler", "Egg.Scheduler\Egg.Scheduler.csproj", "{74C8CAE3-92B7-4C8A-BE96-87AA7AE48D14}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DRBackupWatcher", "DRBackupWatcher\DRBackupWatcher.csproj", "{EB57208E-87EA-4421-891E-8BDB3EB5C320}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecordingFixer", "RecordingFixer\RecordingFixer.csproj", "{F14DC067-769B-4F69-A2E7-208F47B879E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{74C8CAE3-92B7-4C8A-BE96-87AA7AE48D14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74C8CAE3-92B7-4C8A-BE96-87AA7AE48D14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74C8CAE3-92B7-4C8A-BE96-87AA7AE48D14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB57208E-87EA-4421-891E-8BDB3EB5C320}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB57208E-87EA-4421-891E-8BDB3EB5C320}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB57208E-87EA-4421-891E-8BDB3EB5C320}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB57208E-87EA-4421-891E-8BDB3EB5C320}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F14DC067-769B-4F69-A2E7-208F47B879E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F14DC067-769B-4F69-A2E7-208F47B879E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F14DC067-769B-4F69-A2E7-208F47B879E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F14DC067-769B-4F69-A2E7-208F47B879E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

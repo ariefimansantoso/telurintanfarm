@@ -375,19 +375,21 @@
 	decimal StockOpnamTelurParah;
 	decimal StockOpnamTelurParahSekali;
 
-	
+
 	private async Task LoadStokOpnam() 
 	{
+		var dateStart = DateTime.Now.AddDays(-1).Date.Add(new TimeSpan(0,0,0));
+
 		var stockOpnamData = (from so in _db.StockOpnam
-							where so.StockDate >= DateTime.Now.Date && so.GroupId == 6
-							select so).ToList();
+									where so.StockDate >= dateStart && so.GroupId == 6
+									select so).OrderByDescending(so => so.ID).ToList();
 
 		int productIdBentes = 16;
 		int productIdPutih = 7;
 		int productIdParah = 17;
 		int productIdPS = 19;
 
-        StockOpnamTelurUtuh = stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault().StockAkhir;
+		StockOpnamTelurUtuh = stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault().StockAkhir;
 		StockOpnamTelurBentes = stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault().StockAkhir;
 		StockOpnamTelurPutih = stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault().StockAkhir;
 		StockOpnamTelurParah = stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault().StockAkhir;
@@ -434,7 +436,7 @@
 		StockTelurParah = stockPecah;
 		StockTelurParahSekali = stockPecahSekali;
 
-		
+
 		Susut = await _db.StockPosting.Where(x => x.ProductId == 124 && x.Date.Date >= DateTime.Now.Date && x.StockCalculate == "Retur")
 												.GroupBy(x => 1)
 												.Select(g => g.Sum(x => x.InwardQty))
@@ -461,6 +463,7 @@
 		{
 			await LoadData();
 			await LoadDataStock();
+			await LoadStokOpnam();
 			isProcessing = false;
 		}
 		else

@@ -40,11 +40,13 @@
 @inject PdfService pdfService
 @inject IStockAkhirService _stockAkhirService
 @inject ISnackbar Snackbar
+@inject IKontrakKerjaService _kontrakKerja
 
 @using QuickAccounting.Components
 @using QuickAccounting.Constants;
 @using QuickAccounting.Data.Recording
 @using QuickAccounting.Helpers;
+@using System.Runtime.InteropServices
 @attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
 <Loader IsLoading="isLoading"></Loader>
@@ -102,6 +104,45 @@
 				}
 			</div>
 		</div>
+
+		@if (LatestKontrakKerja != null)
+		{
+			if(LatestKontrakKerja.IsSigned == false) {
+				<div class="row">
+					<div class="col-12">
+				
+							<div class="dash-widget" style="background-color:#ff0000;">
+								<div class="dash-widgetcontent">
+
+									<h2 style="color:#fff !important;">KONTRAK KERJA</h2>
+									<p class="counters force-white" id="pengumumanContainer" style="color:#fff !important; font-weight:bold;">
+									Kontrak kerja untuk anda telah disiapkan, silakan baca dan setujui secara elektronik/online <a href="/app/kontrak-detail/@LatestKontrakKerja.ID" style="color:#fff !important; text-decoration:underline; cursor:pointer;">setujui disini</a>
+									</p>
+								</div>
+							</div>
+				
+					</div>
+				</div>
+			}
+			else 
+			{
+				<div class="row">
+					<div class="col-12">
+
+						<div class="dash-widget" style="background-color:#ff0000;">
+							<div class="dash-widgetcontent">
+
+								<h2 style="color:#fff !important;">UNDUH KONTRAK KERJA</h2>
+								<p class="counters force-white" id="pengumumanContainer" style="color:#fff !important; font-weight:bold;">
+									Unduh kontrak kerja anda <a @onclick="@DownloadKontrakKerja" style="color:#fff !important; text-decoration:underline; cursor:pointer;">disini</a>
+								</p>
+							</div>
+						</div>
+
+					</div>
+				</div>
+			}
+		}
 	}
 
 
@@ -1683,6 +1724,8 @@
 	string HtmlContentPdf = "";
 	List<object> ParamDataPdf = new List<object>();
 
+	private KontrakKerja LatestKontrakKerja = new KontrakKerja();
+
 	private async Task LoadDataPrices()
 	{
 		productPrices = await _product.GetAll();
@@ -1921,17 +1964,19 @@
 
 	private async Task LoadStokOpnam() 
 	{
+		var newdtFromDate = dtFromDate.AddDays(-1);
+
 		var stockOpnamData = (from so in _db.StockOpnam
-							where so.StockDate >= dtFromDate &&
-								  so.StockDate <= dtToDate && so.GroupId == 6
-							select so).ToList();
+									where so.StockDate >= newdtFromDate &&
+									so.StockDate <= dtToDate && so.GroupId == 6									
+									select so).OrderByDescending(so => so.ID).ToList();
 
 		int productIdBentes = 16;
 		int productIdPutih = 7;
 		int productIdParah = 17;
 		int productIdPS = 19;
 
-        StockOpnamTelurUtuh = stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault().StockAkhir;
+		StockOpnamTelurUtuh = stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == -99).FirstOrDefault().StockAkhir;
 		StockOpnamTelurBentes = stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdBentes).FirstOrDefault().StockAkhir;
 		StockOpnamTelurPutih = stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdPutih).FirstOrDefault().StockAkhir;
 		StockOpnamTelurParah = stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault() == null ? 0 : stockOpnamData.Where(x => x.ProductID == productIdParah).FirstOrDefault().StockAkhir;
@@ -2152,7 +2197,18 @@
 			.OrderByDescending(x => x.DateCreated)
 			.FirstOrDefault();
 	}
-	
+
+	private async Task GetKontrakKerja()
+	{
+		// Filter kontrak kerja for selected employee
+		LatestKontrakKerja = await _kontrakKerja.GetUnSignedContractsAsync(modelEmployee.EmployeeId);
+
+		if(LatestKontrakKerja == null) 
+		{
+            LatestKontrakKerja = await _kontrakKerja.GetLatestSignedContractsAsync(modelEmployee.EmployeeId);
+		}
+	}
+
 	private async Task DownloadSP()
 	{
 		try
@@ -2267,6 +2323,159 @@
 		{
 			Snackbar.Add($"Gagal mengunduh PDF: {ex.Message}", Severity.Error);
 		}
+	}
+
+	private async Task DownloadKontrakKerja()
+	{
+		try
+		{
+			if (LatestKontrakKerja != null)
+			{
+				ParamDataPdf.Add(modelEmployee.EmployeeName);
+				ParamDataPdf.Add(modelEmployee.EmployeeId);
+				ParamDataPdf.Add(currentUserRole);
+				ParamDataPdf.Add(LatestKontrakKerja.DateStart.ToString("dd/MM/yyyy"));
+				ParamDataPdf.Add(LatestKontrakKerja.IsPermanent ? "Permanen" : LatestKontrakKerja.DateEnd.ToString("dd/MM/yyyy"));
+				ParamDataPdf.Add(LatestKontrakKerja.ContractDetails);
+				ParamDataPdf.Add(LatestKontrakKerja.IsPermanent);
+			}
+
+			HtmlContentPdf = string.Format(@"<!DOCTYPE html>
+								<html lang='en'>
+								<head>
+									<meta charset='UTF-8'>
+									<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+									<title>Slip Gaji</title>
+									<link rel='stylesheet' href='http://balungfarm.javahome.co.id/css/slipgaji.css' />
+								</head>
+								<body>
+									<div class='payslip-container'>
+										<!-- Payslip Header -->
+										<div class='header'>
+											<h1>Kontrak Kerja</h1>
+											<p>PT Telur Intan Farm</p>
+										</div>
+
+										<!-- Employee Details -->
+										<div class='details'>
+											<table>
+												<tr>
+													<th>Nama Karyawan:</th>
+													<td>{0}</td>
+													<th>ID:</th>
+													<td>{1}</td>
+												</tr>
+												<tr>
+													<th>Jabatan:</th>
+													<td colspan='3'>{2}</td>
+												</tr>
+												<tr>
+													<th>Berlaku Mulai:</th>
+													<td colspan='3'>{3}</td>
+												</tr>
+												<tr>
+													<th>Sampai Dengan:</th>
+													<td colspan='3'>{4}</td>
+												</tr>
+											</table>
+										</div>
+
+										<!-- Earnings Section -->
+										<div class='earnings'>
+											{5}
+										</div>
+
+										<!-- Payslip Footer -->
+										<div class='footer'>
+											<table style='width: 100%; border: 0px !important;'>
+												<tr>
+													<td style='width: 50%; border: 0px !important;' valign='top'>
+														<br /><br />
+														Karyawan<br />
+														{0}
+														
+													</td>
+													<td style='width: 50%; border: 0px !important;'>
+														<br /><br />
+														PT Telur Intan Farm <br />
+														Manajemen HRD
+														<br />
+														<img src='http://balungfarm.javahome.co.id/img/ttd.png' style='width: 200px' />
+													</td>
+												</tr>		
+											</table>										
+										</div>
+									</div>
+								</body>
+								</html>", ParamDataPdf.ToArray());
+
+			var fileNamePdf = "kontrakkerja_" + modelEmployee.EmployeeName.Replace(" ", "_") + ".pdf";
+
+			if (RuntimeInformation.OSDescription.Contains("Ubuntu"))
+			{				
+				//var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+				// Initiate the download
+				// Using Javascript to download PDF
+				// var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
+				//var base64 = Convert.ToBase64String(pdfResult);
+				//var url = $"data:application/pdf;base64,{base64}";
+
+				//await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+				string uniqueProfilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
+				// 3. Launch the headless browser (NoSandbox is mandatory for Ubuntu)
+				await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+				{
+					Headless = true,
+					UserDataDir = uniqueProfilePath,
+					ExecutablePath = "/usr/bin/google-chrome-stable",
+					Args = new[]
+					{
+						"--no-sandbox",
+						"--disable-setuid-sandbox",
+						"--disable-dev-shm-usage",
+						"--disable-gpu"
+					}
+				});
+
+				// 4. Create a new page and inject the HTML
+				await using var page = await browser.NewPageAsync();
+				await page.SetContentAsync(HtmlContentPdf);
+
+				// 5. Generate and return the PDF file as a byte array
+				byte[] pdfBytes = await page.PdfDataAsync(new PdfOptions
+				{
+					Format = PaperFormat.A4,
+					PrintBackground = true,
+					MarginOptions = new MarginOptions { Top = "10px", Bottom = "10px", Right = "40px" }
+				});
+
+				string base64Data = Convert.ToBase64String(pdfBytes);
+
+				// 5. Call the JavaScript function to download the file
+				await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileNamePdf, base64Data);
+			}
+			else 
+			{
+				var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+				// Initiate the download
+				// Using Javascript to download PDF
+				// var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
+				var base64 = Convert.ToBase64String(pdfResult);
+				var url = $"data:application/pdf;base64,{base64}";
+
+				await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+			}
+			
+
+			Snackbar.Add("PDF berhasil diunduh!", Severity.Success);
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"Gagal mengunduh PDF: {ex.Message}", Severity.Error);
+		}
     }
 
 	protected async override void OnInitialized()
@@ -2285,12 +2494,12 @@
 
 		await GetSuratPeringatan();
 
-        CageList = await _kandang.GetAll();
+		CageList = await _kandang.GetAll();
 		SelectedKandang = CageList.FirstOrDefault().NoKandang;
 
 		//await GetStrainGraphData();
 		//await InitChart();
-
+		await GetKontrakKerja();
 		await LoadDataPrices();
 		_render = true;
 
@@ -2370,7 +2579,7 @@
 
 		LoadDataStock();
 
-		DaySeven();
+		//DaySeven();
 
 		CurrentPhotoUrl = "img/user.png";
 		await LoadProfilePhoto();
@@ -2379,9 +2588,9 @@
 		_pengumuman = _db.Pengumuman.FirstOrDefault(x => x.ID == 1);
 
 		string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Dashboard.";
-        await _audit.LogAsync(LogTypes.LogInfo, "Dashboard", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+		await _audit.LogAsync(LogTypes.LogInfo, "Dashboard", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
 
-        isLoading = false;
+		isLoading = false;
 		StateHasChanged();
 	}
 
@@ -2422,20 +2631,20 @@
 
 		PartaiTunai = Convert.ToDecimal(PartaiCashList.Sum(x => (decimal)x.Amount));
 		PartaiBank = Convert.ToDecimal(PartaiTransferList.Sum(x => (decimal)x.Amount));
-		
+
 		TelurUtuh = _sales.GetPenjualanTelurUtuh(dtFromDate, dtToDate);
 		TelurPutih =			_sales.GetPenjualanTelurPutih(dtFromDate, dtToDate);
 		TelurBentes =			_sales.GetPenjualanTelurBentes(dtFromDate, dtToDate);
 		TelurParah =			_sales.GetPenjualanTelurParah(dtFromDate, dtToDate);
 		TelurParahSekali =		_sales.GetPenjualanTelurParahSekali(dtFromDate, dtToDate);
-		
+
 		//=====		
 		TelurUtuhEcer = _sales.GetPenjualanTelurUtuhEcer(dtFromDate, dtToDate);
 		TelurUtuhPartai = _sales.GetPenjualanTelurUtuhPartai(dtFromDate, dtToDate);		
 		//=====
 		LoadReportRecordingSummary();
 		CalculateTotalNonTelurRupiah();
-
+		LoadStokOpnam();
 		isProcessing = false;
 
 		StateHasChanged();
