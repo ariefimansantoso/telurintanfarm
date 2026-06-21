@@ -129,6 +129,7 @@
 													<li><a href="/app/stockcheck">Cek Stok Produksi</a></li>
 													<li><a href="/app/eggretur">Form Pengembalian Telur</a></li>
 													<li><a href="/app/reportstock">Laporan Stok Harian</a></li>
+													<li><a href="/app/reportstockcompare">Perbandingan Harian</a></li>													
 													<li><a href="/app/formnota">Form Input Nota</a></li>
 													<li><a href="/app/reportnota">Laporan Input Nota</a></li>
 												</ul>
@@ -171,6 +172,8 @@
 														<li><a href="/app/adminsetpayroll">Tambah Tanggal Payroll</a></li>
 														<li><a href="/app/adminrecordvacation">Admin Submit Ijin</a></li>
 														<li><a href="/app/kontraklist">Kontrak Kerja Karyawan</a></li>
+														<li><a href="/app/adminloanlist">Pinjaman Karyawan</a></li>
+														<li><a href="/app/admindepositgaji">Deposit Karyawan</a></li>
 													}													
 													<li><a href="/app/recordpenalty">Sanksi dan Hukuman</a></li>
 													<li><a href="/app/recordbonus">Bonus dan Tambahan Gaji</a></li>
@@ -346,6 +349,7 @@
 										}
 										@if (currentUserRole == "Admin")
 										{
+											///app/adminformloan
 											<li class="">
 												<a href="/app/pricing"><img src="assets/img/icons/purchase1.svg" alt="img"><span>Set Harga</span></a>									
 											</li>
@@ -415,6 +419,7 @@
 											<div class="alert alert-danger">
 												<h3>@Exception.GetType()</h3>
 												<h3>@Exception.Message</h3>
+												<h4>@Exception.StackTrace</h4>
 											</div>
 										</div>
 

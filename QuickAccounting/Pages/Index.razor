@@ -41,6 +41,7 @@
 @inject IStockAkhirService _stockAkhirService
 @inject ISnackbar Snackbar
 @inject IKontrakKerjaService _kontrakKerja
+@inject QuickAccounting.Repository.Interface.ILoanService _loanService
 
 @using QuickAccounting.Components
 @using QuickAccounting.Constants;
@@ -1474,7 +1475,13 @@
 						<a href="/app/recordattendance" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Absensi Harian</a>
 						<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
 						<a href="/app/attendancelist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Abensi Harian dan Gaji</a>
+						<!-- DEPLOY DEPOSIT GAJI -->
+						@* <a href="/app/karyawandepositgaji" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Deposit Gaji</a> *@
 						<a href="/app/salaryslip" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Slip Gaji</a>
+						@if(HasLoan)
+						{
+							<a href="/app/karyawanloanlist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Daftar Pinjaman</a>
+						}
 						<a href="/app/penalties" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Daftar Sanksi dan Pengurangan Gaji</a>
 
 						@if (currentUserRole == "Packaging")
@@ -1725,6 +1732,8 @@
 	List<object> ParamDataPdf = new List<object>();
 
 	private KontrakKerja LatestKontrakKerja = new KontrakKerja();
+
+	private bool HasLoan = false;
 
 	private async Task LoadDataPrices()
 	{
@@ -2205,7 +2214,7 @@
 
 		if(LatestKontrakKerja == null) 
 		{
-            LatestKontrakKerja = await _kontrakKerja.GetLatestSignedContractsAsync(modelEmployee.EmployeeId);
+			LatestKontrakKerja = await _kontrakKerja.GetLatestSignedContractsAsync(modelEmployee.EmployeeId);
 		}
 	}
 
@@ -2393,7 +2402,7 @@
 														<br /><br />
 														Karyawan<br />
 														{0}
-														
+
 													</td>
 													<td style='width: 50%; border: 0px !important;'>
 														<br /><br />
@@ -2468,7 +2477,7 @@
 
 				await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
 			}
-			
+
 
 			Snackbar.Add("PDF berhasil diunduh!", Severity.Success);
 		}
@@ -2476,7 +2485,7 @@
 		{
 			Snackbar.Add($"Gagal mengunduh PDF: {ex.Message}", Severity.Error);
 		}
-    }
+	}
 
 	protected async override void OnInitialized()
 	{
@@ -2501,6 +2510,7 @@
 		//await InitChart();
 		await GetKontrakKerja();
 		await LoadDataPrices();
+		await CurrentEmployeeHasLoan();
 		_render = true;
 
 		listProduct = await report.GetTopProduct();
@@ -2592,6 +2602,11 @@
 
 		isLoading = false;
 		StateHasChanged();
+	}
+
+	private async Task CurrentEmployeeHasLoan()
+	{
+		HasLoan = (await _loanService.GetByEmployeeAsync(modelEmployee.EmployeeId)).Count > 0;
 	}
 
 	private async Task LoadProfilePhoto()

@@ -88,6 +88,7 @@ builder.Services.AddTransient<ISuratPeringatan, SuratPeringatanService>();
 builder.Services.AddTransient<IStockAkhirService, StockAkhirService>();
 builder.Services.AddTransient<IDepositGajiService, DepositGajiService>();
 builder.Services.AddTransient<IKontrakKerjaService, KontrakKerjaService>();
+builder.Services.AddTransient<ILoanService, LoanService>();
 
 var app = builder.Build();
 

@@ -1,0 +1,209 @@
+﻿@page "/app/karyawanloanlist"
+@using System.Security.Claims
+@using System.Globalization
+@using QuickAccounting.Data.HrPayroll
+@inject QuickAccounting.Repository.Interface.ILoanService _loanService
+@inject IEmployee _employee
+@inject IUser _userManage
+@inject IPrivilege _privilege
+@inject ISnackbar Snackbar
+@inject NavigationManager navigation
+
+<PageTitle>Daftar Pinjaman Karyawan</PageTitle>
+<Loader IsLoading="isLoading"></Loader>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Daftar Pinjaman (Belum Lunas)</h4>
+        </div>
+        <div class="page-btn">
+            
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            @if (!showDetails)
+            {
+                @if (pendingLoans != null && pendingLoans.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>                                    
+                                    <th>Jumlah Pinjaman</th>
+                                    <th>Jangka Waktu (bulan)</th>
+                                    <th>Tanggal Dibuat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int no = 1;
+                                }
+                                @foreach (var loan in pendingLoans)
+                                {
+                                    <tr>                                        
+                                        <td>@string.Format("{0:N2}", loan.LoanTotal)</td>
+                                        <td>@loan.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => ShowDetailsAsync(loan.ID)">Details</button>
+                                        </td>
+                                    </tr>
+                                    no++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div style="text-align:center; padding:20px;">
+                        <h5>Tidak ada pinjaman yang belum lunas.</h5>
+                    </div>
+                }
+            }
+            else
+            {
+                <div>
+                    <h5>Detail Angsuran untuk: @modelEmployee.EmployeeName</h5>
+                    <p>Jumlah Pinjaman: @string.Format("{0:N2}", selectedLoan.LoanTotal) &nbsp; | &nbsp; Jangka Waktu: @selectedLoan.PaymentTermsInMonths bulan</p>
+
+                    @if (selectedLoanDetails != null && selectedLoanDetails.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Bulan</th>
+                                        <th>Tahun</th>
+                                        <th>Jumlah</th>
+                                        <th>Status</th>
+                                        <th>Tanggal Bayar</th>
+                                        <th>Jumlah Bayar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int idx = 1;
+                                    }
+                                    @foreach (var d in selectedLoanDetails.OrderBy(x => x.Year).ThenBy(x => x.Month))
+                                    {
+                                        <tr>
+                                            <td>@idx</td>
+                                            <td>@CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(d.Month)</td>
+                                            <td>@d.Year</td>
+                                            <td>@string.Format("{0:N2}", d.PaidAmount)</td>
+                                            <td>@(d.Paid ? "Paid" : "Pending")</td>
+                                            <td>@(d.PaidDate == default ? "-" : d.PaidDate.ToString("dd/MM/yyyy"))</td>
+                                            <td>@(d.Paid ? string.Format("{0:N2}", d.PaidAmount) : "-")</td>
+                                        </tr>
+                                        idx++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="text-align:center; padding:20px;">
+                            <h6>Tidak ada detail angsuran untuk pinjaman ini.</h6>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private bool isLoading = true;
+    private bool hasAccess = false;
+    private bool showDetails = false;
+
+    private List<LoanMaster> pendingLoans = new();
+    private LoanMaster selectedLoan;
+    private List<LoanDetails> selectedLoanDetails = new();
+
+    // cache employee names to avoid repeated DB calls
+    private Dictionary<int, string> employeeNameCache = new();
+    string strMenu = "Sales";
+    UserMaster modelUser = new UserMaster();
+    Employee modelEmployee = new Employee();
+    string currentUserRole = "User";
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var authState = await AuthenticationState;
+            var strRole = authState.User;
+            var userName = strRole.Identity.Name;
+            string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+            currentUserRole = await _userManage.GetUserRole(userName);
+            modelUser = await _userManage.UserProfile(userName);
+            modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+            var strShow = await _privilege.PriviliageCheck(strMenu, currentUserRole);
+            if (strShow.ShowAction != true)            
+            {
+                return;
+            }
+
+            // load all loans then filter those not completed            
+            pendingLoans = await _loanService.GetByEmployeeAsync(modelEmployee.EmployeeId);            
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading loans: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowDetailsAsync(int loanId)
+    {
+        isLoading = true;
+        try
+        {
+            selectedLoan = pendingLoans.FirstOrDefault(l => l.ID == loanId);
+            if (selectedLoan == null)
+            {
+                Snackbar.Add("Loan not found.", Severity.Warning);
+                return;
+            }
+
+            selectedLoanDetails = await _loanService.GetLoanDetailsAsync(selectedLoan.ID);
+            // ensure employee name cached
+            if (!employeeNameCache.ContainsKey(selectedLoan.EmployeeID))
+            {
+                var emp = await _employee.GetbyId(selectedLoan.EmployeeID);
+                employeeNameCache[selectedLoan.EmployeeID] = emp?.EmployeeName ?? "Unknown";
+            }
+
+            showDetails = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading loan details: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void BackToList()
+    {
+        showDetails = false;
+        selectedLoan = null;
+        selectedLoanDetails.Clear();
+    }
+}

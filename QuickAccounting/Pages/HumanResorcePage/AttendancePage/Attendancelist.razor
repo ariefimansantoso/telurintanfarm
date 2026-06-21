@@ -17,6 +17,7 @@
 @inject IExcelService _excelService
 @inject ApplicationDbContext _db
 @inject IAuditLogService _audit
+@inject ILoanService _loan
 
 @attribute [Authorize]
 <PageTitle>Admin - Laporan Absensi dan Gaji Karyawan</PageTitle>
@@ -142,6 +143,7 @@
                         <th>Deposit</th>
                         <th>No. Rek</th>
                         <th>Total Gaji</th>
+                            <th>Gaji Asli</th>
                     </tr>
                     </thead>
                <tbody>
@@ -163,6 +165,8 @@
                                     //{
                                          _db.Employee.FirstOrDefault(x => x.EmployeeId == payrollPerPerson.EmployeeID);
                                     //}
+                                    var existingDeposit = payrollPerPerson.GajiBersih / 9;
+                                    var gajiAsli = payrollPerPerson.GajiBersih + existingDeposit;
                                     <tr>
                                         <td>@(currentEmployee != null ? currentEmployee.EmployeeName : "")</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.GajiHarian)</td>
@@ -185,9 +189,10 @@
                                         <td>@string.Format("{0:n0}", payrollPerPerson.Cicilan)</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.Potongan)</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.RpLembur)</td>
-                                        <td>@string.Format("{0:n0}", payrollPerPerson.DepositGaji)</td>
+                                        <td>@string.Format("{0:n0}", existingDeposit)</td>
                                         <td>@payrollPerPerson.NoRek</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.GajiBersih)</td>
+                                        <td>@string.Format("{0:n0}", gajiAsli)</td>
                                     </tr>
 
                                     if (currentEmployee.BankAccount != "0" && currentEmployee.BankAccount != "")
@@ -197,7 +202,9 @@
                                             No = number,
                                             Karyawan = currentEmployee.EmployeeName,
                                             Rekening = currentEmployee.BankAccount,
-                                            Gaji = payrollPerPerson.GajiBersih
+                                            Deposit = existingDeposit,
+                                            Gaji = payrollPerPerson.GajiBersih,
+                                            GajiAsli = gajiAsli
                                         });
                                     }
                                     number++;
@@ -325,6 +332,8 @@
                                         .Sum();
 
                                     rpLembur = (employee.DailyWage / (decimal)480) * (decimal)totalMenitLembur * 2;
+
+                                    //cicilan = await _loan.GetCurrentMonthPayment(employee.EmployeeId, DateTime.Now.Month, DateTime.Now.Year);
 
                                     hariDinasLuar = perijinanKaryawan.Where(x => x.SubmittedFor.Equals("DINAS")).Count();
                                     decimal premi = 0;
@@ -744,7 +753,7 @@
                     CloneStyledCell(headerCells, 0, item.No.ToString()),
                     CloneStyledCell(headerCells, 1, item.Karyawan),
                     CloneStyledCell(headerCells, 2, item.Rekening),
-                    CloneStyledCell(headerCells, 3, item.Gaji.ToString("N0", new CultureInfo("id-ID")))
+                    CloneStyledCell(headerCells, 3, item.Deposit.ToString("N0", new CultureInfo("id-ID")))
                 );
 
                 totalSalary = totalSalary + item.Gaji;
@@ -1085,7 +1094,9 @@
         public int No { get; set; }
         public string Karyawan { get; set; }
         public string Rekening { get; set; }
+        public decimal Deposit { get; set; }
         public decimal Gaji { get; set; }
+        public decimal GajiAsli { get; set; }
     }
 
     public class AbsensiData

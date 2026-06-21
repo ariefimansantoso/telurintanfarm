@@ -12,12 +12,12 @@
 @inject IEmployee _employee
 @inject IHRServices _hr
 @attribute [Authorize]
-<PageTitle>Laporan Sangsi dan Pengurangan Gaji</PageTitle>
+<PageTitle>Laporan Pengurangan/Penambahan Gaji</PageTitle>
 <Loader IsLoading="IsLoading"></Loader>
 <div class="content">
     <div class="page-header">
         <div class="page-title">
-            <h4>Laporan Sangsi dan Pengurangan Gaji</h4>            
+            <h4>Laporan Pengurangan/Penambahan Gaji</h4>
         </div>
     </div>
     <!-- /product list -->
@@ -89,6 +89,7 @@
                                 <th>Tanggal</th>
                                 <th>Karyawan</th>
                                 <th>Alasan</th>
+                                <th>Jenis</th>
                                 <th>Potongan</th>
                                 <th></th>
                             </tr>
@@ -104,6 +105,7 @@
                                         @fullName
                                     </td>
                                     <td>@item.PenaltyDescription</td>
+                                    <td>@(item.IsPenalty ? "Potongan" : "Tambahan")</td>
                                     <td>@string.Format("{0:n0}", item.PenaltyAmount)</td>
                                     <td>
                                         <a @onclick="( () => { OpenDeleteDialog(item.ID); } )" class="btn btn-danger" style="color:#fff !important;">HAPUS</a>

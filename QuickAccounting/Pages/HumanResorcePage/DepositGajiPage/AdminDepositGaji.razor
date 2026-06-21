@@ -1,0 +1,209 @@
+﻿@page "/app/admindepositgaji"
+@inject QuickAccounting.Repository.Interface.IDepositGajiService _depositService
+@inject QuickAccounting.Repository.Interface.IEmployee _employee
+@using QuickAccounting.Data.HrPayroll
+@using System.Security.Claims
+@inject IEmployee _employee
+@inject IPrivilege _privilege
+@inject ISnackbar Snackbar
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<PageTitle>Admin - Deposit Gaji</PageTitle>
+
+<Loader IsLoading="isProcessing"></Loader>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h4>Admin - Deposit Gaji</h4>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label>Karyawan</label>
+                    <select class="form-control" @onchange="OnEmployeeChanged">
+                        <option value="0">-- Semua Karyawan --</option>
+                        @if (employees != null)
+                        {
+                            foreach (var emp in employees)
+                            {
+                                <option value="@emp.EmployeeId" selected="@(emp.EmployeeId == selectedEmployeeId)">
+                                    @emp.EmployeeName
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 text-right align-self-end">
+                    <button class="btn btn-danger" @onclick="DisburseAllPending" disabled="@(!CanDisburse)">
+                        Bayarkan Semua Pending
+                    </button>
+                    @((MarkupString)"&nbsp;")
+                    <button class="btn btn-secondary" @onclick="Reload">Refresh</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Karyawan</th>
+                            <th>Jumlah</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (deposits != null && deposits.Count > 0)
+                        {
+                            foreach (var d in deposits)
+                            {
+                                <tr>
+                                    <td>@d.ID</td>
+                                    <td>@GetEmployeeName(d.EmployeeID)</td>
+                                    <td>@d.DepositAmount.ToString("N2")</td>
+                                    <td>@d.DateCreated.ToString("dd/MM/yyyy HH:mm")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center">Belum ada deposit.</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>Total Deposit</strong></td>
+                            <td colspan="4"><strong>@totalPending.ToString("N2")</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] 
+    public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private bool isProcessing = false;
+    private List<DepositGaji> deposits = new();
+    private List<QuickAccounting.Data.HrPayroll.Employee> employees = new();
+    private int selectedEmployeeId = 0;
+    private decimal totalPending = 0;
+
+    private bool CanDisburse => deposits != null && deposits.Any();
+    private Dictionary<int, string> employeeNameCache = new();
+    string strMenu = "Sales";
+
+    protected override async Task OnInitializedAsync()
+    {
+        isProcessing = true;
+        var authState = await AuthenticationState;
+        var strRole = authState.User;
+        string strName = strRole.FindFirst(ClaimTypes.Role).Value;
+        var strShow = await _privilege.PriviliageCheck(strMenu, strName);
+        if (strShow.ShowAction != true)
+        {
+            return;
+        }
+
+        await LoadEmployees();
+        await LoadDeposits();
+
+        isProcessing = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadEmployees()
+    {
+        // Reuse the employee service used elsewhere in project
+        employees = (await _employee.GetAllEmployeeActive())?.ToList() ?? new List<QuickAccounting.Data.HrPayroll.Employee>();
+    }
+
+    private async Task LoadDeposits()
+    {
+        deposits.Clear();
+        totalPending = 0;
+
+        if (selectedEmployeeId > 0)
+        {
+            deposits = (await _depositService.GetActiveDepositByEmployeeIdAsync(selectedEmployeeId))?.ToList() ?? new List<DepositGaji>();
+        }
+        else
+        {
+            // fallback: load all and filter IsCredited == false
+            var all = (await _depositService.GetAllAsync())?.ToList() ?? new List<DepositGaji>();
+            deposits = all.Where(d => d.IsCredited == false).ToList();
+        }
+
+        totalPending = deposits.Sum(d => d.DepositAmount);
+    }
+
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
+    {
+        isProcessing = true;
+        if (int.TryParse(e?.Value?.ToString(), out var id))
+        {
+            selectedEmployeeId = id;
+        }
+        else
+        {
+            selectedEmployeeId = 0;
+        }
+        await LoadDeposits();
+        isProcessing = false;
+    }
+
+    private string GetEmployeeName(int employeeId)
+    {
+        var emp = employees.FirstOrDefault(x => x.EmployeeId == employeeId);
+        return emp?.EmployeeName ?? $"#{employeeId}";
+    }
+
+    private async Task DisburseAllPending()
+    {
+        if (!CanDisburse) return;
+
+        isProcessing = true;
+        try
+        {
+            // This will mark all pending deposits (IsCredited == false) as credited and set a single GUID code
+            var code = await _depositService.DisburseDepositAsync();
+            if (!string.IsNullOrEmpty(code))
+            {
+                Snackbar.Add($"Disbursed deposits (code: {code})", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("No pending deposits to disburse", Severity.Warning);
+            }
+
+            await LoadDeposits();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error disbursing deposits: " + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task Reload()
+    {
+        isProcessing = true;
+        await LoadEmployees();
+        await LoadDeposits();
+        isProcessing = false;
+    }
+}

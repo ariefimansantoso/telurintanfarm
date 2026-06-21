@@ -162,7 +162,70 @@
             ParamDataPdf.Add(payrollKaryawan.DinasLuar);
             ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.RpLembur));
 
-            HtmlContentPdf = string.Format(@"<!DOCTYPE html>
+            HtmlContentPdf = GetTemplateSalarySlip(payrollKaryawan.Cicilan > 0);
+
+            var fileNamePdf = "slipgaji_" + modelEmployee.EmployeeName.Replace(" ", "_") + "_" + Cutoff.PayrollPeriode.Replace(" ", "_") + "_.pdf";
+
+            if (RuntimeInformation.OSDescription.Contains("Ubuntu"))
+            {
+                string uniqueProfilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
+                // 3. Launch the headless browser (NoSandbox is mandatory for Ubuntu)
+                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+                {
+                    Headless = true,
+                    UserDataDir = uniqueProfilePath,
+                    ExecutablePath = "/usr/bin/google-chrome-stable",
+                    Args = new[]
+                    {
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu"
+                    }
+                });
+
+                // 4. Create a new page and inject the HTML
+                await using var page = await browser.NewPageAsync();
+                await page.SetContentAsync(HtmlContentPdf);
+
+                // 5. Generate and return the PDF file as a byte array
+                byte[] pdfBytes = await page.PdfDataAsync(new PdfOptions
+                {
+                    Format = PaperFormat.A4,
+                    PrintBackground = true,
+                    MarginOptions = new MarginOptions { Top = "10px", Bottom = "10px", Right = "40px" }
+                });
+
+                string base64Data = Convert.ToBase64String(pdfBytes);
+
+                // 5. Call the JavaScript function to download the file
+                await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileNamePdf, base64Data);
+            }
+            else
+            {
+                var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
+
+                // Initiate the download
+                // Using Javascript to download PDF
+                // var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
+                var base64 = Convert.ToBase64String(pdfResult);
+                var url = $"data:application/pdf;base64,{base64}";
+
+                await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
+            }
+        }
+        else
+        {
+            Snackbar.Add("Slip Gaji belum tersedia.", Severity.Error);
+        }
+    }
+
+    private string GetTemplateSalarySlip(bool hasLoan)
+    {
+        if (hasLoan)
+        {
+            return string.Format(@"<!DOCTYPE html>
                         <html lang='en'>
                         <head>
                             <meta charset='UTF-8'>
@@ -173,7 +236,7 @@
                         <body>
                             <div class='payslip-container'>
                                 <!-- Payslip Header -->
-                                <div class='header'>                                    
+                                <div class='header'>
                                     <h1>Slip Gaji</h1>
                                     <p><strong>Nama Perusahaan:</strong> PT Telur Intan Farm</p>
                                     <p><strong>Bulan:</strong> {0}</p>
@@ -248,7 +311,7 @@
                                         <tr>
                                             <td>Premi</td>
                                             <td>{8}</td>
-                                        </tr>                                        
+                                        </tr>
                                         <tr>
                                             <td>Tambahan</td>
                                             <td>{11}</td>
@@ -256,7 +319,7 @@
                                         <tr>
                                             <td>Tunjangan</td>
                                             <td>{12}</td>
-                                        </tr>    
+                                        </tr>
                                         <tr>
                                             <td>Lembur</td>
                                             <td>{29}</td>
@@ -302,7 +365,7 @@
 
                                 <!-- Net Pay -->
                                 <div class='net-pay'>
-                                    <h3>Gaji Bersih Rp. {18}</h3>                                    
+                                    <h3>Gaji Bersih Rp. {18}</h3>
                                 </div>
 
                                 <!-- Payslip Footer -->
@@ -313,61 +376,160 @@
                             </div>
                         </body>
                         </html>", ParamDataPdf.ToArray());
-
-            var fileNamePdf = "slipgaji_" + modelEmployee.EmployeeName.Replace(" ", "_") + "_" + Cutoff.PayrollPeriode.Replace(" ", "_") + "_.pdf";
-
-            if (RuntimeInformation.OSDescription.Contains("Ubuntu"))
-            {
-                string uniqueProfilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-                // 3. Launch the headless browser (NoSandbox is mandatory for Ubuntu)
-                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-                {
-                    Headless = true,
-                    UserDataDir = uniqueProfilePath,
-                    ExecutablePath = "/usr/bin/google-chrome-stable",
-                    Args = new[]
-                    {
-                        "--no-sandbox",
-                        "--disable-setuid-sandbox",
-                        "--disable-dev-shm-usage",
-                        "--disable-gpu"
-                    }
-                });
-
-                // 4. Create a new page and inject the HTML
-                await using var page = await browser.NewPageAsync();
-                await page.SetContentAsync(HtmlContentPdf);
-
-                // 5. Generate and return the PDF file as a byte array
-                byte[] pdfBytes = await page.PdfDataAsync(new PdfOptions
-                {
-                    Format = PaperFormat.A4,
-                    PrintBackground = true,
-                    MarginOptions = new MarginOptions { Top = "10px", Bottom = "10px", Right = "40px" }
-                });
-
-                string base64Data = Convert.ToBase64String(pdfBytes);
-
-                // 5. Call the JavaScript function to download the file
-                await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileNamePdf, base64Data);
-            }
-            else
-            {
-                var pdfResult = await pdfService.GeneratePdf(HtmlContentPdf);
-
-                // Initiate the download
-                // Using Javascript to download PDF
-                // var fileName = "slipgaji_" + namaKaryawan.Replace(" ", "_") + "_" + periode.Replace(" ", "_") + "_.pdf";
-                var base64 = Convert.ToBase64String(pdfResult);
-                var url = $"data:application/pdf;base64,{base64}";
-
-                await JSRuntime.InvokeVoidAsync("downloadPdf", url, fileNamePdf);
-            }
         }
         else
         {
-            Snackbar.Add("Slip Gaji belum tersedia.", Severity.Error);
+            return string.Format(@"<!DOCTYPE html>
+                        <html lang='en'>
+                        <head>
+                            <meta charset='UTF-8'>
+                            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                            <title>Slip Gaji</title>
+                            <link rel='stylesheet' href='http://balungfarm.javahome.co.id/css/slipgaji.css' />
+                        </head>
+                        <body>
+                            <div class='payslip-container'>
+                                <!-- Payslip Header -->
+                                <div class='header'>
+                                    <h1>Slip Gaji</h1>
+                                    <p><strong>Nama Perusahaan:</strong> PT Telur Intan Farm</p>
+                                    <p><strong>Bulan:</strong> {0}</p>
+                                </div>
+
+                                <!-- Employee Details -->
+                                <div class='details'>
+                                    <table>
+                                        <tr>
+                                            <th>Nama Karyawan:</th>
+                                            <td>{1}</td>
+                                            <th>ID:</th>
+                                            <td>{2}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Jabatan:</th>
+                                            <td colspan='3'>{3}</td>
+                                            <!--<th>Department:</th>
+                                            <td>{4}</td>-->
+                                        </tr>
+                                        <tr>
+                                            <th>Tanggal Mulai:</th>
+                                            <td>{5}</td>
+                                            <th>Nomor Rekening:</th>
+                                            <td>{6}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Masuk:</th>
+                                            <td>{20}</td>
+                                            <th>Libur:</th>
+                                            <td>{21}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Ijin:</th>
+                                            <td>{22}</td>
+                                            <th>Sakit:</th>
+                                            <td>{23}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Setengah Hari:</th>
+                                            <td>{26}</td>
+                                            <th>Lembur:</th>
+                                            <td>{27}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Alpha:</th>
+                                            <td>{24}</td>
+                                            <th>Gaji Harian:</th>
+                                            <td>{25}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Dinas Luar:</th>
+                                            <td>{28}</td>
+                                            <th></th>
+                                            <td></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Earnings Section -->
+                                <div class='earnings'>
+                                    <h3>Pendapatan</h3>
+                                    <table>
+                                        <tr>
+                                            <th>Jenis</th>
+                                            <th>Jumlah (Rp)</th>
+                                        </tr>
+                                        <tr>
+                                            <td>Gaji Pokok (Gaji Harian x Hari Masuk)</td>
+                                            <td>{7}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Premi</td>
+                                            <td>{8}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Tambahan</td>
+                                            <td>{11}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Tunjangan</td>
+                                            <td>{12}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Lembur</td>
+                                            <td>{29}</td>
+                                        </tr>
+                                        <tr class='total'>
+                                            <td>Total Pendapatan</td>
+                                            <td>{13}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Deductions Section -->
+                                <div class='deductions'>
+                                    <h3>Potongan</h3>
+                                    <table>
+                                        <tr>
+                                            <th>{14}</th>
+                                            <th>Jumlah (Rp)</th>
+                                        </tr>
+                                        <tr>
+                                            <td>BPJS Kesehatan</td>
+                                            <td>{9}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>BPJS Ketenagakerjaan</td>
+                                            <td>{10}</td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td><!--{15}--></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Potongan</td>
+                                            <td>{16}</td>
+                                        </tr>
+
+                                        <tr class='total'>
+                                            <td>Total Potongan</td>
+                                            <td>{17}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Net Pay -->
+                                <div class='net-pay'>
+                                    <h3>Gaji Bersih Rp. {18}</h3>
+                                </div>
+
+                                <!-- Payslip Footer -->
+                                <div class='footer'>
+                                    <!--<p><strong>Tanggal Pembayaran:</strong> {19}</p> -->
+                                    <img src='http://balungfarm.javahome.co.id/img/ttd.png' style='width: 200px' />
+                                </div>
+                            </div>
+                        </body>
+                        </html>", ParamDataPdf.ToArray());
         }
     }
 

@@ -87,6 +87,8 @@ namespace QuickAccounting.Data
         public DbSet<Payroll> Payroll { get; set; }
         public DbSet<PayrollCutoff> PayrollCutoff { get; set; }
         public DbSet<AbsensiPotongan> AbsensiPotongan { get; set; }
+        public DbSet<LoanMaster> LoanMaster { get; set; }
+        public DbSet<LoanDetails> LoanDetails { get; set; }
 
         // KontrakKerja DbSet
         public DbSet<KontrakKerja> KontrakKerja { get; set; }

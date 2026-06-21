@@ -32,5 +32,6 @@
         public decimal GajiNonPremi { get; set; }
         public DateTime TanggalGajian { get; set; }
         public decimal DepositGaji { get; set; }
+        public decimal GajiNonDeposit { get; set; }        
     }
 }

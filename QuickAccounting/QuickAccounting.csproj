@@ -34,7 +34,6 @@
 
   <ItemGroup>
     <Folder Include="Pages\HumanResorcePage\HrConfiguration\" />
-    <Folder Include="Pages\HumanResorcePage\DepositGajiPage\" />
     <Folder Include="wwwroot\uploads\absensi\" />
   </ItemGroup>
 

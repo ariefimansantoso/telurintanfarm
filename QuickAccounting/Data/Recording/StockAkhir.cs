@@ -22,5 +22,7 @@ namespace QuickAccounting.Data.Recording
         public int CreatedBy { get; set; }
 
         public int GroupId { get; set; }
+
+        public bool Capture { get; set; } = false;
     }
 }

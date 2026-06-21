@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using QuickAccounting.Data;
 using QuickAccounting.Data.HrPayroll;
 using QuickAccounting.Repository.Interface;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace QuickAccounting.Repository.Repository
 {
@@ -24,7 +28,7 @@ namespace QuickAccounting.Repository.Repository
             return await _context.DepositGaji.FindAsync(id);
         }
 
-        public async Task<int> CreateAsync(DepositGaji model)
+        public async Task<int> AddAsync(DepositGaji model)
         {
             model.DateCreated = DateTime.Now;
             await _context.DepositGaji.AddAsync(model);
@@ -57,71 +61,33 @@ namespace QuickAccounting.Repository.Repository
             return true;
         }
 
-        public async Task<List<DepositGaji>> GetByEmployeeAsync(int employeeId)
+        public async Task<List<DepositGaji>> GetActiveDepositByEmployeeIdAsync(int employeeId)
         {
             return await _context.DepositGaji
-                .Where(x => x.EmployeeID == employeeId)
-                .OrderByDescending(x => x.DateCreated)
-                .ToListAsync();
+                            .Where(d => d.EmployeeID == employeeId && !d.IsCredited)
+                            .AsNoTracking()
+                            .ToListAsync();
         }
 
-        public async Task<List<DepositGaji>> GetByEmployeeLast12MonthsAsync(int employeeId)
+        // marks all IsCredited == false rows in table as credited and stamps a single DisburseCode GUID
+        public async Task<string> DisburseDepositAsync(string disburseCode = null)
         {
-            var fromDate = DateTime.Now.AddMonths(-12);
-            return await _context.DepositGaji
-                .Where(x => x.EmployeeID == employeeId && x.DateCreated >= fromDate)
-                .OrderByDescending(x => x.DateCreated)
-                .ToListAsync();
-        }
-
-        public async Task<List<DepositGaji>> GetByEmployeeNotExpiredNotDisbursed(int employeeId)
-        {
-            return await _context.DepositGaji
-                .Where(x => x.EmployeeID == employeeId && x.IsCredited == false && x.IsExpired == false)
-                .OrderByDescending(x => x.DateCreated)
-                .ToListAsync();
-        }
-
-        public async Task<List<DepositGaji>> GetByEmployeeExpiredNotDisbursed(int employeeId)
-        {
-            return await _context.DepositGaji
-                .Where(x => x.EmployeeID == employeeId && x.IsCredited == false && x.IsExpired == true)
-                .OrderByDescending(x => x.DateCreated)
-                .ToListAsync();
-        }
-
-        public async Task<List<DepositGaji>> GetByEmployeeAndDisburseCode(int employeeId, string disburseCode)
-        {
-            return await _context.DepositGaji
-                .Where(x => x.EmployeeID == employeeId && x.DisburseCode == disburseCode)
-                .OrderByDescending(x => x.DateCreated)
-                .ToListAsync();
-        }
-
-        /// <summary>
-        /// Assigns the provided unique disburse code to all DepositGaji records for the employee
-        /// that are not credited and not expired. Returns the number of records updated.
-        /// </summary>
-        public async Task<int> AssignDisburseCodeToPendingAsync(int employeeId, string uniqueDisburseCode)
-        {
-            // Load targeted records
-            var pending = await _context.DepositGaji
-                .Where(x => x.EmployeeID == employeeId && !x.IsCredited && !x.IsExpired)
-                .ToListAsync();
-
+            var pending = await _context.DepositGaji.Where(d => !d.IsCredited).ToListAsync();
             if (pending == null || pending.Count == 0)
-                return 0;
+                return null;
 
-            // Update the DisburseCode on each record
+            var code = string.IsNullOrWhiteSpace(disburseCode) ? Guid.NewGuid().ToString() : disburseCode;
+
             foreach (var d in pending)
             {
-                d.DisburseCode = uniqueDisburseCode;
+                d.IsCredited = true;
+                d.DisburseCode = code;
+                // optionally update DateCreated? We keep DateCreated as original creation date.
+                _context.DepositGaji.Update(d);
             }
 
-            // Persist changes
             await _context.SaveChangesAsync();
-
-            return pending.Count;
+            return code;
         }
     }
 }

@@ -205,7 +205,11 @@
                     decimal potonganSetengahHari = 0;
                     if (setengahHari > 0)
                     {
-                        potonganSetengahHari = potonganSetengahHari + (SelectedEmployee.DailyWage / 2);
+                        for(int i = 1; i <= setengahHari; i++)
+                        {
+                            countMasuk = countMasuk + 1;
+                            potonganSetengahHari = potonganSetengahHari + (SelectedEmployee.DailyWage / 2);
+                        }   
                     }
 
                     if (listPotongan.Count > 0)

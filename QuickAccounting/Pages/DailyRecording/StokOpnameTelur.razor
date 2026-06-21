@@ -179,6 +179,12 @@
     decimal StockTelurParahSekali;
     decimal StockTelurRusak;
 
+    decimal StockTelurUtuhCapture;
+    decimal StockTelurBentesCapture;
+    decimal StockTelurPutihCapture;
+    decimal StockTelurParahCapture;
+    decimal StockTelurParahSekaliCapture;
+
     private UserMaster modelUser;
     private Employee modelEmployee;
     string currentUserRole = "Admin";
@@ -321,8 +327,52 @@
         }
     }
 
+    private async Task LoadDataStock()
+    {
+        var stockTelurUtuh = await _db.StockTelurUtuh.FirstOrDefaultAsync();
+
+        if (stockTelurUtuh != null)
+        {
+            StockTelurUtuhCapture = stockTelurUtuh.StockKG;
+        }
+
+        var startingStockDate = stockTelurUtuh.StockDate.Date;
+
+        // bentes
+        var stockBentes = await _db.StockPosting.Where(x => x.ProductId == 16 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefaultAsync();
+
+        // putih
+        var stockPutih = _db.StockPosting.Where(x => x.ProductId == 7 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+
+        // pecah
+        var stockPecah = _db.StockPosting.Where(x => x.ProductId == 17 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+
+        // pecah sekali
+        var stockPecahSekali = _db.StockPosting.Where(x => x.ProductId == 19 && x.Date.Date >= startingStockDate)
+                                                .GroupBy(x => 1)
+                                                .Select(g => g.Sum(x => x.InwardQty) - g.Sum(x => x.OutwardQty))
+                                                .FirstOrDefault();
+
+        StockTelurBentesCapture = stockBentes;
+        StockTelurPutihCapture = stockPutih;
+        StockTelurParahCapture = stockPecah;
+        StockTelurParahSekaliCapture = stockPecahSekali;
+    }
+
     private async Task Save()   
     {
+        // stok opnam telur
+        // stok opnam stok jualan as Capture
+        // reset stok jualan
         try
         {
             string auditMessage = "";
@@ -333,6 +383,8 @@
             int productIdParah = 17;
             int productIdPS = 19;
             int productIdRusak = 106;
+
+            await LoadDataStock();
 
             // telur utuh
             var stock = new StockOpnam
@@ -394,7 +446,7 @@
                 CreatedDate = DateTime.Now,
                 CreatedBy = modelEmployee.EmployeeId
             };
-            
+
             List<StockOpnam> StockAkhirs = new List<StockOpnam>();
             StockAkhirs.Add(stock);
             StockAkhirs.Add(stockPutih);
@@ -403,10 +455,77 @@
             StockAkhirs.Add(stockPS);
             StockAkhirs.Add(stockRusak);
 
-            try
+            await _stockAkhirService.CreateAllAsync(StockAkhirs);
+            await _db.SaveChangesAsync();
+
+            var stockCapture = new StockOpnam
             {
-                await _stockAkhirService.CreateAllAsync(StockAkhirs);
+                ProductID = -99,
+                GroupId = 6,
+                StockAkhir = StockTelurUtuhCapture,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId,
+                 Capture = true
+            };
+
+            var stockPutihCapture = new StockOpnam
+            {
+                ProductID = productIdPutih,
+                GroupId = 6,
+                StockAkhir = StockTelurPutihCapture,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId,
+                 Capture = true
+            };
+
+            var stockBentesCapture = new StockOpnam
+            {
+                ProductID = productIdBentes,
+                GroupId = 6,
+                StockAkhir = StockTelurBentesCapture,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId,
+                 Capture = true
+            };
+
+            var stockParahCapture = new StockOpnam
+            {
+                ProductID = productIdParah,
+                GroupId = 6,
+                StockAkhir = StockTelurParahCapture,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId,
+                Capture = true
+            };
+
+            var stockPSCapture = new StockOpnam
+            {
+                ProductID = productIdPS,
+                GroupId = 6,
+                StockAkhir = StockTelurParahSekaliCapture,
+                StockDate = dateNow,
+                CreatedDate = DateTime.Now,
+                CreatedBy = modelEmployee.EmployeeId,
+                 Capture = true
+            };
+
+            List<StockOpnam> StockAkhirsCapture = new List<StockOpnam>();
+            StockAkhirsCapture.Add(stockCapture);
+            StockAkhirsCapture.Add(stockPutihCapture);
+            StockAkhirsCapture.Add(stockBentesCapture);
+            StockAkhirsCapture.Add(stockParahCapture);
+            StockAkhirsCapture.Add(stockPSCapture);
+
+            try
+            {                
+                await _stockAkhirService.CreateAllAsync(StockAkhirsCapture);
                 await _db.SaveChangesAsync();
+
+                await Save2();
             }
             catch (Exception ex)
             {
@@ -415,7 +534,7 @@
             }
 
             Snackbar.Add("Stok Opnam Telur berhasil.", Severity.Success);
-            navigation.NavigateTo("/app/resetsalesstock", true);
+            //navigation.NavigateTo("/app/stokopnametelur", true);
         }
         catch (DbUpdateException dex)
         {
@@ -427,6 +546,105 @@
         }
     }    
     
+    private async Task Save2()   
+    {
+        try
+        {
+            string auditMessage = "";
+            var dateNow = DateTime.Now;
+
+            var stockTelurUtuh = _db.StockTelurUtuh.FirstOrDefault();
+            if (stockTelurUtuh != null)
+            {                    
+                auditMessage = "Reset stock telur UTUH: " + stockTelurUtuh.StockKG;
+                await _audit.LogAsync(LogTypes.LogInfo, "Reset Stock Penjualan Telur UTUH", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+                stockTelurUtuh.StockKG = Kilogram;
+                // stock reset mulai besoknya
+                stockTelurUtuh.StockDate = dateNow;                    
+
+                MutasiStockTelurHarian mutasiUtuh = new MutasiStockTelurHarian();
+                mutasiUtuh.JenisTelur = "UTUH";
+                mutasiUtuh.BeratTelurIn = Kilogram;
+                mutasiUtuh.BeratTelurOut = 0;
+                mutasiUtuh.DateCreated = dateNow;
+                mutasiUtuh.CreatedBy = modelEmployee.EmployeeId;
+                _db.MutasiStockTelurHarian.Add(mutasiUtuh);
+                await _db.SaveChangesAsync();
+            }
+
+            int productIdBentes = 16;
+            int productIdPutih = 7;
+            int productIdParah = 17;
+            int productIdPS = 19;
+            int productIdRusak = 106;
+
+            await ProcessResetStock(productIdBentes, "BENTES", KilogramBentes, dateNow);
+            await ProcessResetStock(productIdPutih, "PUTIH", KilogramPutih, dateNow);
+            await ProcessResetStock(productIdParah, "PARAH", KilogramParah, dateNow);
+            await ProcessResetStock(productIdPS, "PS", KilogramPS, dateNow);
+            //await ProcessResetStock(productIdRusak, "RUSAK", dateNow);
+            
+            Snackbar.Add("Reset stok berhasil.", Severity.Success);
+            //navigation.NavigateTo("/app/resetsalesstock", true);
+        }
+        catch (DbUpdateException dex)
+        {
+            Snackbar.Add("Error: " + dex.Message + Environment.NewLine + dex.InnerException?.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error e: " + ex.Message + Environment.NewLine + ex.StackTrace, Severity.Error);
+        }
+    }
+
+    private async Task ProcessResetStock(int productId, string jenisTelur, decimal kg, DateTime dateNow)
+    {
+        var existingStock = await _db.StockPosting.Where(x => x.ProductId == productId && x.Date.Date == dateNow.Date).ToListAsync();
+
+        if (existingStock != null)
+        {
+            _db.StockPosting.RemoveRange(existingStock);
+            await _db.SaveChangesAsync();
+        }
+
+        StockPosting stockposting = new StockPosting();
+        stockposting.Date = dateNow.Date;
+        stockposting.ProductId = productId;
+        stockposting.InwardQty = kg;
+        stockposting.OutwardQty = 0;
+        stockposting.UnitId = 0;
+        stockposting.BatchId = 0;
+        stockposting.Rate = 0;
+        stockposting.DetailsId = 0;
+        stockposting.InvoiceNo = productId.ToString();
+        stockposting.VoucherNo = productId.ToString();
+        stockposting.VoucherTypeId = 0;
+        stockposting.AgainstInvoiceNo = String.Empty;
+        stockposting.AgainstVoucherNo = String.Empty;
+        stockposting.AgainstVoucherTypeId = 0;
+        stockposting.WarehouseId = 1;
+        stockposting.StockCalculate = "Reset Stock";
+        stockposting.CompanyId = 1;
+        stockposting.FinancialYearId = 2;
+        stockposting.AddedDate = DateTime.Now;
+        _db.StockPosting.Add(stockposting);
+
+        MutasiStockTelurHarian mutasi = new MutasiStockTelurHarian();
+        mutasi.JenisTelur = jenisTelur;
+        mutasi.BeratTelurIn = kg;
+        mutasi.BeratTelurOut = 0;
+        mutasi.DateCreated = dateNow;
+        mutasi.CreatedBy = modelEmployee.EmployeeId;
+        _db.MutasiStockTelurHarian.Add(mutasi);
+
+        await _db.SaveChangesAsync();
+
+        string auditMessage = "Reset stok telur " + jenisTelur + " stok baru: " + kg;
+        await _audit.LogAsync(LogTypes.LogInfo, "Reset Stock Penjualan Telur " + jenisTelur, auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var authstate = await authStateProvider.GetAuthenticationStateAsync();

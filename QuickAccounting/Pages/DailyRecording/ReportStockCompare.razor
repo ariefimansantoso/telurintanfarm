@@ -1,0 +1,256 @@
+﻿@page "/app/reportstockcompare"
+@using System.Security.Claims;
+@using Microsoft.EntityFrameworkCore;
+@using QuickAccounting.Data.Recording;
+@using System.Transactions;
+@using System.Globalization;
+@using QuickAccounting.Components
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+@inject IUser _user
+@inject IEmployee _employee
+@inject IWebHostEnvironment _hostingEnvironment
+@inject IPrivilege _privilege
+@inject NavigationManager navigation
+@inject IDailyRecordingService _recording
+@inject IKandangService _kandang
+@inject IDailyEggPickupService _egg
+@inject AuthenticationStateProvider authStateProvider
+@inject ApplicationDbContext _db
+@inject IAuditLogService _audit
+@attribute [Authorize]
+
+<PageTitle>Laporan Stok Opnam dan Sisa Stok Jualan</PageTitle>
+<Loader IsLoading="isProcessing"></Loader>
+
+<style type="text/css">
+    .table tbody tr td {
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+        /* color: #637381;
+        font-weight: 200 !important;
+        border-bottom: 1px solid #E9ECEF;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: right !important; */
+    }
+</style>
+
+<div class="content">
+    <div class="page-header">
+        <div class="page-title">
+            <h2>Laporan Stok Opnam dan Sisa Stok Jualan</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">           
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDateFrom" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        Tanggal
+                        <input type="date" @bind="@SelectedDateTo" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg col-sm-6 col-12">
+                    <div class="form-group">
+                        <input type="button" class="btn btn-success" @onclick="(e => ShowData())" value="Tampilkan Data" />
+                    </div>
+                </div>
+            </div>
+
+            @if (listOfStocks.Count > 0)
+            {
+                <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-12">
+                        <div class="form-group" style="text-align: left !important;">                            
+                            <div class="table-responsive table-scrollable">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align:left;">Tanggal</th>
+                                            <th style="text-align:left;">Sisa Jualan</th>
+                                            <th style="text-align:left;">Utuh</th>
+                                            <th style="text-align:left;">Putih</th>
+                                            <th style="text-align:left;">Bentes</th>
+                                            <th style="text-align:left;">Parah</th>
+                                            <th style="text-align:left;">PS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach(var listOfStock in listOfStocks) 
+                                        {
+                                            @foreach(var reportStock in listOfStock) 
+                                            {
+                                                <tr>
+                                                    <td style="text-align:left !important;">@reportStock.CurrentDate.ToString("dd/MM/yyyy")</td>
+                                                    <td style="text-align:left !important;">@reportStock.SisaJualan</td>
+                                                    <td style="text-align:left !important;">@reportStock.Utuh</td>
+                                                    <td style="text-align:left !important;">@reportStock.Putih</td>
+                                                    <td style="text-align:left !important;">@reportStock.Bentes</td>
+                                                    <td style="text-align:left !important;">@reportStock.Parah</td>
+                                                    <td style="text-align:left !important;">@reportStock.ParahSekali</td>
+                                                </tr>
+                                            }
+                                            <tr>
+                                                <td colspan="8">&nbsp;</td>
+                                            </tr>
+                                        }                                        
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    </div>    
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> authenticationState { get; set; }
+    string strMenu = "Report Stock Produksi";
+
+    private UserMaster modelUser;
+    private Employee modelEmployee;
+    string currentUserRole = "User";
+    DateTime SelectedDateFrom;
+    DateTime SelectedDateTo;
+
+    public class StockReportItem
+    {
+        public DateTime CurrentDate { get; set; }
+        public string SisaJualan { get; set; }
+        public decimal Utuh { get; set; }
+        public decimal Putih { get; set; }
+        public decimal Bentes { get; set; }
+        public decimal Parah { get; set; }
+        public decimal ParahSekali { get; set; }
+    }
+
+    bool isProcessing;
+    bool IsValid = true;
+    List<DateTime> dates = new List<DateTime>();
+    List<StockReportItem> stocks = new List<StockReportItem>();
+    List<List<StockReportItem>> listOfStocks = new List<List<StockReportItem>>();
+
+    private async Task ShowData()
+    {
+        stocks = new List<StockReportItem>();
+        listOfStocks = new List<List<StockReportItem>>();
+
+        for (DateTime date = SelectedDateFrom; date <= SelectedDateTo; date = date.AddDays(1))
+        {
+            dates.Add(date);
+            await LoadData(date);
+        }
+    }
+
+    private async Task LoadData(DateTime SelectedDate)
+    {
+        // 1. Establish strict midnight boundaries for Indonesia (WIB) 
+        // This ensures "yesterday" is accurate regardless of server UTC time.
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Jakarta");
+        var nowWib = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
+        var yesterday = nowWib.Date.AddDays(-1);
+        var today = nowWib.Date;
+
+        // Product ID definitions
+        int productIdUtuh = -99;
+        int productIdBentes = 16;
+        int productIdPutih = 7;
+        int productIdParah = 17;
+        int productIdPS = 19;
+        int productIdRusak = 106;
+
+        var targetProductIds = new[] { 
+            productIdUtuh, productIdBentes, productIdPutih, 
+            productIdParah, productIdPS, productIdRusak 
+        };
+
+        // 2. Fetch the raw data from the database in a single round-trip.
+        // Bringing this into memory (.ToListAsync) allows us to pivot safely.
+        var yesterdayRecords = await _db.StockOpnam
+            .Where(s => s.StockDate.Date == SelectedDate.Date && 
+                        targetProductIds.Contains(s.ProductID))
+            .ToListAsync();
+
+        // 3. Group by the Capture flag
+        var groupedRecords = yesterdayRecords.GroupBy(s => s.Capture).ToList();
+
+        // Helper function: extracts the stock value for a specific product.
+        // OrderByDescending ensures if there were multiple stock entries for the same product yesterday, 
+        // you grab the most recently submitted one.
+        decimal GetStockForProduct(bool isCapture, int productId)
+        {
+            var group = groupedRecords.FirstOrDefault(g => g.Key == isCapture);
+            if (group == null) return 0m;
+
+            return group
+                .Where(x => x.ProductID == productId)
+                .OrderByDescending(x => x.ID)
+                .Select(x => x.StockAkhir)
+                .FirstOrDefault(); // Returns 0 if no record exists for that product
+        }
+
+        // 4. Construct the exact 2-row output
+        stocks = new List<StockReportItem>
+        {
+            // Row 1: Capture = true -> SisaJualan = "Yes"
+            new StockReportItem
+            {
+                CurrentDate = SelectedDate,
+                SisaJualan = "Ya",
+                Utuh = GetStockForProduct(true, productIdUtuh),
+                Putih = GetStockForProduct(true, productIdPutih),
+                Bentes = GetStockForProduct(true, productIdBentes),
+                Parah = GetStockForProduct(true, productIdParah),
+                ParahSekali = GetStockForProduct(true, productIdPS)
+            },
+
+            // Row 2: Capture = false -> SisaJualan = "No"
+            new StockReportItem
+            {
+                CurrentDate = SelectedDate,
+                SisaJualan = "Stock Opnam",
+                Utuh = GetStockForProduct(false, productIdUtuh),
+                Putih = GetStockForProduct(false, productIdPutih),
+                Bentes = GetStockForProduct(false, productIdBentes),
+                Parah = GetStockForProduct(false, productIdParah),
+                ParahSekali = GetStockForProduct(false, productIdPS)
+            }
+        };
+
+        listOfStocks.Add(stocks);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {        
+        var authstate = await authStateProvider.GetAuthenticationStateAsync();
+        var user = authstate.User;
+        var userName = user.Identity.Name;
+        currentUserRole = await _user.GetUserRole(userName);
+        modelUser = await _user.UserProfile(userName);
+        modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+        string auditMessage = "User dengan nama " + modelEmployee.EmployeeName + " mengunjungi Compare Laporan Stok Opnam dan Sisa Stok Jualan.";
+        await _audit.LogAsync(LogTypes.LogInfo, "Laporan Compare Stok Opnam dan Sisa Stok Jualan", auditMessage, modelEmployee.EmployeeId, modelEmployee.EmployeeName);
+
+        SelectedDateFrom = SelectedDateTo = DateTime.Now;
+
+        await ShowData();
+    }
+}    

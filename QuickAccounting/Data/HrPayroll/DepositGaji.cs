@@ -9,7 +9,6 @@ namespace QuickAccounting.Data.HrPayroll
         [Key]
         public int ID { get; set; }
 
-        [Required]
         public int EmployeeID { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
@@ -19,10 +18,9 @@ namespace QuickAccounting.Data.HrPayroll
 
         public int CreatedBy { get; set; }
 
-        public bool IsExpired { get; set; }
-
         public bool IsCredited { get; set; }
 
+        [MaxLength(250)]
         public string DisburseCode { get; set; }
     }
 }
