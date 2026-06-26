@@ -40,6 +40,7 @@
                         @* <MudTh>RP BPJS Kes</MudTh>
                         <MudTh>RP BPJS Kes</MudTh> *@
                         <MudTh>Aktif/Masih Kerja</MudTh>
+                        <MudTh>Setuju Deposit</MudTh>
                         <MudTh></MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -54,6 +55,7 @@
                         @* <MudTd DataLabel="RPBPJSKes">@string.Format("{0:n0}", context.BPJS_KES)</MudTd>
                         <MudTd DataLabel="RPBPJSTK">@string.Format("{0:n0}", context.BPJS_TK)</MudTd> *@
                         <MudTd DataLabel="Active">@(context.isActive ? "Ya" : "Tidak")</MudTd>
+                        <MudTd DataLabel="Setuju Deposit">@(context.AgreeDeposit ? "Ya" : "Tidak")</MudTd>
                         <MudTd DataLabel="">
                                 <a class="me-3" href="/app/employeeeditsop/@context.EmployeeId">
                                     SOP

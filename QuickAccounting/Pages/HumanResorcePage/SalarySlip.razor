@@ -129,7 +129,7 @@
         var payrollKaryawan = _context.Payroll.Where(x => x.CutoffID == Cutoff.ID && x.EmployeeID == modelEmployee.EmployeeId).FirstOrDefault(); 
         if(payrollKaryawan != null)
         {
-            var totalPotongan = payrollKaryawan.BPJS_KES + payrollKaryawan.BPJS_TK + payrollKaryawan.Cicilan + payrollKaryawan.Potongan + payrollKaryawan.SetengahHari;
+            var totalPotongan = payrollKaryawan.BPJS_KES + payrollKaryawan.BPJS_TK + payrollKaryawan.Cicilan + payrollKaryawan.Potongan + payrollKaryawan.SetengahHari + payrollKaryawan.DepositGaji;
 
             ParamDataPdf.Add(Cutoff.PayrollPeriode);
             ParamDataPdf.Add(modelEmployee.EmployeeName);
@@ -161,6 +161,7 @@
             ParamDataPdf.Add(payrollKaryawan.Lembur);
             ParamDataPdf.Add(payrollKaryawan.DinasLuar);
             ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.RpLembur));
+            ParamDataPdf.Add(string.Format("{0:n0}", payrollKaryawan.DepositGaji));
 
             HtmlContentPdf = GetTemplateSalarySlip(payrollKaryawan.Cicilan > 0);
 
@@ -355,7 +356,10 @@
                                             <td>Potongan</td>
                                             <td>{16}</td>
                                         </tr>
-
+                                        <tr>
+                                            <td>Deposit</td>
+                                            <td>{30}</td>
+                                        </tr>
                                         <tr class='total'>
                                             <td>Total Potongan</td>
                                             <td>{17}</td>
@@ -509,7 +513,10 @@
                                             <td>Potongan</td>
                                             <td>{16}</td>
                                         </tr>
-
+                                        <tr>
+                                            <td>Deposit</td>
+                                            <td>{30}</td>
+                                        </tr>
                                         <tr class='total'>
                                             <td>Total Potongan</td>
                                             <td>{17}</td>

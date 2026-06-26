@@ -1476,7 +1476,7 @@
 						<a href="/app/recordvacation" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Form Ijin / Libur</a>
 						<a href="/app/attendancelist" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Laporan Abensi Harian dan Gaji</a>
 						<!-- DEPLOY DEPOSIT GAJI -->
-						@* <a href="/app/karyawandepositgaji" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Deposit Gaji</a> *@
+						<a href="/app/karyawandepositgaji" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Deposit Gaji</a>
 						<a href="/app/salaryslip" class="btn btn-primary" style="width:100%; margin-bottom: 20px;">Slip Gaji</a>
 						@if(HasLoan)
 						{
@@ -1513,6 +1513,21 @@
 	</div>
 	}
 </div>
+
+@if (ConfirmNewContract)
+{
+    <ModalDialog Title="Setuju Kontrak Baru"
+				 Text="Diberitahukan kepada semua karyawan, adendum / penambahan poin kontrak kerja:
+						<ol>
+						 <li>1. Bersedia untuk deposit 10% dari gaji pokok untuk durasi satu tahun.</li>
+						 <li>2. Deposit akan dicairkan pada setiap akhir tahun kontrak kerja.</li>
+						 <li>3. Deposit akan terus berlanjut setelah dicairkan pada tahun berikutnya.</li>
+						</ol>"
+				 OnClose="@OnConfirmNewContractDialogClose"
+				 DialogType="ModalDialog.ModalDialogType.AgreeDisagree">
+    </ModalDialog>
+}
+
 @if (ApproveDialogOpen)
 {
 	<ModalDialog Title="Setujui Pengajuan Ijin/Libur Karyawan"
@@ -1594,6 +1609,8 @@
 	public int SelectedPerijinanID { get; set; }
 	public bool ApproveDialogOpen { get; set; }
 	public bool RejectDialogOpen { get; set; }
+	public bool ConfirmNewContract { get; set; }
+
 	UserMaster modelUser = new UserMaster();
 	Employee modelEmployee = new Employee();
 	public string RejectionReason { get; set; }
@@ -2085,6 +2102,30 @@
 		navigation.NavigateTo("/app/dashboard", true);
 	}
 
+	private async Task OnConfirmNewContractDialogClose(bool accepted)
+	{
+		if (!accepted)
+		{
+			modelEmployee.isActive = false;
+			var updateSuccessful = await _employee.Update(modelEmployee);
+			if(updateSuccessful)
+			{
+				var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+				await customAuthStateProvider.UpdateAuthenticationState(null);
+				navigation.NavigateTo("/", true);
+			}
+		}
+		else {
+			modelEmployee.AgreeDeposit = true;
+			var updateSuccessful = await _employee.Update(modelEmployee);
+			if(updateSuccessful)
+			{
+				ConfirmNewContract = false;
+				StateHasChanged();
+			}
+		}		
+	}
+
 	private async Task RejectPerijinan()
 	{
 		var perijinan = _hr.PerijinanQuery().FirstOrDefault(x => x.ID == SelectedPerijinanID);
@@ -2497,6 +2538,20 @@
 		currentUserRole = await _userManage.GetUserRole(userName);
 		modelUser = await _userManage.UserProfile(userName);
 		modelEmployee = await _employee.GetbyUserId(modelUser.UserId);
+
+		if(modelEmployee.EmployeeId == 6 || modelEmployee.EmployeeId == 5 || modelEmployee.EmployeeId == 8)
+		{
+			ConfirmNewContract = false;
+		}
+		else 
+		{
+			ConfirmNewContract = true;
+		}
+
+		if(modelEmployee.AgreeDeposit) 
+		{
+			ConfirmNewContract = false;
+		}
 
 		JobDescAvailable = !string.IsNullOrEmpty(modelEmployee.JobDesc);
 		SOPAvailable = !string.IsNullOrEmpty(modelEmployee.SOP);

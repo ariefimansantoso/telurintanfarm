@@ -165,8 +165,8 @@
                                     //{
                                          _db.Employee.FirstOrDefault(x => x.EmployeeId == payrollPerPerson.EmployeeID);
                                     //}
-                                    var existingDeposit = payrollPerPerson.GajiBersih / 9;
-                                    var gajiAsli = payrollPerPerson.GajiBersih + existingDeposit;
+                                    var existingDeposit = payrollPerPerson.DepositGaji;
+                                    var gajiAsli = payrollPerPerson.GajiNonDeposit;
                                     <tr>
                                         <td>@(currentEmployee != null ? currentEmployee.EmployeeName : "")</td>
                                         <td>@string.Format("{0:n0}", payrollPerPerson.GajiHarian)</td>
@@ -202,9 +202,7 @@
                                             No = number,
                                             Karyawan = currentEmployee.EmployeeName,
                                             Rekening = currentEmployee.BankAccount,
-                                            Deposit = existingDeposit,
-                                            Gaji = payrollPerPerson.GajiBersih,
-                                            GajiAsli = gajiAsli
+                                            Gaji = payrollPerPerson.GajiBersih
                                         });
                                     }
                                     number++;
@@ -273,6 +271,7 @@
                                     decimal prosentasiPremi = _hr.GetProsentasePremi(masaKerjaDalamTahun) / 100;
                                     decimal gajiNonPremi = 0;
                                     decimal depositGaji = 0;
+                                    decimal gajiAsli = 0;
 
                                     //calculate tunjangan hari kerja
                                     decimal dailyTunjangan = employee.Tunjangan / 365; //rata2 hari dalam sebulan 30                                
@@ -398,6 +397,13 @@
                                     }
 
                                     gajiNonPremi = employee.DailyWage * (decimal)countMasuk;
+                                    
+                                    // Jauhari
+                                    if (employee.EmployeeId != 8)
+                                    {
+                                        depositGaji = gajiNonPremi * 0.1m;
+                                    }
+                                    
                                     decimal rpPremi = totalGaji - gajiNonPremi;
 
                                     foreach(DateTime alphaDate in PeriodeDatesAlpha)
@@ -428,8 +434,10 @@
                                     }
 
                                     gajiBersih = totalGaji - employee.BPJS_KES - employee.BPJS_TK - cicilan - potonganNonCicilan - potonganSetengahHari + tambahanGaji + tunjanganTetap + rpLembur;
-                                    depositGaji = gajiBersih * 0.1m;
+                                    //depositGaji = gajiBersih * 0.1m;
+                                    gajiAsli = gajiBersih;
                                     gajiBersih = gajiBersih - depositGaji;
+
                                     gajiKaryawanTotal = gajiKaryawanTotal + gajiBersih;
 
                                     int totalHours = totalMenitLembur / 60; // Get the whole number of hours
@@ -454,9 +462,10 @@
                                         jumlahTerlambatCount = 0;
                                         cicilan = 0;
                                         //potonganNonCicilan = 0;
-                                        potonganSetengahHari = 0;                                        
+                                        potonganSetengahHari = 0;
+                                        depositGaji = gajiNonPremi * 0.1m;
                                         gajiBersih = gajiNonPremi + tambahanGaji - potonganNonCicilan;
-                                        depositGaji = gajiBersih * 0.1m;
+                                        gajiAsli = gajiBersih;
                                         gajiBersih = gajiBersih - depositGaji;
                                     }
 
@@ -502,6 +511,7 @@
                                     payrollItem.CreatedDate = DateTime.Now;
                                     payrollItem.GajiHarian = employee.DailyWage;
                                     payrollItem.DepositGaji = depositGaji;
+                                    payrollItem.GajiNonDeposit = gajiAsli;
                                     newPayrolls.Add(payrollItem);
 
                                     <tr>
@@ -529,6 +539,7 @@
                                         <td>@string.Format("{0:n0}", depositGaji)</td>
                                         <td>@employee.BankAccount</td>
                                         <td>@string.Format("{0:n0}", gajiBersih)</td>
+                                        <td>@string.Format("{0:n0}", gajiAsli)</td>
                                     </tr>
                                 }                                
                             }
@@ -753,7 +764,7 @@
                     CloneStyledCell(headerCells, 0, item.No.ToString()),
                     CloneStyledCell(headerCells, 1, item.Karyawan),
                     CloneStyledCell(headerCells, 2, item.Rekening),
-                    CloneStyledCell(headerCells, 3, item.Deposit.ToString("N0", new CultureInfo("id-ID")))
+                    CloneStyledCell(headerCells, 3, item.Gaji.ToString("N0", new CultureInfo("id-ID")))
                 );
 
                 totalSalary = totalSalary + item.Gaji;
@@ -1049,6 +1060,7 @@
                 payrollItem.CreatedDate = DateTime.Now;
                 payrollItem.GajiHarian = pakThomy.DailyWage;
                 payrollItem.DepositGaji = 0;
+                payrollItem.GajiNonDeposit = gajiBersihPakThomy;
                 newPayrolls.Add(payrollItem);
 
                 payrollExcel.Add(new PayrollExcel
@@ -1059,7 +1071,28 @@
                         Gaji = gajiBersihPakThomy
                     });
 
+                List<DepositGaji> depositGajiList = new List<DepositGaji>();
+                foreach(var newPayroll in newPayrolls)
+                {
+                    if (newPayroll.EmployeeID == 6) continue; // skip pak thomy
+                    if (newPayroll.EmployeeID == 8) continue; // skip Jauhari
+
+                    var depositGaji = new DepositGaji
+                    {                         
+                        EmployeeID = newPayroll.EmployeeID,
+                        DepositAmount = newPayroll.DepositGaji,
+                        IsCredited = false,
+                        DisburseCode = "",
+                        CreatedBy = modelEmployee.EmployeeId,
+                        DateCreated = DateTime.Now                        
+                    };
+                    depositGajiList.Add(depositGaji);
+                }
+                
                 _db.Payroll.AddRange(newPayrolls);
+                await _db.SaveChangesAsync();
+
+                await _db.DepositGaji.AddRangeAsync(depositGajiList);
                 await _db.SaveChangesAsync();
 
                 Snackbar.Add("Payroll Sukses", Severity.Success);
@@ -1094,9 +1127,9 @@
         public int No { get; set; }
         public string Karyawan { get; set; }
         public string Rekening { get; set; }
-        public decimal Deposit { get; set; }
+        //public decimal Deposit { get; set; }
         public decimal Gaji { get; set; }
-        public decimal GajiAsli { get; set; }
+        ///public decimal GajiAsli { get; set; }
     }
 
     public class AbsensiData

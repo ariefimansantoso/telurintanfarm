@@ -40,7 +40,8 @@ namespace QuickAccounting.Data.HrPayroll
         public string JobDesc { get; set; }
         public string SOP { get; set; }
 		public int OldEmployeeId { get; set; }
-	}
+        public bool AgreeDeposit { get; set; }        
+    }
 
     public class SalaryHistory
     {
